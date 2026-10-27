@@ -43,7 +43,11 @@ class AuthController extends Controller
 
     public function changePassword(ChangeOwnPasswordRequest $request): Response
     {
-        $this->authentication->changeOwnPassword($request->user(), $request->validated('password'));
+        $this->authentication->changeOwnPassword(
+            $request->user(),
+            $request->validated('current_password'),
+            $request->validated('password'),
+        );
 
         return response()->noContent();
     }

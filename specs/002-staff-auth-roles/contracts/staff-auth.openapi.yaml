@@ -110,7 +110,14 @@ paths:
       responses:
         '204': { description: Password changed; the current token stays valid }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '422':
+          description: >
+            Validation error, a wrong current password (`validation.current_password` on
+            `current_password`), or too many attempts (`auth.throttle` on `current_password`).
+            Wrong current passwords count toward the same per-email limit as failed sign-ins.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
 
   /staff:
     get:

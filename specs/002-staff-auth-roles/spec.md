@@ -34,6 +34,9 @@ introduced here from scratch. Patients do not have accounts; there is no patient
   emails (full-width letters) matched the same account under the database collation, letting
   variants dodge the per-email limit; keying on the account id instead revealed which accounts
   exist. → A: Emails are ASCII only, rejected at validation before any lookup (edge cases, R7).
+- Security review (during US5 implementation): the own-password change had no limit on wrong
+  current passwords, so a stolen or unattended token could guess the password. → A: They count
+  toward the sign-in per-email limit, shared by both endpoints (FR-023, R7).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -255,6 +258,7 @@ works.
   composition rules are imposed.
 - **FR-023**: A signed-in staff member MUST be able to change their own password by providing the
   current password; on success, their other access is ended and the current access stays valid.
+  Wrong current passwords count toward the same per-email limit as failed sign-ins (FR-007).
 - **FR-024**: Password recovery MUST be done by an administrator setting a new password (FR-020).
   There is no self-service or email-based password reset in this feature.
 

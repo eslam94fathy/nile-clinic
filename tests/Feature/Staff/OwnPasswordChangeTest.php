@@ -80,6 +80,45 @@ class OwnPasswordChangeTest extends TestCase
     }
 
     /**
+     * Wrong current passwords count against the same per-account limit as sign-in (FR-007), so a
+     * stolen or unattended token cannot be used to guess the password without limit.
+     */
+    #[DataProvider('locales')]
+    public function test_wrong_current_passwords_are_rate_limited_together_with_sign_in(string $locale): void
+    {
+        $user = User::factory()->create();
+        $token = $this->signIn($user);
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->usingToken($token)->putJson(self::URI, [
+                'current_password' => "wrong-guess-{$i}-pass",
+                'password' => self::NEW_PASSWORD,
+                'password_confirmation' => self::NEW_PASSWORD,
+            ], ['Accept-Language' => $locale])->assertJsonPath(
+                'errors.current_password.0',
+                (require lang_path("{$locale}/validation.php"))['current_password'],
+            );
+        }
+
+        $throttled = $this->usingToken($token)->putJson(self::URI, [
+            'current_password' => UserFactory::PASSWORD,
+            'password' => self::NEW_PASSWORD,
+            'password_confirmation' => self::NEW_PASSWORD,
+        ], ['Accept-Language' => $locale]);
+
+        $throttled->assertUnprocessable();
+        $this->assertMatchesRegularExpression(
+            $this->linePattern((require lang_path("{$locale}/auth.php"))['throttle']),
+            $throttled->json('errors.current_password.0'),
+        );
+
+        $this->usingToken(null)->postJson('/api/v1/auth/sign-in', [
+            'email' => $user->email,
+            'password' => UserFactory::PASSWORD,
+        ])->assertUnprocessable();
+    }
+
+    /**
      * @return array<string, array{string, string}>
      */
     public static function invalidNewPasswords(): array
@@ -102,6 +141,16 @@ class OwnPasswordChangeTest extends TestCase
         ])->assertJsonValidationErrorFor('password');
     }
 
+    public function test_current_password_is_required(): void
+    {
+        $token = $this->signIn(User::factory()->create());
+
+        $this->usingToken($token)->putJson(self::URI, [
+            'password' => self::NEW_PASSWORD,
+            'password_confirmation' => self::NEW_PASSWORD,
+        ])->assertJsonValidationErrorFor('current_password');
+    }
+
     public function test_requires_a_token(): void
     {
         $this->usingToken(null)->putJson(self::URI, [
@@ -109,5 +158,13 @@ class OwnPasswordChangeTest extends TestCase
             'password' => self::NEW_PASSWORD,
             'password_confirmation' => self::NEW_PASSWORD,
         ])->assertUnauthorized();
+    }
+
+    /**
+     * A regex for a translation line whose :placeholders may hold any value.
+     */
+    private function linePattern(string $line): string
+    {
+        return '/^'.preg_replace('/\\\\:[a-z_]+/', '.+', preg_quote($line, '/')).'$/u';
     }
 }

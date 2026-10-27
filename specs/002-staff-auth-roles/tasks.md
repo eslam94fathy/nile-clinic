@@ -517,14 +517,18 @@ the other gets `401`, the old password fails.
 - [X] T046 [US5] Add `deleteAllExcept(User $user, PersonalAccessToken $keep): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
-- [X] T047 [US5] Add `changeOwnPassword(User $user, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
+- [X] T047 [US5] Add `changeOwnPassword(User $user, string $currentPassword, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
   - Scope: in one `DB::transaction()`: update the password (via `StaffMemberRepository::update`) and
     `deleteAllExcept($user, $user->currentAccessToken())`.
+  - (Revised after a security review: before that, it hits the shared `sign-in:email:<email>`
+    counter (max 5 per 60 s → `auth.throttle` on `current_password`), checks the current password
+    with `Hash::check` (`validation.current_password` on failure), and clears the counter on success;
+    research R7.)
   - Depends: T037 (or add `update()` to the repository here if US3 is not done), T046
 
 - [X] T048 [US5] Create `app/Modules/Staff/Http/Requests/ChangeOwnPasswordRequest.php`, add `AuthController::changePassword`, and route `PUT auth/password` → `staff.auth.password` in `app/Modules/Staff/routes/api.php`
-  - Scope: rules `current_password` → `required|string|current_password:sanctum`; `password` →
-    `PasswordRules::rules()`; controller returns `204`.
+  - Scope: rules `current_password` → `required|string` (checked and rate-limited by the service,
+    see T047); `password` → `PasswordRules::rules()`; controller returns `204`.
   - Accept: T045 passes.
   - Verify: `docker compose exec app php artisan test --filter=OwnPasswordChangeTest` → pass
   - Depends: T035, T047

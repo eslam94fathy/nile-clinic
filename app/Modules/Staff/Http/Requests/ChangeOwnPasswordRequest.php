@@ -21,7 +21,8 @@ class ChangeOwnPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'string', 'current_password:sanctum'],
+            // Checked by AuthenticationService, which also rate-limits wrong guesses (FR-007).
+            'current_password' => ['required', 'string'],
             'password' => PasswordRules::rules(),
         ];
     }

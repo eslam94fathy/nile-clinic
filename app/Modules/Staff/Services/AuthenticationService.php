@@ -49,7 +49,7 @@ class AuthenticationService
     {
         // The email is lower-cased ASCII (SignInRequest), so this key and the case-insensitive
         // lookup always agree, and it is built the same way whether or not an account exists.
-        $emailKey = 'sign-in:email:'.$email;
+        $emailKey = $this->accountAttemptsKey($email);
         $ipKey = 'sign-in:ip:'.$ip;
 
         // Count first, then check, so simultaneous requests cannot slip past the limits.
@@ -86,10 +86,31 @@ class AuthenticationService
 
     /**
      * Change the signed-in member's password and end their other sessions; the token used for
-     * this request stays valid (FR-023). The current password is checked by the Form Request.
+     * this request stays valid (FR-023).
+     *
+     * Wrong current passwords count against the same per-account limit as sign-in (FR-007), so a
+     * stolen or unattended token cannot be used to guess the password without limit.
+     *
+     * @throws ValidationException
      */
-    public function changeOwnPassword(User $user, string $password): void
+    public function changeOwnPassword(User $user, string $currentPassword, string $password): void
     {
+        $key = $this->accountAttemptsKey($user->email);
+
+        if (RateLimiter::hit($key, self::DECAY_SECONDS) > self::MAX_ATTEMPTS_PER_EMAIL) {
+            throw ValidationException::withMessages([
+                'current_password' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($key)]),
+            ]);
+        }
+
+        if (! Hash::check($currentPassword, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => __('validation.current_password'),
+            ]);
+        }
+
+        RateLimiter::clear($key);
+
         DB::transaction(function () use ($user, $password) {
             $this->staffMembers->update($user, ['password' => $password]);
 
@@ -113,6 +134,14 @@ class AuthenticationService
             && $user instanceof User
             && $user->is_active
             && $lastActivity->greaterThan($this->idleCutoff());
+    }
+
+    /**
+     * The per-account attempt counter shared by sign-in and own password change.
+     */
+    private function accountAttemptsKey(string $email): string
+    {
+        return 'sign-in:email:'.$email;
     }
 
     private function idleCutoff(): CarbonInterface
