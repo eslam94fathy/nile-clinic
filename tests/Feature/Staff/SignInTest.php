@@ -116,6 +116,27 @@ class SignInTest extends TestCase
         );
     }
 
+    public function test_email_limit_counts_variants_that_reach_the_same_account(): void
+    {
+        User::factory()->create(['email' => 'sara@clinic.test']);
+
+        // Full-width letters: the database collation matches these to the same account, so they
+        // must share one counter. (Accents are already folded by the rate limiter's key cleaning.)
+        foreach (['ｓara', 'sａra', 'saｒa', 'sarａ', 'ｓａｒａ'] as $i => $variant) {
+            $this->fromAddress('10.0.1.'.($i + 1))
+                ->attempt("{$variant}@clinic.test", 'wrong-password-1')
+                ->assertJsonPath('errors.email.0', $this->authLine('en', 'failed'));
+        }
+
+        $throttled = $this->fromAddress('10.0.1.99')->attempt('sara@clinic.test', UserFactory::PASSWORD);
+
+        $throttled->assertUnprocessable();
+        $this->assertMatchesRegularExpression(
+            $this->linePattern($this->authLine('en', 'throttle')),
+            $throttled->json('errors.email.0'),
+        );
+    }
+
     public function test_client_address_limit_applies_across_emails(): void
     {
         $user = User::factory()->create(['email' => 'known@clinic.test']);

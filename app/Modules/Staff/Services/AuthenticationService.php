@@ -46,7 +46,12 @@ class AuthenticationService
      */
     public function signIn(string $email, string $password, string $ip): array
     {
-        $emailKey = 'sign-in:email:'.$email;
+        $user = $this->staffMembers->findByEmail($email);
+
+        // Key the per-email limit on the account the lookup matched, not the typed text: the
+        // column's collation treats variants such as full-width letters as the same email, so a
+        // text key would give each variant its own counter against one account.
+        $emailKey = 'sign-in:account:'.($user?->id ?? 'unknown:'.$email);
         $ipKey = 'sign-in:ip:'.$ip;
 
         // Count first, then check, so simultaneous requests cannot slip past the limits.
@@ -61,7 +66,6 @@ class AuthenticationService
             ]);
         }
 
-        $user = $this->staffMembers->findByEmail($email);
         $passwordMatches = Hash::check($password, $user?->password ?? $this->dummyHash());
 
         if (! $user || ! $passwordMatches || ! $user->is_active) {

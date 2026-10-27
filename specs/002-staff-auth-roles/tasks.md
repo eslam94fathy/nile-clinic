@@ -263,7 +263,7 @@ the old token gets `401`.
 - [X] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
   - Scope:
     - `signIn(string $email, string $password, string $ip): array{token: string, user: User}`:
-      keys `sign-in:email:<email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
+      look up the account first; keys `sign-in:account:<id or unknown:email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
       `RateLimiter::hit(…, 60)` **before** checking; if either count is over its max throw
       `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => <longer wait>])])`;
       look up via `findByEmail`; if missing, still run `Hash::check` against a fixed dummy Argon2id

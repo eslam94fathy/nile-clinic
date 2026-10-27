@@ -101,7 +101,10 @@ approved on 2026-10-27 and are listed in the plan's Decisions table.
 
 - **Decision** (revised after a security review during US1): `AuthenticationService::signIn()`
   uses two `RateLimiter` keys with a 60 s window:
-  - `sign-in:email:<lowercase email>`: more than **5** attempts → refused. A successful sign-in
+  - `sign-in:account:<user id>` (or `sign-in:account:unknown:<email>` when no account matches):
+    more than **5** attempts → refused. Keyed on the matched account, not the typed text, because
+    the `utf8mb4_unicode_ci` collation matches variants such as full-width letters to the same
+    account (found by a second security review; `SignInTest` covers it). A successful sign-in
     clears it, so it effectively counts failures for that account from any address.
   - `sign-in:ip:<client IP>`: more than **20** attempts for any email → refused. Never cleared on
     success, so signing in to one account cannot reset an address that is guessing others.
