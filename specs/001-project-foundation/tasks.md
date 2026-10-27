@@ -420,7 +420,7 @@ mandated layers.
   - Verify: manual checklist against FR-021's layer list (SC-006)
   - Depends: T021
 
-- [ ] T030 [US4] Verify the System module follows the documented rules
+- [X] T030 [US4] Verify the System module follows the documented rules
   - Accept: no DB access outside repositories; the controller depends on the service only; the service depends on the interface only.
   - Verify:
     - `grep -rnE "Facades\\\\DB|DB::" app/Modules --include=*.php` → matches only `MySqlDatabaseStatusRepository.php`
