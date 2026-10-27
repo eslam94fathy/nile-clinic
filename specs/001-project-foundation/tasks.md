@@ -300,7 +300,7 @@ mandated layers.
   - Verify: `grep -n "Facades\\\\DB" app/Modules/System/Services` → no matches
   - Depends: T016
 
-- [ ] T020 [US1] Implement the thin invokable `app/Modules/System/Http/Controllers/HealthController.php`
+- [X] T020 [US1] Implement the thin invokable `app/Modules/System/Http/Controllers/HealthController.php`
   - Scope:
     - `__invoke(HealthCheckService $service): JsonResponse`
     - calls `$service->check()`; returns `HealthResource` with status 200 for `ok` and 503 for `unavailable`
