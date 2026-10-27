@@ -177,7 +177,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan test --filter=AuthErrorsTest` → pass
   - Depends: T010, T011, T012
 
-- [ ] T014 [P] Add module translations `app/Modules/Staff/lang/en/messages.php` and `app/Modules/Staff/lang/ar/messages.php`
+- [X] T014 [P] Add module translations `app/Modules/Staff/lang/en/messages.php` and `app/Modules/Staff/lang/ar/messages.php`
   - Scope: exactly these keys:
     - `not_found` — en `No staff member was found.`; ar `لم يتم العثور على الموظف.`
     - `last_administrator` — en `This change would leave the clinic without an active administrator.`;
