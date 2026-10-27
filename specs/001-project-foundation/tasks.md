@@ -439,7 +439,7 @@ mandated layers.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T031 [P] [US5] Write `tests/Feature/Localization/LocaleSelectionTest.php`
+- [X] T031 [P] [US5] Write `tests/Feature/Localization/LocaleSelectionTest.php`
   - Scope:
     - Register a **test-only** route inside the test (`Route::middleware('api')->post('api/v1/_test/locale', …)` validating a `required` field; not shipped).
     - Data provider:
@@ -456,13 +456,13 @@ mandated layers.
   - Verify: `docker compose exec app php artisan test --filter=LocaleSelectionTest` → fails
   - Depends: T012, T013
 
-- [ ] T032 [P] [US5] Write `tests/Feature/Api/JsonErrorsTest.php`
+- [X] T032 [P] [US5] Write `tests/Feature/Api/JsonErrorsTest.php`
   - Scope: `GET /api/v1/does-not-exist` with `Accept: text/html` → 404 JSON; same structure under `ar` and `en`.
   - Accept: passes once T011 is in place (a regression guard for FR-019).
   - Verify: `docker compose exec app php artisan test --filter=JsonErrorsTest` → pass
   - Depends: T011, T013
 
-- [ ] T033 [P] [US5] Write `tests/Feature/Localization/TranslationParityTest.php` (Feature, because it needs the booted app for `lang_path()`)
+- [X] T033 [P] [US5] Write `tests/Feature/Localization/TranslationParityTest.php` (Feature, because it needs the booted app for `lang_path()`)
   - Scope:
     - For each file in `lang/en/*.php`, assert `lang/ar/<same>.php` exists.
     - Assert its keys, flattened with dot notation, equal the English keys.
@@ -472,7 +472,7 @@ mandated layers.
 
 ### Implementation for User Story 5
 
-- [ ] T034 [US5] Implement `app/Http/Middleware/SetLocaleFromHeader.php`
+- [X] T034 [US5] Implement `app/Http/Middleware/SetLocaleFromHeader.php`
   - Scope (deterministic; does not rely on how Symfony matches regions):
     1. Go through `$request->getLanguages()` in order (already sorted by q-value).
     2. For each entry, take the base language: lowercase, keep the part before the first `_` or `-`.
@@ -484,13 +484,14 @@ mandated layers.
   - Verify: covered by T031
   - Depends: T012
 
-- [ ] T035 [US5] Append the middleware to the `api` group in `bootstrap/app.php`
+- [X] T035 [US5] Append the middleware to the `api` group in `bootstrap/app.php`
   - Scope: `->withMiddleware(fn (Middleware $m) => $m->api(append: [SetLocaleFromHeader::class]))`
   - Accept: middleware is registered; the locale-resolution cases in T031 pass. The Arabic message-text cases may fail until T037; the full pass is checked in T038.
-  - Verify: `docker compose exec app php artisan route:list --path=api -v` shows `SetLocaleFromHeader` in the api middleware
+  - Verify: `docker compose exec app php artisan tinker --execute="print_r(app(Illuminate\Contracts\Http\Kernel::class)->getMiddlewareGroups()['api']);"` lists `App\Http\Middleware\SetLocaleFromHeader`
+    - (Revised: `route:list --path=api -v` and `-vv` show only the group name `api`, not its members. The router's own group list is empty in console commands, so the HTTP kernel is queried instead.)
   - Depends: T011, T031, T034
 
-- [ ] T036 [P] [US5] Publish the English framework translations to `lang/en/`
+- [X] T036 [P] [US5] Publish the English framework translations to `lang/en/`
   - Scope: `php artisan lang:publish`; commit only the generated `lang/en/*.php`; no business messages.
   - Accept: `lang/en/{auth,pagination,passwords,validation}.php` exist.
   - Verify:
@@ -498,7 +499,7 @@ mandated layers.
     - `ls lang/en` → the four files
   - Depends: T010
 
-- [ ] T037 [US5] Add the Arabic framework translations to `lang/ar/` (approved D4)
+- [X] T037 [US5] Add the Arabic framework translations to `lang/ar/` (approved D4)
   - Scope:
     - Create `lang/ar/{auth,pagination,passwords,validation}.php` from the MIT-licensed Laravel-Lang `lang` project.
     - Header comment recording the source repository and commit/version.
@@ -508,7 +509,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T033, T036
 
-- [ ] T038 [US5] Verify the localization story (quickstart V6, SC-005)
+- [X] T038 [US5] Verify the localization story (quickstart V6, SC-005)
   - Verify: `docker compose exec app php artisan test --filter="LocaleSelectionTest|JsonErrorsTest|TranslationParityTest"` → all pass
   - Depends: T032, T035, T037
 
