@@ -487,7 +487,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=CreateAdministratorCommandTest` → pass
   - Depends: T042
 
-- [ ] T044 [US4] Document the first-administrator step in `README.md`
+- [X] T044 [US4] Document the first-administrator step in `README.md`
   - Scope: in "First-time setup", add step 6 `docker compose exec app php artisan staff:create-admin`
     with a note that the password is typed (hidden) and no default accounts exist.
   - Depends: T043
