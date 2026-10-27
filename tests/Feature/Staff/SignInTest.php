@@ -97,6 +97,46 @@ class SignInTest extends TestCase
         );
     }
 
+    public function test_email_limit_applies_across_client_addresses(): void
+    {
+        User::factory()->create(['email' => 'known@clinic.test']);
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->fromAddress("10.0.0.{$i}")
+                ->attempt('known@clinic.test', 'wrong-password-1')
+                ->assertJsonPath('errors.email.0', $this->authLine('en', 'failed'));
+        }
+
+        $throttled = $this->fromAddress('10.0.0.99')->attempt('known@clinic.test', UserFactory::PASSWORD);
+
+        $throttled->assertUnprocessable();
+        $this->assertMatchesRegularExpression(
+            $this->linePattern($this->authLine('en', 'throttle')),
+            $throttled->json('errors.email.0'),
+        );
+    }
+
+    public function test_client_address_limit_applies_across_emails(): void
+    {
+        $user = User::factory()->create(['email' => 'known@clinic.test']);
+
+        for ($i = 1; $i <= 20; $i++) {
+            $this->fromAddress('10.0.0.1')
+                ->attempt("nobody{$i}@clinic.test", 'wrong-password-1')
+                ->assertJsonPath('errors.email.0', $this->authLine('en', 'failed'));
+        }
+
+        $throttled = $this->fromAddress('10.0.0.1')->attempt($user->email, UserFactory::PASSWORD);
+
+        $throttled->assertUnprocessable();
+        $this->assertMatchesRegularExpression(
+            $this->linePattern($this->authLine('en', 'throttle')),
+            $throttled->json('errors.email.0'),
+        );
+
+        $this->fromAddress('10.0.0.2')->attempt($user->email, UserFactory::PASSWORD)->assertOk();
+    }
+
     public function test_successful_sign_in_clears_the_failure_counter(): void
     {
         User::factory()->create(['email' => 'known@clinic.test']);
@@ -125,6 +165,11 @@ class SignInTest extends TestCase
         return $this->postJson(self::URI, ['email' => $email, 'password' => $password], [
             'Accept-Language' => $locale,
         ]);
+    }
+
+    private function fromAddress(string $ip): static
+    {
+        return $this->withServerVariables(['REMOTE_ADDR' => $ip]);
     }
 
     private function authLine(string $locale, string $key): string

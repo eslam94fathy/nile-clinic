@@ -16,7 +16,16 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 class AuthenticationService
 {
-    private const MAX_ATTEMPTS = 5;
+    /**
+     * Failed attempts allowed per email (account), from any client, per window (FR-007).
+     */
+    private const MAX_ATTEMPTS_PER_EMAIL = 5;
+
+    /**
+     * Attempts allowed per client address, for any email, per window. Looser than the email limit
+     * because clinic staff usually share one public address (FR-007).
+     */
+    private const MAX_ATTEMPTS_PER_IP = 20;
 
     private const DECAY_SECONDS = 60;
 
@@ -37,11 +46,18 @@ class AuthenticationService
      */
     public function signIn(string $email, string $password, string $ip): array
     {
-        $key = $email.'|'.$ip;
+        $emailKey = 'sign-in:email:'.$email;
+        $ipKey = 'sign-in:ip:'.$ip;
 
-        if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+        // Count first, then check, so simultaneous requests cannot slip past the limits.
+        $emailAttempts = RateLimiter::hit($emailKey, self::DECAY_SECONDS);
+        $ipAttempts = RateLimiter::hit($ipKey, self::DECAY_SECONDS);
+
+        if ($emailAttempts > self::MAX_ATTEMPTS_PER_EMAIL || $ipAttempts > self::MAX_ATTEMPTS_PER_IP) {
             throw ValidationException::withMessages([
-                'email' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($key)]),
+                'email' => __('auth.throttle', [
+                    'seconds' => max(RateLimiter::availableIn($emailKey), RateLimiter::availableIn($ipKey)),
+                ]),
             ]);
         }
 
@@ -49,12 +65,12 @@ class AuthenticationService
         $passwordMatches = Hash::check($password, $user?->password ?? $this->dummyHash());
 
         if (! $user || ! $passwordMatches || ! $user->is_active) {
-            RateLimiter::hit($key, self::DECAY_SECONDS);
-
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
-        RateLimiter::clear($key);
+        // Only the account's counter resets; the address counter keeps running, so signing in to
+        // one account cannot reset an address that is guessing others.
+        RateLimiter::clear($emailKey);
         $this->tokens->deleteIdleFor($user, $this->idleCutoff());
 
         return ['token' => $this->tokens->issueFor($user), 'user' => $user];

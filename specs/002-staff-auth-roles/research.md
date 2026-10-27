@@ -99,12 +99,21 @@ approved on 2026-10-27 and are listed in the plan's Decisions table.
 
 ## R7 — Sign-in failures and rate limiting (FR-006, FR-007)
 
-- **Decision**: `AuthenticationService::signIn()` uses `RateLimiter` with the key
-  `lowercase(email)|client IP`, 5 attempts per 60 s. When the limit is hit it throws a
-  `ValidationException` on `email` with `__('auth.throttle', ['seconds' => …])`. Any failure
-  (unknown email, wrong password, deactivated account) throws `ValidationException` on `email`
-  with `__('auth.failed')` and counts an attempt; success clears the counter. Both messages
-  already exist in `lang/en/auth.php` and `lang/ar/auth.php`.
+- **Decision** (revised after a security review during US1): `AuthenticationService::signIn()`
+  uses two `RateLimiter` keys with a 60 s window:
+  - `sign-in:email:<lowercase email>`: more than **5** attempts → refused. A successful sign-in
+    clears it, so it effectively counts failures for that account from any address.
+  - `sign-in:ip:<client IP>`: more than **20** attempts for any email → refused. Never cleared on
+    success, so signing in to one account cannot reset an address that is guessing others.
+  - Both keys are incremented **before** the credentials are checked (`RateLimiter::hit` returns
+    the new count), so simultaneous requests cannot slip past a check-then-count gap.
+  - When either limit is exceeded it throws a `ValidationException` on `email` with
+    `__('auth.throttle', ['seconds' => …])` (the longer of the two waits). Any failure (unknown
+    email, wrong password, deactivated account) throws `ValidationException` on `email` with
+    `__('auth.failed')`. Both messages already exist in `lang/en/auth.php` and `lang/ar/auth.php`.
+- **Why it was revised**: the original single key `email|IP` let someone with many addresses get
+  5 tries per address against one account. The 20-per-address limit is looser than the per-email
+  one because a clinic's staff usually share one public address.
 - **Timing**: an unknown email still runs one hash check against a fixed dummy hash, so response
   time does not reveal whether the account exists (SC-004).
 - **Rationale**: This is the pattern of Laravel's own starter kits (`LoginRequest`), moved into a

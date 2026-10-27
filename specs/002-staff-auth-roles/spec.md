@@ -28,6 +28,9 @@ introduced here from scratch. Patients do not have accounts; there is no patient
   each request restarts the period (FR-009).
 - Q: Can staff reset a forgotten password themselves by email? → A: No. An administrator sets a
   new password; no email reset in this feature (FR-024).
+- Security review (during US1 implementation): one combined email-and-client limit let attempts
+  spread across many addresses guess one account. → A: Two separate limits, 5 failures per email
+  and 20 attempts per client, counted before checking (FR-007).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -203,9 +206,12 @@ works.
   that identify them on later requests.
 - **FR-006**: Failed sign-ins MUST return one generic message whether the email is unknown, the
   password is wrong, or the account is deactivated.
-- **FR-007**: Sign-in attempts MUST be rate-limited per email and per client: after 5 failed
-  attempts within 1 minute, further attempts are refused for at least 1 minute, with a message
-  saying when to retry.
+- **FR-007**: Sign-in attempts MUST be rate-limited by two separate limits, each refusing further
+  attempts for at least 1 minute with a message saying when to retry:
+  - **per email**, from any client: after 5 failed attempts within 1 minute; a successful
+    sign-in resets this count;
+  - **per client**, for any email: after 20 attempts within 1 minute (looser, because clinic
+    staff usually share one public address); a successful sign-in does not reset it.
 - **FR-008**: Staff MUST be able to sign out, ending only the access used for that request.
 - **FR-009**: Access MUST expire after 8 hours without any request (about one clinic shift); each
   request made with the access restarts that 8-hour period.

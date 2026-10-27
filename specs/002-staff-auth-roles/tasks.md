@@ -263,12 +263,15 @@ the old token gets `401`.
 - [X] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
   - Scope:
     - `signIn(string $email, string $password, string $ip): array{token: string, user: User}`:
-      key `$email.'|'.$ip`; if `RateLimiter::tooManyAttempts($key, 5)` throw
-      `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($key)])])`;
+      keys `sign-in:email:<email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
+      `RateLimiter::hit(…, 60)` **before** checking; if either count is over its max throw
+      `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => <longer wait>])])`;
       look up via `findByEmail`; if missing, still run `Hash::check` against a fixed dummy Argon2id
-      hash; on any failure (missing, wrong password, inactive) `RateLimiter::hit($key, 60)` and throw
-      `['email' => __('auth.failed')]`; on success `RateLimiter::clear($key)`, delete idle tokens
+      hash; on any failure (missing, wrong password, inactive) throw
+      `['email' => __('auth.failed')]`; on success clear only the email key, delete idle tokens
       (`now()->subMinutes(config('sanctum.idle_timeout_minutes'))`), issue a token.
+    - (Revised after a security review: the original single `email|ip` key allowed guessing one
+      account from many addresses; see research R7. `SignInTest` covers both limits.)
     - `signOut(User $user): void` → `deleteCurrent`.
     - `isTokenUsable(PersonalAccessToken $token, bool $isValid): bool` → `$isValid` and
       tokenable is active and `($token->last_used_at ?? $token->created_at)` is after the idle cutoff.
