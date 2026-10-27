@@ -370,7 +370,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=DeactivationTest` → fails
   - Depends: T027, T029
 
-- [ ] T032 [P] [US3] Write `tests/Feature/Staff/LastAdministratorTest.php`
+- [X] T032 [P] [US3] Write `tests/Feature/Staff/LastAdministratorTest.php`
   - Scope: the only active administrator: deactivating self → `422`
     `staff::messages.last_administrator` (en and ar); changing own role → same; with a second active
     administrator both are allowed; an inactive administrator does not count.
