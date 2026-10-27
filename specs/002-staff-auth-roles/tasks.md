@@ -166,7 +166,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: `TranslationParityTest` passes.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T013 Render localized 401/403 and run the locale middleware before authentication in `bootstrap/app.php` (R5, R6)
+- [X] T013 Render localized 401/403 and run the locale middleware before authentication in `bootstrap/app.php` (R5, R6)
   - Scope:
     - `withMiddleware`: keep the `api(append: …)` line and add
       `$middleware->prependToPriorityList(before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, prepend: SetLocaleFromHeader::class);`
