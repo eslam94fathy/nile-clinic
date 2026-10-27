@@ -391,7 +391,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Implementation for User Story 3
 
-- [ ] T035 [P] [US3] Create `app/Modules/Staff/Support/PasswordRules.php`
+- [X] T035 [P] [US3] Create `app/Modules/Staff/Support/PasswordRules.php`
   - Scope: `public static function rules(): array` → `['required', 'string', Password::min(12)->max(72), 'confirmed']` (FR-022).
 
 - [ ] T036 [P] [US3] Create `app/Modules/Staff/Exceptions/StaffMemberNotFoundException.php` and `app/Modules/Staff/Exceptions/LastAdministratorException.php`
