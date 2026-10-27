@@ -2,8 +2,8 @@
 
 namespace App\Modules\Staff\Http\Requests;
 
+use App\Modules\Staff\Support\EmailRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 
 class SignInRequest extends FormRequest
 {
@@ -17,8 +17,8 @@ class SignInRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        if (is_string($this->input('email'))) {
-            $this->merge(['email' => Str::lower(trim($this->input('email')))]);
+        if ($this->has('email')) {
+            $this->merge(['email' => EmailRules::normalize($this->input('email'))]);
         }
     }
 
@@ -28,9 +28,7 @@ class SignInRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Printable ASCII only: the email collation would otherwise match look-alike letters and
-            // ignore control characters, letting variants dodge the per-email rate limit (research R7).
-            'email' => ['required', 'string', 'regex:/^[\x21-\x7E]+$/D', 'email', 'max:255'],
+            'email' => ['required', ...EmailRules::rules()],
             'password' => ['required', 'string'],
         ];
     }

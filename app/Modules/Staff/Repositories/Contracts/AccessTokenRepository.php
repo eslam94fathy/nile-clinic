@@ -21,4 +21,9 @@ interface AccessTokenRepository
      * Delete the user's tokens whose last activity (or creation, if never used) is before $cutoff.
      */
     public function deleteIdleFor(User $user, CarbonInterface $cutoff): void;
+
+    /**
+     * Delete every token of the user, ending all of their access.
+     */
+    public function deleteAllFor(User $user): void;
 }

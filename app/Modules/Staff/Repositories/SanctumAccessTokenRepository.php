@@ -29,4 +29,9 @@ class SanctumAccessTokenRepository implements AccessTokenRepository
                     ->where('created_at', '<', $cutoff)))
             ->delete();
     }
+
+    public function deleteAllFor(User $user): void
+    {
+        $user->tokens()->delete();
+    }
 }

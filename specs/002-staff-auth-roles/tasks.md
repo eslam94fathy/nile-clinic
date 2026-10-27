@@ -349,7 +349,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T030 [P] [US3] Write `tests/Feature/Staff/StaffManagementTest.php`
+- [X] T030 [P] [US3] Write `tests/Feature/Staff/StaffManagementTest.php`
   - Scope:
     - `POST /staff` → `201`, account active, the new member can sign in
     - duplicate email (also when the existing owner is deactivated, and with different case) → `422` `errors.email`
@@ -363,27 +363,27 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=StaffManagementTest` → fails
   - Depends: T027, T029
 
-- [ ] T031 [P] [US3] Write `tests/Feature/Staff/DeactivationTest.php`
+- [X] T031 [P] [US3] Write `tests/Feature/Staff/DeactivationTest.php`
   - Scope: member with two tokens → deactivate → `200`, both tokens `401`, sign-in → generic
     `auth.failed`; deactivate again → `200` (idempotent); reactivate → `200`, sign-in works, old
     tokens stay invalid.
   - Verify: `docker compose exec app php artisan test --filter=DeactivationTest` → fails
   - Depends: T027, T029
 
-- [ ] T032 [P] [US3] Write `tests/Feature/Staff/LastAdministratorTest.php`
+- [X] T032 [P] [US3] Write `tests/Feature/Staff/LastAdministratorTest.php`
   - Scope: the only active administrator: deactivating self → `422`
     `staff::messages.last_administrator` (en and ar); changing own role → same; with a second active
     administrator both are allowed; an inactive administrator does not count.
   - Verify: `docker compose exec app php artisan test --filter=LastAdministratorTest` → fails
   - Depends: T027, T029
 
-- [ ] T033 [P] [US3] Write `tests/Feature/Staff/AdminSetPasswordTest.php`
+- [X] T033 [P] [US3] Write `tests/Feature/Staff/AdminSetPasswordTest.php`
   - Scope: `PUT /staff/{id}/password` → `204`; old password fails, new works; every earlier token
     of that member → `401`; length and confirmation rules as in T030.
   - Verify: `docker compose exec app php artisan test --filter=AdminSetPasswordTest` → fails
   - Depends: T027, T029
 
-- [ ] T034 [P] [US3] Write `tests/Feature/Staff/AuthorizationMatrixTest.php` (SC-002)
+- [X] T034 [P] [US3] Write `tests/Feature/Staff/AuthorizationMatrixTest.php` (SC-002)
   - Scope: data provider over the 7 staff endpoints × `receptionist`, `doctor` → `403` with
     `auth.forbidden`, and nothing changed in the database; administrator → not `403`; no token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=AuthorizationMatrixTest` → fails
@@ -391,14 +391,14 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Implementation for User Story 3
 
-- [ ] T035 [P] [US3] Create `app/Modules/Staff/Support/PasswordRules.php`
+- [X] T035 [P] [US3] Create `app/Modules/Staff/Support/PasswordRules.php`
   - Scope: `public static function rules(): array` → `['required', 'string', Password::min(12)->max(72), 'confirmed']` (FR-022).
 
-- [ ] T036 [P] [US3] Create `app/Modules/Staff/Exceptions/StaffMemberNotFoundException.php` and `app/Modules/Staff/Exceptions/LastAdministratorException.php`
+- [X] T036 [P] [US3] Create `app/Modules/Staff/Exceptions/StaffMemberNotFoundException.php` and `app/Modules/Staff/Exceptions/LastAdministratorException.php`
   - Scope: each with `render()` returning JSON `{"message": …}`: `404` `__('staff::messages.not_found')`;
     `422` `__('staff::messages.last_administrator')`.
 
-- [ ] T037 [US3] Add staff-management methods to `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
+- [X] T037 [US3] Add staff-management methods to `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
   - Scope:
     - `findById(int $id): ?User`
     - `create(array $attributes): User`
@@ -408,10 +408,10 @@ their token and sign-in fail; reactivate, they sign in again.
       (must be called inside a transaction)
   - Depends: T020
 
-- [ ] T038 [US3] Add `deleteAllFor(User $user): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
+- [X] T038 [US3] Add `deleteAllFor(User $user): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
-- [ ] T039 [US3] Implement `app/Modules/Staff/Services/StaffManagementService.php` (R8, R9)
+- [X] T039 [US3] Implement `app/Modules/Staff/Services/StaffManagementService.php` (R8, R9)
   - Scope:
     - `list(?Role, ?bool, int)`, `find(int $id): User` (throws `StaffMemberNotFoundException`)
     - `create(array): User` — active by default; a `UniqueConstraintViolationException` becomes a
@@ -425,7 +425,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - `setPassword(User, string $password)` — update and `deleteAllFor()` in one transaction
   - Depends: T036, T037, T038
 
-- [ ] T040 [P] [US3] Create Form Requests in `app/Modules/Staff/Http/Requests/`: `ListStaffRequest.php`, `StoreStaffMemberRequest.php`, `UpdateStaffMemberRequest.php`, `SetStaffMemberPasswordRequest.php`
+- [X] T040 [P] [US3] Create Form Requests in `app/Modules/Staff/Http/Requests/`: `ListStaffRequest.php`, `StoreStaffMemberRequest.php`, `UpdateStaffMemberRequest.php`, `SetStaffMemberPasswordRequest.php`
   - Scope:
     - `authorize()` → `$this->user()->can(<ability>, User::class)` (`viewAny`, `create`, `update`, `setPassword`)
     - List: `role` → `nullable|`enum `Role`; `is_active` → `nullable|boolean`; `page` → `nullable|integer|min:1`;
@@ -437,7 +437,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - SetPassword: `password` → `PasswordRules::rules()`
   - Depends: T029, T035
 
-- [ ] T041 [US3] Create controllers `app/Modules/Staff/Http/Controllers/StaffMemberController.php`, `StaffMemberStatusController.php`, `StaffMemberPasswordController.php` and their routes in `app/Modules/Staff/routes/api.php`
+- [X] T041 [US3] Create controllers `app/Modules/Staff/Http/Controllers/StaffMemberController.php`, `StaffMemberStatusController.php`, `StaffMemberPasswordController.php` and their routes in `app/Modules/Staff/routes/api.php`
   - Scope:
     - `StaffMemberController`: `index`, `store` (201), `show` (`Gate::authorize('view', User::class)` first), `update`
     - `StaffMemberStatusController`: `deactivate`, `reactivate` (`Gate::authorize(...)` first)
