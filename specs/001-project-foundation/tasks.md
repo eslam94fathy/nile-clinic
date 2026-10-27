@@ -579,7 +579,7 @@ mandated layers.
   - Verify: manual checklist against FR-025
   - Depends: T038, T040
 
-- [ ] T043 Run code style checks with the skeleton's Pint
+- [X] T043 Run code style checks with the skeleton's Pint
   - Verify: `docker compose exec app vendor/bin/pint --test` → exit 0 (if it fails, run `vendor/bin/pint` and re-run the test suite)
   - Depends: T038
 
