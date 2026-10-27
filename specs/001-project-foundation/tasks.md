@@ -310,7 +310,7 @@ mandated layers.
   - Verify: `grep -nE "DB::|::query\(|Eloquent" app/Modules/System/Http/Controllers/HealthController.php` → no matches
   - Depends: T018, T019
 
-- [ ] T021 [US1] Register the module: `app/Modules/System/routes/api.php`, `app/Modules/System/Providers/SystemServiceProvider.php`, `bootstrap/providers.php`
+- [X] T021 [US1] Register the module: `app/Modules/System/routes/api.php`, `app/Modules/System/Providers/SystemServiceProvider.php`, `bootstrap/providers.php`
   - Scope:
     - Route: `Route::get('/health', HealthController::class)->name('system.health');`
     - Provider `register()`: `$this->app->bind(DatabaseStatusRepository::class, MySqlDatabaseStatusRepository::class);`
