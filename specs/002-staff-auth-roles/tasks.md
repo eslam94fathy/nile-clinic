@@ -93,7 +93,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: covered by T009
   - Depends: T002
 
-- [ ] T005 [P] Create the role enum in `app/Modules/Staff/Enums/Role.php`
+- [X] T005 [P] Create the role enum in `app/Modules/Staff/Enums/Role.php`
   - Scope: string-backed enum `Role`: `Administrator = 'administrator'`, `Receptionist = 'receptionist'`,
     `Doctor = 'doctor'`. No other cases (FR-002).
   - Accept: three cases with those exact values.
