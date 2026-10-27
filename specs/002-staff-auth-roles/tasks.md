@@ -127,7 +127,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan tinker --execute="echo config('auth.providers.users.model');"` → `App\Modules\Staff\Models\User`
   - Depends: T006
 
-- [ ] T009 Run the migrations in `database/migrations/` and confirm the existing suite still passes
+- [X] T009 Run the migrations in `database/migrations/` and confirm the existing suite still passes
   - Verify:
     - `docker compose exec app php artisan migrate` → `create_users_table` and `create_personal_access_tokens_table` `DONE`
     - `docker compose exec app php artisan migrate:status` → all `Ran`
