@@ -273,7 +273,7 @@ mandated layers.
   - Verify: `docker compose exec app composer dump-autoload` → exit 0
   - Depends: T013
 
-- [ ] T017 [US1] Implement `app/Modules/System/Repositories/MySqlDatabaseStatusRepository.php`
+- [X] T017 [US1] Implement `app/Modules/System/Repositories/MySqlDatabaseStatusRepository.php`
   - Scope:
     - Implements the interface.
     - Runs `DB::connection()->select('select 1')` and returns `true`.
