@@ -583,7 +583,7 @@ mandated layers.
   - Verify: `docker compose exec app vendor/bin/pint --test` → exit 0 (if it fails, run `vendor/bin/pint` and re-run the test suite)
   - Depends: T038
 
-- [ ] T044 Full quickstart validation from a clean, isolated stack (V1–V9)
+- [X] T044 Full quickstart validation from a clean, isolated stack (V1–V9)
   - Scope:
     - `git clone` the branch into a new temp folder outside the repo (a real fresh checkout: no `vendor/`, no `.env`).
     - From that clone, follow **only** `README.md` with project name `-p nileverify`, `APP_PORT=8090`, `PMA_PORT=8091`, timing from clone to a migrated, healthy stack (excluding image downloads; pull images first with `docker compose pull`).
