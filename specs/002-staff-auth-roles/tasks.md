@@ -505,7 +505,7 @@ the other gets `401`, the old password fails.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T045 [US5] Write `tests/Feature/Staff/OwnPasswordChangeTest.php`
+- [X] T045 [US5] Write `tests/Feature/Staff/OwnPasswordChangeTest.php`
   - Scope: `PUT /api/v1/auth/password` → `204`; current token `200`, other token `401`; old password
     fails, new works; wrong `current_password` → `422` `validation.current_password` (en and ar);
     11-char or unconfirmed new password → `422`; no token → `401`.
@@ -514,17 +514,21 @@ the other gets `401`, the old password fails.
 
 ### Implementation for User Story 5
 
-- [ ] T046 [US5] Add `deleteAllExcept(User $user, PersonalAccessToken $keep): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
+- [X] T046 [US5] Add `deleteAllExcept(User $user, PersonalAccessToken $keep): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
-- [ ] T047 [US5] Add `changeOwnPassword(User $user, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
+- [X] T047 [US5] Add `changeOwnPassword(User $user, string $currentPassword, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
   - Scope: in one `DB::transaction()`: update the password (via `StaffMemberRepository::update`) and
     `deleteAllExcept($user, $user->currentAccessToken())`.
+  - (Revised after a security review: before that, it hits the shared `sign-in:email:<email>`
+    counter (max 5 per 60 s → `auth.throttle` on `current_password`), checks the current password
+    with `Hash::check` (`validation.current_password` on failure), and clears the counter on success;
+    research R7.)
   - Depends: T037 (or add `update()` to the repository here if US3 is not done), T046
 
-- [ ] T048 [US5] Create `app/Modules/Staff/Http/Requests/ChangeOwnPasswordRequest.php`, add `AuthController::changePassword`, and route `PUT auth/password` → `staff.auth.password` in `app/Modules/Staff/routes/api.php`
-  - Scope: rules `current_password` → `required|string|current_password:sanctum`; `password` →
-    `PasswordRules::rules()`; controller returns `204`.
+- [X] T048 [US5] Create `app/Modules/Staff/Http/Requests/ChangeOwnPasswordRequest.php`, add `AuthController::changePassword`, and route `PUT auth/password` → `staff.auth.password` in `app/Modules/Staff/routes/api.php`
+  - Scope: rules `current_password` → `required|string` (checked and rate-limited by the service,
+    see T047); `password` → `PasswordRules::rules()`; controller returns `204`.
   - Accept: T045 passes.
   - Verify: `docker compose exec app php artisan test --filter=OwnPasswordChangeTest` → pass
   - Depends: T035, T047

@@ -123,6 +123,11 @@ approved on 2026-10-27 and are listed in the plan's Decisions table.
   (printable ASCII, `regex:/^[\x21-\x7E]+$/D`; the collation also ignores control characters,
   so plain `ascii` is not enough by itself), rejected before any lookup or counting; for these the collation only
   folds case, which is already lower-cased, so the key and the lookup always agree.
+- **Own password change** (security review during US5): `AuthenticationService::changeOwnPassword()`
+  checks the current password itself instead of the `current_password` validation rule, so it can
+  count each attempt on the same `sign-in:email:<email>` key (more than 5 per 60 s → `auth.throttle`
+  on `current_password`). Sign-in and password change share the counter, so guesses on one
+  endpoint cannot be continued on the other; a correct current password clears it.
 - **Timing**: an unknown email still runs one hash check against a fixed dummy hash, so response
   time does not reveal whether the account exists (SC-004).
 - **Rationale**: This is the pattern of Laravel's own starter kits (`LoginRequest`), moved into a

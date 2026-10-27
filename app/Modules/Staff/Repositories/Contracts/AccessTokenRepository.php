@@ -4,6 +4,7 @@ namespace App\Modules\Staff\Repositories\Contracts;
 
 use App\Modules\Staff\Models\User;
 use Carbon\CarbonInterface;
+use Laravel\Sanctum\PersonalAccessToken;
 
 interface AccessTokenRepository
 {
@@ -26,4 +27,9 @@ interface AccessTokenRepository
      * Delete every token of the user, ending all of their access.
      */
     public function deleteAllFor(User $user): void;
+
+    /**
+     * Delete every token of the user except $keep (the one used for this request).
+     */
+    public function deleteAllExcept(User $user, PersonalAccessToken $keep): void;
 }

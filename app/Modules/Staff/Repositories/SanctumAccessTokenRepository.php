@@ -6,6 +6,7 @@ use App\Modules\Staff\Models\User;
 use App\Modules\Staff\Repositories\Contracts\AccessTokenRepository;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class SanctumAccessTokenRepository implements AccessTokenRepository
 {
@@ -33,5 +34,10 @@ class SanctumAccessTokenRepository implements AccessTokenRepository
     public function deleteAllFor(User $user): void
     {
         $user->tokens()->delete();
+    }
+
+    public function deleteAllExcept(User $user, PersonalAccessToken $keep): void
+    {
+        $user->tokens()->whereKeyNot($keep->getKey())->delete();
     }
 }
