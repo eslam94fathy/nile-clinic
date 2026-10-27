@@ -41,7 +41,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `git switch -c 001-project-foundation` then `git branch --show-current` → `001-project-foundation`
   - Depends: none
 
-- [ ] T002 Add LF line-ending rules in `.gitattributes`
+- [X] T002 Add LF line-ending rules in `.gitattributes`
   - Scope: `* text=auto eol=lf`; explicit `*.sh text eol=lf`; binary markers for images and fonts. No other files.
   - Accept: new or changed text files check out with LF; `*.sh` is always LF.
   - Verify: `git check-attr eol -- docker/mysql/init/01-create-test-database.sh` → `eol: lf`
