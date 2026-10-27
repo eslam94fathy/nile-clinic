@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-27
 
-**Status**: Draft
+**Status**: Approved (2026-10-27)
 
 **Input**: User description: "Define Feature 001: Project Foundation and Local Development Environment
 for a new Clinic Management System — clean API application, database and containerized local

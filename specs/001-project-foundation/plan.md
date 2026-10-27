@@ -210,8 +210,10 @@ docs/architecture.md  docs/troubleshooting.md  README.md
 
 - **Migrate**: `docker compose exec app php artisan migrate`. New migrations only; applied migrations
   are never edited. `migrate:fresh`, `db:wipe`, and `down -v` are documented as destructive.
-- **Test**: `docker compose exec app php artisan test` runs against `clinic_testing` with
-  `RefreshDatabase`. A non-zero exit means failure.
+- **Test**: `docker compose exec app composer test` (clears config, then `php artisan test`) runs
+  against `clinic_testing` with `RefreshDatabase`. A non-zero exit means failure. A
+  `beforeRefreshingDatabase()` guard in `tests/TestCase.php` aborts any run whose connection is not
+  `clinic_testing`.
 - **Foundation tests**:
   - `tests/Feature/System/HealthEndpointTest`: 200 with the contract body; 503 when the
     container binds a fake `DatabaseStatusRepository` that returns `false`; no internal details
@@ -222,6 +224,10 @@ docs/architecture.md  docs/troubleshooting.md  README.md
     test (not shipped).
   - `tests/Feature/Api/JsonErrorsTest`: an unknown `/api/v1/*` path returns a JSON 404 with an
     identical structure across locales.
+  - `tests/Feature/Infrastructure/TestDatabaseIsolationTest`: suite targets `clinic_testing` and the
+    `beforeRefreshingDatabase()` guard throws for any other database (runs first, in Phase 2).
+  - `tests/Feature/Localization/TranslationParityTest`: every `lang/en/*.php` file has a matching
+    `lang/ar/*.php` file with identical keys.
 
 ## Verification Commands and Expected Outcomes
 
@@ -326,8 +332,11 @@ bootstrap/app.php  bootstrap/providers.php
 config/app.php
 lang/en/*.php  lang/ar/*.php
 database/migrations/   (skeleton cache + jobs only)
+tests/TestCase.php                       (beforeRefreshingDatabase guard)
+tests/Feature/Infrastructure/TestDatabaseIsolationTest.php
 tests/Feature/System/HealthEndpointTest.php
 tests/Feature/Localization/LocaleSelectionTest.php
+tests/Feature/Localization/TranslationParityTest.php
 tests/Feature/Api/JsonErrorsTest.php
 README.md  docs/architecture.md  docs/troubleshooting.md
 ```

@@ -196,6 +196,10 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - Set `<env name="DB_CONNECTION" value="mysql" force="true"/>` and `<env name="DB_DATABASE" value="clinic_testing" force="true"/>`.
     - Keep the skeleton's `APP_ENV=testing`, `CACHE_STORE=array`, `SESSION_DRIVER=array`, `QUEUE_CONNECTION=sync`.
     - No passwords in this file (the credentials come from `.env`).
+    - In `tests/TestCase.php`, implement `protected function beforeRefreshingDatabase(): void`
+      that throws a `RuntimeException` unless `DB::connection()->getDatabaseName() === 'clinic_testing'`
+      (runs before every `RefreshDatabase` migration; protects `clinic` even if config is cached — analysis R1).
+      If `DatabaseMigrations` or `DatabaseTruncation` are adopted later, they must get the same guard.
   - Accept: the isolation guard (T023) passes. No test that uses `RefreshDatabase` may run before T023 passes.
   - Verify: `docker compose exec app php artisan test` → passes, exit 0
   - Depends: T010
@@ -206,7 +210,10 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - assert `DB::connection()->getDatabaseName() === 'clinic_testing'`
     - the test exists to stop the suite ever running against development data
     - it must NOT use `RefreshDatabase`
-  - Accept: passes under `phpunit.xml`; it would fail if `DB_DATABASE` resolved to `clinic`.
+    - a second test proves the per-run guard: set `config(['database.connections.mysql.database' => 'clinic'])`,
+      call `DB::purge('mysql')`, assert `$this->beforeRefreshingDatabase()` throws `RuntimeException`,
+      then restore the config and purge again (the guard throws before any migration, so `clinic` is never touched)
+  - Accept: both tests pass; the suite cannot refresh any database other than `clinic_testing`, on any run.
   - Verify: `docker compose exec app php artisan test --filter=TestDatabaseIsolationTest` → pass
   - Depends: T013
 
@@ -533,7 +540,7 @@ mandated layers.
     - first-time setup: copy `.env`, `up -d --build`, `composer install`, `key:generate`, `migrate`
     - daily start/stop
     - migrations: the "never edit applied migrations" rule; destructive commands (`migrate:fresh`, `db:wipe`, `down -v`) marked opt-in
-    - tests: `composer test`
+    - tests: `composer test` (the documented command; it clears cached config first). Warn: never run `php artisan config:cache` in development; the guard in `tests/TestCase.php` aborts if tests ever target a database other than `clinic_testing`
     - environment variables (pointer to `.env.example`)
     - phpMyAdmin usage
     - links to `docs/`
