@@ -1,0 +1,20 @@
+$kind: http-request
+description: The signed-in staff member's own profile. Never includes the password.
+method: GET
+url: '{{base_url}}/auth/me'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with exactly the public fields', () => {
+        pm.response.to.have.status(200);
+        const keys = Object.keys(pm.response.json().data).sort();
+        pm.expect(keys).to.eql(['created_at', 'email', 'id', 'is_active', 'name', 'role', 'updated_at']);
+      });
+examples: './.resources/get own profile.resources/examples'

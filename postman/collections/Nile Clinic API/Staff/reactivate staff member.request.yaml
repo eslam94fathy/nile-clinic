@@ -1,0 +1,21 @@
+$kind: http-request
+description: Allow a deactivated account to sign in again (earlier tokens stay invalid). Idempotent.
+method: POST
+url: '{{base_url}}/staff/:staffMember/reactivate'
+order: 6000
+pathVariables:
+  - key: staffMember
+    value: '{{staff_member_id}}'
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 and active', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.is_active).to.eql(true);
+      });

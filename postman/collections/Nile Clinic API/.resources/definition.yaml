@@ -1,0 +1,29 @@
+$kind: collection
+name: Nile Clinic API
+description: |-
+  Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).
+
+  Contracts: `specs/001-project-foundation/contracts/health.openapi.yaml` and
+  `specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`.
+
+  **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Auth/sign out.
+  Select the **Nile Clinic Local** environment and set `admin_email` / `admin_password` to an
+  administrator created with `php artisan staff:create-admin`. All data must be synthetic.
+
+  Every request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);
+  field names and structure are identical in both locales, only `message` texts change.
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'
+variables:
+  - key: token
+    value: ''
+    description: Set by "Auth/sign in"; cleared by "Auth/sign out".
+  - key: staff_member_id
+    value: ''
+    description: Set by "Staff/create staff member".
+  - key: new_staff_email
+    value: ''
+    description: Unique synthetic email generated before "Staff/create staff member".

@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Create an active account. Email: printable ASCII, unique among all accounts (including
+  deactivated), stored lower-cased. Password: 12–72 characters, confirmed. Role: administrator,
+  receptionist, or doctor. The pre-request script generates a unique synthetic email; the id is
+  stored in `staff_member_id` for the next requests.
+method: POST
+url: '{{base_url}}/staff'
+order: 2000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Postman Reception",
+      "email": "{{new_staff_email}}",
+      "role": "receptionist",
+      "password": "postman-member-pass-1",
+      "password_confirmation": "postman-member-pass-1"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('new_staff_email', 'postman-' + Date.now() + '@clinic.test');
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 with an active receptionist', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data.email).to.eql(pm.collectionVariables.get('new_staff_email'));
+        pm.expect(data.role).to.eql('receptionist');
+        pm.expect(data.is_active).to.eql(true);
+        pm.collectionVariables.set('staff_member_id', String(data.id));
+      });
+examples: './.resources/create staff member.resources/examples'

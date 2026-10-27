@@ -1,0 +1,1362 @@
+{
+  "info": {
+    "name": "Nile Clinic API",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml` and\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Auth/sign out.\nSelect the **Nile Clinic Local** environment and set `admin_email` / `admin_password` to an\nadministrator created with `php artisan staff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "description": "Public health check (feature 001).",
+      "item": [
+        {
+          "name": "health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the health contract body', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'ok', checks: { database: 'ok' } });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Reports whether the API can reach its database. Public, no input. 200 with \"ok\", or 503 with\n\"unavailable\" and no internal details."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/health",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"status\": \"ok\", \"checks\": {\"database\": \"ok\"}}"
+            },
+            {
+              "name": "503 Service Unavailable",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/health",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "status": "Service Unavailable",
+              "code": 503,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"status\": \"unavailable\", \"checks\": {\"database\": \"unavailable\"}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Sign in, the signed-in member's own account, and sign out (feature 002, US1 and US5).\nTokens expire after 8 hours without a request. After 5 failed attempts for one email, or 20\nfrom one address, within a minute, sign-in is refused for up to a minute.",
+      "item": [
+        {
+          "name": "sign in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a Bearer token and the account', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.token_type).to.eql('Bearer');",
+                  "  pm.expect(data.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(data.user.role).to.eql('administrator');",
+                  "  pm.expect(data.user).to.not.have.property('password');",
+                  "  pm.collectionVariables.set('token', data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Sign in with email and password. Stores the returned token in the collection variable `token`,\nwhich every other request sends as `Authorization: Bearer {{token}}`. Unknown email, wrong\npassword, and deactivated account all get the same 422 message. Emails are printable ASCII;\ncase and surrounding spaces are ignored."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"token\": \"1|<plain-text token, shown once>\", \"token_type\": \"Bearer\", \"user\": {\"id\": 1, \"name\": \"Test Admin\", \"email\": \"admin@clinic.test\", \"role\": \"administrator\", \"is_active\": true, \"created_at\": \"2026-10-27T16:26:43+00:00\", \"updated_at\": \"2026-10-27T16:26:43+00:00\"}}}"
+            },
+            {
+              "name": "422 Too many attempts",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"Too many login attempts. Please try again in 55 seconds.\", \"errors\": {\"email\": [\"Too many login attempts. Please try again in 55 seconds.\"]}}"
+            },
+            {
+              "name": "422 Wrong credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"These credentials do not match our records.\", \"errors\": {\"email\": [\"These credentials do not match our records.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get own profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with exactly the public fields', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const keys = Object.keys(pm.response.json().data).sort();",
+                  "  pm.expect(keys).to.eql(['created_at', 'email', 'id', 'is_active', 'name', 'role', 'updated_at']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "The signed-in staff member's own profile. Never includes the password."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"id\": 1, \"name\": \"Test Admin\", \"email\": \"admin@clinic.test\", \"role\": \"administrator\", \"is_active\": true, \"created_at\": \"2026-10-27T16:26:43+00:00\", \"updated_at\": \"2026-10-27T16:26:43+00:00\"}}"
+            },
+            {
+              "name": "401 Unauthenticated",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"You are not signed in.\"}"
+            }
+          ]
+        },
+        {
+          "name": "change own password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{admin_password}}\",\n  \"password\": \"{{admin_password}}\",\n  \"password_confirmation\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Change your own password (12–72 characters, confirmed). Ends your other tokens; the token used\nfor this request stays valid. Wrong current passwords count toward the sign-in per-email limit.\nThis run sets the password to its current value, so the administrator's password is unchanged."
+          },
+          "response": [
+            {
+              "name": "422 Wrong current password",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "password"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"current_password\": \"{{admin_password}}\",\n  \"password\": \"{{admin_password}}\",\n  \"password_confirmation\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"The password is incorrect.\", \"errors\": {\"current_password\": [\"The password is incorrect.\"]}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Staff",
+      "description": "Staff account management, administrators only (feature 002, US3). Receptionists and doctors\nget 403. Ids are numeric; unknown ids get 404.",
+      "item": [
+        {
+          "name": "list staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 paginated, no passwords', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.keys('data', 'links', 'meta');",
+                  "  pm.expect(pm.response.text()).to.not.include('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/staff?per_page=15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "receptionist",
+                  "description": "administrator, receptionist, or doctor",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "description": "true/false or 1/0",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "1–100, default 15"
+                }
+              ]
+            },
+            "description": "One page of staff accounts ordered by name, then id. Laravel's paginated shape: data, links, meta."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff?per_page=15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": [{\"id\": 1, \"name\": \"Test Admin\", \"email\": \"admin@clinic.test\", \"role\": \"administrator\", \"is_active\": true, \"created_at\": \"2026-10-27T16:26:43+00:00\", \"updated_at\": \"2026-10-27T16:26:43+00:00\"}, {\"id\": 2, \"name\": \"Test Reception\", \"email\": \"reception@clinic.test\", \"role\": \"receptionist\", \"is_active\": true, \"created_at\": \"2026-10-27T16:29:46+00:00\", \"updated_at\": \"2026-10-27T16:29:46+00:00\"}], \"links\": {\"first\": \"http://localhost:8080/api/v1/staff?per_page=15&page=1\", \"last\": \"http://localhost:8080/api/v1/staff?per_page=15&page=1\", \"prev\": null, \"next\": null}, \"meta\": {\"current_page\": 1, \"from\": 1, \"last_page\": 1, \"path\": \"http://localhost:8080/api/v1/staff\", \"per_page\": 15, \"to\": 2, \"total\": 2}}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "create staff member",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('new_staff_email', 'postman-' + Date.now() + '@clinic.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 with an active receptionist', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.email).to.eql(pm.collectionVariables.get('new_staff_email'));",
+                  "  pm.expect(data.role).to.eql('receptionist');",
+                  "  pm.expect(data.is_active).to.eql(true);",
+                  "  pm.collectionVariables.set('staff_member_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Reception\",\n  \"email\": \"{{new_staff_email}}\",\n  \"role\": \"receptionist\",\n  \"password\": \"postman-member-pass-1\",\n  \"password_confirmation\": \"postman-member-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff"
+              ]
+            },
+            "description": "Create an active account. Email: printable ASCII, unique among all accounts (including\ndeactivated), stored lower-cased. Password: 12–72 characters, confirmed. Role: administrator,\nreceptionist, or doctor. The pre-request script generates a unique synthetic email; the id is\nstored in `staff_member_id` for the next requests."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Postman Reception\",\n  \"email\": \"{{new_staff_email}}\",\n  \"role\": \"receptionist\",\n  \"password\": \"postman-member-pass-1\",\n  \"password_confirmation\": \"postman-member-pass-1\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"id\": 2, \"name\": \"Test Reception\", \"email\": \"reception@clinic.test\", \"role\": \"receptionist\", \"is_active\": true, \"created_at\": \"2026-10-27T16:29:46+00:00\", \"updated_at\": \"2026-10-27T16:29:46+00:00\"}}"
+            },
+            {
+              "name": "422 Email taken",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Postman Reception\",\n  \"email\": \"{{new_staff_email}}\",\n  \"role\": \"receptionist\",\n  \"password\": \"postman-member-pass-1\",\n  \"password_confirmation\": \"postman-member-pass-1\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"The email has already been taken.\", \"errors\": {\"email\": [\"The email has already been taken.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get staff member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the created account', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(String(pm.response.json().data.id)).to.eql(pm.collectionVariables.get('staff_member_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/staff/:staffMember",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                ":staffMember"
+              ],
+              "variable": [
+                {
+                  "key": "staffMember",
+                  "value": "{{staff_member_id}}"
+                }
+              ]
+            },
+            "description": "One staff account by id. Unknown id → 404 with a translated message."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "2"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"id\": 2, \"name\": \"Test Reception\", \"email\": \"reception@clinic.test\", \"role\": \"receptionist\", \"is_active\": true, \"created_at\": \"2026-10-27T16:29:46+00:00\", \"updated_at\": \"2026-10-27T16:29:46+00:00\"}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"No staff member was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "update staff member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the new name and role', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.name).to.eql('Postman Doctor');",
+                  "  pm.expect(data.role).to.eql('doctor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Doctor\",\n  \"role\": \"doctor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/staff/:staffMember",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                ":staffMember"
+              ],
+              "variable": [
+                {
+                  "key": "staffMember",
+                  "value": "{{staff_member_id}}"
+                }
+              ]
+            },
+            "description": "Change name, email, and/or role (at least one). Changing the role of the only active\nadministrator is refused with 422. A new role applies on the member's next request."
+          },
+          "response": []
+        },
+        {
+          "name": "set staff member password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"postman-member-pass-2\",\n  \"password_confirmation\": \"postman-member-pass-2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/staff/:staffMember/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                ":staffMember",
+                "password"
+              ],
+              "variable": [
+                {
+                  "key": "staffMember",
+                  "value": "{{staff_member_id}}"
+                }
+              ]
+            },
+            "description": "Set a new password for a staff member; ends all of that member's tokens."
+          },
+          "response": []
+        },
+        {
+          "name": "reactivate staff member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and active', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.is_active).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/staff/:staffMember/reactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                ":staffMember",
+                "reactivate"
+              ],
+              "variable": [
+                {
+                  "key": "staffMember",
+                  "value": "{{staff_member_id}}"
+                }
+              ]
+            },
+            "description": "Allow a deactivated account to sign in again (earlier tokens stay invalid). Idempotent."
+          },
+          "response": []
+        },
+        {
+          "name": "deactivate staff member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and deactivated', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.is_active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/staff/:staffMember/deactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                ":staffMember",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "staffMember",
+                  "value": "{{staff_member_id}}"
+                }
+              ]
+            },
+            "description": "Deactivate an account and end all of its tokens immediately. Idempotent. Refused with 422 if it\nis the only active administrator. Runs last in this folder, so a collection run leaves the\nsynthetic member it created deactivated."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/2/deactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "2",
+                    "deactivate"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"id\": 2, \"name\": \"Test Reception\", \"email\": \"reception@clinic.test\", \"role\": \"receptionist\", \"is_active\": false, \"created_at\": \"2026-10-27T16:29:46+00:00\", \"updated_at\": \"2026-10-27T16:29:46+00:00\"}}"
+            },
+            {
+              "name": "422 Last administrator",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff/1/deactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff",
+                    "1",
+                    "deactivate"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\": \"This change would leave the clinic without an active administrator.\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sign out",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+              "pm.collectionVariables.set('token', '');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "{{locale}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/sign-out",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "sign-out"
+          ]
+        },
+        "description": "Ends only the token used for this request (other devices stay signed in). Runs last, after the\nStaff folder, and clears the `token` variable."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "description": "Set by \"Auth/sign in\"; cleared by \"Auth/sign out\"."
+    },
+    {
+      "key": "staff_member_id",
+      "value": "",
+      "description": "Set by \"Staff/create staff member\"."
+    },
+    {
+      "key": "new_staff_email",
+      "value": "",
+      "description": "Unique synthetic email generated before \"Staff/create staff member\"."
+    }
+  ]
+}

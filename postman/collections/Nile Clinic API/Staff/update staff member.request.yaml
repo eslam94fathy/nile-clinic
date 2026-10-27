@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Change name, email, and/or role (at least one). Changing the role of the only active
+  administrator is refused with 422. A new role applies on the member's next request.
+method: PATCH
+url: '{{base_url}}/staff/:staffMember'
+order: 4000
+pathVariables:
+  - key: staffMember
+    value: '{{staff_member_id}}'
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Postman Doctor",
+      "role": "doctor"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the new name and role', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.name).to.eql('Postman Doctor');
+        pm.expect(data.role).to.eql('doctor');
+      });

@@ -1,0 +1,4 @@
+$kind: collection
+name: System
+description: Public health check (feature 001).
+order: 1000

@@ -1,0 +1,14 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/staff'
+  method: GET
+response:
+  statusCode: 403
+  statusText: Forbidden
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message": "You are not allowed to perform this action."}
