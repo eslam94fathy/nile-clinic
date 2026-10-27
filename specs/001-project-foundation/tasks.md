@@ -389,12 +389,13 @@ mandated layers.
     - `docker compose config --quiet` with `.env` → exit 0
   - Depends: T026
 
-- [ ] T028 [US3] Verify that no secrets or real data are tracked (FR-010, Constitution XII)
+- [X] T028 [US3] Verify that no secrets or real data are tracked (FR-010, Constitution XII)
   - Accept: `.env` is ignored and untracked; no password other than the placeholders appears in tracked files.
   - Verify:
     - `git check-ignore .env` → `.env`
     - `git ls-files .env` → empty
-    - `git grep -nE "PASSWORD=.+" -- . ':!.env.example'` → no matches
+    - `git grep -nE "PASSWORD=.+" -- . ':!.env.example' ':!specs/'` → no matches
+    - (Revised: `specs/` is excluded because the plan and tasks quote the `.env.example` placeholders, `${VAR}` references, and this pattern itself; none is a secret.)
   - Depends: T027
 
 **Checkpoint**: US3 complete.
