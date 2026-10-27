@@ -381,7 +381,7 @@ mandated layers.
     - manual check that each `${VAR}` in `compose.yaml` appears in `.env.example`
   - Depends: T010
 
-- [ ] T027 [US3] Fail fast on missing secrets in `compose.yaml`
+- [X] T027 [US3] Fail fast on missing secrets in `compose.yaml`
   - Scope: use `${DB_PASSWORD:?DB_PASSWORD is required}`, `${MYSQL_ROOT_PASSWORD:?…}`, and `${DB_USERNAME:?…}` in the `mysql` service.
   - Accept: Compose errors clearly when they are unset.
   - Verify:
