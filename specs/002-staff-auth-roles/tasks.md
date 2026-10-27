@@ -318,7 +318,7 @@ the old token gets `401`.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T028 [US2] Write `tests/Feature/Staff/StaffMemberPolicyTest.php`
+- [X] T028 [US2] Write `tests/Feature/Staff/StaffMemberPolicyTest.php`
   - Scope: data provider over roles (`administrator`, `receptionist`, `doctor`) × abilities
     (`viewAny`, `view`, `create`, `update`, `deactivate`, `reactivate`, `setPassword`), checking
     `Gate::forUser($actor)->allows($ability, User::class)`: true only for administrator. An inactive
