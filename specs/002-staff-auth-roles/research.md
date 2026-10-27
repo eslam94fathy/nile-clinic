@@ -86,6 +86,14 @@ approved on 2026-10-27 and are listed in the plan's Decisions table.
   `401 {"message": __('auth.unauthenticated')}` and `AccessDeniedHttpException` as
   `403 {"message": __('auth.forbidden')}` for API requests. The two keys are added to
   `lang/{en,ar}/auth.php`, so the existing `TranslationParityTest` covers them.
+- **Finding (quickstart run, T053)**: for requests that do not send `Accept: application/json`
+  (e.g. plain `curl`), `Authenticate::unauthenticated()` calls the framework's default guest
+  redirect `route('login')`, which this API does not define, so the response was a **500
+  `Route [login] not defined.`** before the 401 renderer ran. Tests had missed it because
+  `getJson()` always sends the JSON `Accept` header.
+- **Decision**: `$middleware->redirectGuestsTo(null)` in `bootstrap/app.php`, so no redirect is
+  attempted and the translated 401 JSON is returned for any `Accept` header. `AuthErrorsTest`
+  covers `text/html` and `*/*`.
 
 ## R6 — Locale must be set before authentication (FR-027)
 

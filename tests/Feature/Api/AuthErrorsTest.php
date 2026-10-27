@@ -57,6 +57,23 @@ class AuthErrorsTest extends TestCase
             ->assertJsonPath('message', $this->message($locale, 'unauthenticated'));
     }
 
+    /**
+     * Clients that do not send Accept: application/json (e.g. plain curl) must also get a JSON
+     * 401; the framework's default would try to redirect to a "login" route this API does not have.
+     */
+    #[DataProvider('locales')]
+    public function test_unauthenticated_is_json_even_without_a_json_accept_header(string $locale): void
+    {
+        $this->get('api/v1/_test/protected', ['Accept' => 'text/html', 'Accept-Language' => $locale])
+            ->assertUnauthorized()
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertJsonPath('message', $this->message($locale, 'unauthenticated'));
+
+        $this->get('api/v1/_test/protected', ['Accept' => '*/*', 'Authorization' => 'Bearer 1|revoked'])
+            ->assertUnauthorized()
+            ->assertHeader('Content-Type', 'application/json');
+    }
+
     #[DataProvider('locales')]
     public function test_denied_ability_is_forbidden(string $locale): void
     {
