@@ -54,7 +54,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan tinker --execute="var_dump(config('sanctum.guard'), config('sanctum.expiration'), config('sanctum.idle_timeout_minutes'));"` → `array(0)`, `NULL`, `int(480)`
   - Depends: T001
 
-- [ ] T003 [P] Publish `config/hashing.php` and switch to Argon2id; lower its cost in `phpunit.xml` (approved D2, R3)
+- [X] T003 [P] Publish `config/hashing.php` and switch to Argon2id; lower its cost in `phpunit.xml` (approved D2, R3)
   - Scope:
     - `docker compose exec app php artisan config:publish hashing`
     - Set `'driver' => env('HASH_DRIVER', 'argon2id')`; leave the `argon` block's env keys
