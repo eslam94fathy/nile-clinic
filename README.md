@@ -37,7 +37,14 @@ docker compose exec app php artisan key:generate
 
 # 5. Create the database tables.
 docker compose exec app php artisan migrate
+
+# 6. Create the first administrator. You are asked for the password twice (hidden input).
+docker compose exec app php artisan staff:create-admin --name="Your Name" --email=you@example.com
 ```
+
+No default accounts or credentials ship with the system: the administrator you create in step 6
+is the only account until they add staff through the API. Run the command again whenever another
+administrator is needed from the command line.
 
 Check it works:
 

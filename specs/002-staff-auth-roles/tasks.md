@@ -461,7 +461,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T042 [US4] Write `tests/Feature/Staff/CreateAdministratorCommandTest.php`
+- [X] T042 [US4] Write `tests/Feature/Staff/CreateAdministratorCommandTest.php`
   - Scope (`$this->artisan(...)->expectsQuestion(...)`):
     - `staff:create-admin --name="Test Admin" --email=Admin@Clinic.test`, password and confirmation
       answered → exit `0`, output contains the `administrator_created` text, one active administrator
@@ -474,7 +474,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Create `app/Modules/Staff/Console/CreateAdministratorCommand.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T043 [US4] Create `app/Modules/Staff/Console/CreateAdministratorCommand.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope:
     - Signature `staff:create-admin {--name=} {--email=}`; asks for missing options; password via
       `secret()` twice (never an option, R12).
@@ -487,7 +487,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=CreateAdministratorCommandTest` → pass
   - Depends: T042
 
-- [ ] T044 [US4] Document the first-administrator step in `README.md`
+- [X] T044 [US4] Document the first-administrator step in `README.md`
   - Scope: in "First-time setup", add step 6 `docker compose exec app php artisan staff:create-admin`
     with a note that the password is typed (hidden) and no default accounts exist.
   - Depends: T043
