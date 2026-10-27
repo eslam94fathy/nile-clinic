@@ -280,7 +280,7 @@ the old token gets `401`.
     `Sanctum::authenticateAccessTokensUsing(fn ($token, bool $isValid) => $this->app->make(AuthenticationService::class)->isTokenUsable($token, $isValid));`
   - Depends: T023
 
-- [ ] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
+- [X] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
   - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|email|max:255`,
     `password` → `required|string`. `authorize()` → `true`.
 
