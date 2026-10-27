@@ -593,7 +593,7 @@ mandated layers.
   - Verify: the commands in `specs/001-project-foundation/quickstart.md`
   - Depends: T041, T042, T043
 
-- [ ] T045 Record the actual verification results in `specs/001-project-foundation/verification.md`
+- [X] T045 Record the actual verification results in `specs/001-project-foundation/verification.md`
   - Scope:
     - For each V-step, record the date, command, actual output summary, and pass/fail. Report failures as failures (Constitution VIII).
     - Record the measured setup duration from T044.
