@@ -121,7 +121,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: no real names or real domains; emails end with `@clinic.test`.
   - Depends: T005, T006
 
-- [ ] T008 Point the auth provider at the new model in `config/auth.php`
+- [X] T008 Point the auth provider at the new model in `config/auth.php`
   - Scope: replace `use App\Models\User;` with `use App\Modules\Staff\Models\User;`; keep
     `env('AUTH_MODEL', User::class)`. No other change.
   - Verify: `docker compose exec app php artisan tinker --execute="echo config('auth.providers.users.model');"` → `App\Modules\Staff\Models\User`
