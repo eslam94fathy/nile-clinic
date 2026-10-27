@@ -291,7 +291,7 @@ mandated layers.
   - Verify: covered by T015
   - Depends: T013
 
-- [ ] T019 [US1] Implement `app/Modules/System/Services/HealthCheckService.php`
+- [X] T019 [US1] Implement `app/Modules/System/Services/HealthCheckService.php`
   - Scope:
     - Constructor-injects `DatabaseStatusRepository` (the interface).
     - `check(): array` returns `['status' => 'ok'|'unavailable', 'checks' => ['database' => 'ok'|'unavailable']]`.
