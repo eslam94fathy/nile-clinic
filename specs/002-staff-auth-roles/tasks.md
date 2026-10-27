@@ -256,7 +256,7 @@ the old token gets `401`.
       `COALESCE(last_used_at, created_at) < $cutoff`
   - Depends: T006
 
-- [ ] T022 [US1] Bind both repositories in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T022 [US1] Bind both repositories in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope: `register()`: bind each contract to its implementation.
   - Depends: T020, T021
 
@@ -275,7 +275,7 @@ the old token gets `401`.
     - No queries here; no logging of emails or passwords.
   - Depends: T022
 
-- [ ] T024 [US1] Register the token callback in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T024 [US1] Register the token callback in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope: in `boot()`:
     `Sanctum::authenticateAccessTokensUsing(fn ($token, bool $isValid) => $this->app->make(AuthenticationService::class)->isTokenUsable($token, $isValid));`
   - Depends: T023
