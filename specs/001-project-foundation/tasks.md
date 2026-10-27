@@ -462,7 +462,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan test --filter=JsonErrorsTest` → pass
   - Depends: T011, T013
 
-- [ ] T033 [P] [US5] Write `tests/Feature/Localization/TranslationParityTest.php` (Feature, because it needs the booted app for `lang_path()`)
+- [X] T033 [P] [US5] Write `tests/Feature/Localization/TranslationParityTest.php` (Feature, because it needs the booted app for `lang_path()`)
   - Scope:
     - For each file in `lang/en/*.php`, assert `lang/ar/<same>.php` exists.
     - Assert its keys, flattened with dot notation, equal the English keys.
