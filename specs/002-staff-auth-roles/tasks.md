@@ -539,7 +539,7 @@ the other gets `401`, the old password fails.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T049 [P] Write `tests/Feature/Staff/StaffMessagesTest.php` (SC-007)
+- [X] T049 [P] Write `tests/Feature/Staff/StaffMessagesTest.php` (SC-007)
   - Scope: for `en` and `ar`: 401, 403, 404, 422 sign-in failure, 422 throttle, 422 last-administrator,
     each `message` equal to its translation file value, with identical JSON keys across locales.
   - Verify: `docker compose exec app php artisan test --filter=StaffMessagesTest` → pass
