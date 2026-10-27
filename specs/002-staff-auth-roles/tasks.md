@@ -363,7 +363,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=StaffManagementTest` → fails
   - Depends: T027, T029
 
-- [ ] T031 [P] [US3] Write `tests/Feature/Staff/DeactivationTest.php`
+- [X] T031 [P] [US3] Write `tests/Feature/Staff/DeactivationTest.php`
   - Scope: member with two tokens → deactivate → `200`, both tokens `401`, sign-in → generic
     `auth.failed`; deactivate again → `200` (idempotent); reactivate → `200`, sign-in works, old
     tokens stay invalid.
