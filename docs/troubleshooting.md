@@ -108,6 +108,35 @@ Desktop with a Windows path this is normally not needed.
 - `Cannot log in to the MySQL server`: check `docker compose ps` shows `mysql` healthy.
 - It only connects to the `mysql` service, by design; there is no server field.
 
+## `401` after a while ("You are not signed in.")
+
+A token that worked earlier now gets `401`. Sign in again. A token ends when:
+
+- it went **8 hours without a request** (each request restarts the 8 hours);
+- you signed out with it;
+- an administrator **deactivated** the account or **set a new password** for it (all tokens end);
+- you **changed your own password** from another session (your other tokens end).
+
+Check that the header is exactly `Authorization: Bearer <token>`, with the whole token including
+the part before `|`.
+
+## `422` "Too many login attempts"
+
+Sign-in is refused for up to a minute after 5 failed attempts for one email (from anywhere) or 20
+attempts from one address (for any email). Wrong current passwords on `PUT /api/v1/auth/password`
+count toward the same per-email limit. Wait the number of seconds in the message, then try again.
+A clinic's staff usually share one address, so many typos at the front desk can reach the
+20-attempt limit together.
+
+## No administrator can sign in
+
+There are no default accounts. Create one from the command line (the password is typed twice,
+hidden):
+
+```sh
+docker compose exec app php artisan staff:create-admin --name="Your Name" --email=you@example.com
+```
+
 ## Viewing logs
 
 ```sh

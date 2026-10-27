@@ -551,7 +551,7 @@ the other gets `401`, the old password fails.
     the model class)"; add the `Staff` module and its translations as a second example in one short
     paragraph; mention `prependToPriorityList` for locale-before-auth.
 
-- [ ] T051 [P] Update `README.md` and `docs/troubleshooting.md`
+- [X] T051 [P] Update `README.md` and `docs/troubleshooting.md`
   - Scope: README: short "Signing in" section (sign-in, `Authorization: Bearer`, 8-hour idle expiry,
     roles, link to the contract). Troubleshooting: "401 after a while" (idle expiry, deactivation,
     password reset) and "422 too many attempts" (wait the given seconds).
