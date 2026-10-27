@@ -2,11 +2,14 @@
 
 namespace App\Modules\Staff\Providers;
 
+use App\Modules\Staff\Models\User;
+use App\Modules\Staff\Policies\StaffMemberPolicy;
 use App\Modules\Staff\Repositories\Contracts\AccessTokenRepository;
 use App\Modules\Staff\Repositories\Contracts\StaffMemberRepository;
 use App\Modules\Staff\Repositories\EloquentStaffMemberRepository;
 use App\Modules\Staff\Repositories\SanctumAccessTokenRepository;
 use App\Modules\Staff\Services\AuthenticationService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -33,6 +36,8 @@ class StaffServiceProvider extends ServiceProvider
             ->group(__DIR__.'/../routes/api.php');
 
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'staff');
+
+        Gate::policy(User::class, StaffMemberPolicy::class);
 
         // Idle expiry and deactivated accounts are checked on every token request (research R2).
         Sanctum::authenticateAccessTokensUsing(
