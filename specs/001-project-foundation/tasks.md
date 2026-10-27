@@ -83,7 +83,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `git check-ignore composer.lock` → no output (exit 1)
   - Depends: T003
 
-- [ ] T005 Remove frontend, web-route, and default user scaffolding (approved D3, D5)
+- [X] T005 Remove frontend, web-route, and default user scaffolding (approved D3, D5)
   - Scope: delete
     - `package.json`, `vite.config.js`, `resources/css/`, `resources/js/`, `resources/views/welcome.blade.php`
     - `routes/web.php`
