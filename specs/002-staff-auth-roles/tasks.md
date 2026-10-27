@@ -77,7 +77,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Create the `users` migration in `database/migrations/<timestamp>_create_users_table.php`
+- [X] T004 Create the `users` migration in `database/migrations/<timestamp>_create_users_table.php`
   - Scope: `docker compose exec app php artisan make:migration create_users_table`, then exactly
     the columns in data-model.md:
     - `id` bigint unsigned auto-increment primary key
@@ -93,13 +93,13 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: covered by T009
   - Depends: T002
 
-- [ ] T005 [P] Create the role enum in `app/Modules/Staff/Enums/Role.php`
+- [X] T005 [P] Create the role enum in `app/Modules/Staff/Enums/Role.php`
   - Scope: string-backed enum `Role`: `Administrator = 'administrator'`, `Receptionist = 'receptionist'`,
     `Doctor = 'doctor'`. No other cases (FR-002).
   - Accept: three cases with those exact values.
   - Verify: covered by T008/T009
 
-- [ ] T006 Create the model in `app/Modules/Staff/Models/User.php`
+- [X] T006 Create the model in `app/Modules/Staff/Models/User.php`
   - Scope:
     - `class User extends Authenticatable` using `HasApiTokens` (Sanctum) and `HasFactory`
     - `$fillable = ['name', 'email', 'password', 'role', 'is_active']`
@@ -111,7 +111,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: `password` never appears in `toArray()`.
   - Depends: T004, T005
 
-- [ ] T007 [P] Create the factory in `database/factories/UserFactory.php` (synthetic data only, Constitution XII)
+- [X] T007 [P] Create the factory in `database/factories/UserFactory.php` (synthetic data only, Constitution XII)
   - Scope:
     - Model `App\Modules\Staff\Models\User`
     - defaults: `name` = `fake()->name()`, `email` = `fake()->unique()->userName().'@clinic.test'`,
@@ -121,20 +121,20 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: no real names or real domains; emails end with `@clinic.test`.
   - Depends: T005, T006
 
-- [ ] T008 Point the auth provider at the new model in `config/auth.php`
+- [X] T008 Point the auth provider at the new model in `config/auth.php`
   - Scope: replace `use App\Models\User;` with `use App\Modules\Staff\Models\User;`; keep
     `env('AUTH_MODEL', User::class)`. No other change.
   - Verify: `docker compose exec app php artisan tinker --execute="echo config('auth.providers.users.model');"` → `App\Modules\Staff\Models\User`
   - Depends: T006
 
-- [ ] T009 Run the migrations in `database/migrations/` and confirm the existing suite still passes
+- [X] T009 Run the migrations in `database/migrations/` and confirm the existing suite still passes
   - Verify:
     - `docker compose exec app php artisan migrate` → `create_users_table` and `create_personal_access_tokens_table` `DONE`
     - `docker compose exec app php artisan migrate:status` → all `Ran`
     - `docker compose exec app composer test` → 19 passed
   - Depends: T002, T004, T007, T008
 
-- [ ] T010 Create the module skeleton: `app/Modules/Staff/Providers/StaffServiceProvider.php`, `app/Modules/Staff/routes/api.php`, `bootstrap/providers.php`
+- [X] T010 Create the module skeleton: `app/Modules/Staff/Providers/StaffServiceProvider.php`, `app/Modules/Staff/routes/api.php`, `bootstrap/providers.php`
   - Scope:
     - Provider `boot()`: load `routes/api.php` with `api` middleware and `api/v1` prefix (same as
       `SystemServiceProvider`); `loadTranslationsFrom(__DIR__.'/../lang', 'staff')`.
@@ -145,7 +145,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan route:list --path=api` → still only `api/v1/health`
   - Depends: T009
 
-- [ ] T011 [P] Write the failing refusal-message test in `tests/Feature/Api/AuthErrorsTest.php`
+- [X] T011 [P] Write the failing refusal-message test in `tests/Feature/Api/AuthErrorsTest.php`
   - Scope:
     - Register two **test-only** routes in `setUp()`:
       `Route::middleware(['api', 'auth:sanctum'])->get('api/v1/_test/protected', fn () => 'ok')` and
@@ -159,14 +159,14 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan test --filter=AuthErrorsTest` → fails
   - Depends: T009
 
-- [ ] T012 [P] Add the refusal keys to `lang/en/auth.php` and `lang/ar/auth.php`
+- [X] T012 [P] Add the refusal keys to `lang/en/auth.php` and `lang/ar/auth.php`
   - Scope: add, in both files, after `throttle`:
     - en: `'unauthenticated' => 'You are not signed in.'`, `'forbidden' => 'You are not allowed to perform this action.'`
     - ar: `'unauthenticated' => 'لم تقم بتسجيل الدخول.'`, `'forbidden' => 'غير مسموح لك بتنفيذ هذا الإجراء.'`
   - Accept: `TranslationParityTest` passes.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T013 Render localized 401/403 and run the locale middleware before authentication in `bootstrap/app.php` (R5, R6)
+- [X] T013 Render localized 401/403 and run the locale middleware before authentication in `bootstrap/app.php` (R5, R6)
   - Scope:
     - `withMiddleware`: keep the `api(append: …)` line and add
       `$middleware->prependToPriorityList(before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, prepend: SetLocaleFromHeader::class);`
@@ -177,7 +177,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan test --filter=AuthErrorsTest` → pass
   - Depends: T010, T011, T012
 
-- [ ] T014 [P] Add module translations `app/Modules/Staff/lang/en/messages.php` and `app/Modules/Staff/lang/ar/messages.php`
+- [X] T014 [P] Add module translations `app/Modules/Staff/lang/en/messages.php` and `app/Modules/Staff/lang/ar/messages.php`
   - Scope: exactly these keys:
     - `not_found` — en `No staff member was found.`; ar `لم يتم العثور على الموظف.`
     - `last_administrator` — en `This change would leave the clinic without an active administrator.`;
@@ -186,7 +186,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: same keys and placeholders in both files.
   - Depends: T010
 
-- [ ] T015 Extend `tests/Feature/Localization/TranslationParityTest.php` to module translations
+- [X] T015 Extend `tests/Feature/Localization/TranslationParityTest.php` to module translations
   - Scope: also compare every `app/Modules/*/lang/en/*.php` with its `ar` sibling (same flattened
     keys); keep the existing `lang/` check and its non-empty assertion.
   - Accept: passes with T014; fails if an `ar` key is removed (check locally, do not commit that).
