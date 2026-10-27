@@ -260,7 +260,7 @@ the old token gets `401`.
   - Scope: `register()`: bind each contract to its implementation.
   - Depends: T020, T021
 
-- [ ] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
+- [X] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
   - Scope:
     - `signIn(string $email, string $password, string $ip): array{token: string, user: User}`:
       key `$email.'|'.$ip`; if `RateLimiter::tooManyAttempts($key, 5)` throw
