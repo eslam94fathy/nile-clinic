@@ -5,6 +5,7 @@ namespace Tests\Feature\Staff;
 use App\Modules\Staff\Models\User;
 use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Staff\Concerns\InteractsWithStaffTokens;
 use Tests\TestCase;
@@ -62,7 +63,7 @@ class DeactivationTest extends TestCase
         return $this;
     }
 
-    private function signInAttempt(User $user): \Illuminate\Testing\TestResponse
+    private function signInAttempt(User $user): TestResponse
     {
         return $this->usingToken(null)->postJson('/api/v1/auth/sign-in', [
             'email' => $user->email,

@@ -437,7 +437,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - SetPassword: `password` → `PasswordRules::rules()`
   - Depends: T029, T035
 
-- [ ] T041 [US3] Create controllers `app/Modules/Staff/Http/Controllers/StaffMemberController.php`, `StaffMemberStatusController.php`, `StaffMemberPasswordController.php` and their routes in `app/Modules/Staff/routes/api.php`
+- [X] T041 [US3] Create controllers `app/Modules/Staff/Http/Controllers/StaffMemberController.php`, `StaffMemberStatusController.php`, `StaffMemberPasswordController.php` and their routes in `app/Modules/Staff/routes/api.php`
   - Scope:
     - `StaffMemberController`: `index`, `store` (201), `show` (`Gate::authorize('view', User::class)` first), `update`
     - `StaffMemberStatusController`: `deactivate`, `reactivate` (`Gate::authorize(...)` first)
