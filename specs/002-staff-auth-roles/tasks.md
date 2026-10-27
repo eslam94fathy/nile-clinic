@@ -408,7 +408,7 @@ their token and sign-in fail; reactivate, they sign in again.
       (must be called inside a transaction)
   - Depends: T020
 
-- [ ] T038 [US3] Add `deleteAllFor(User $user): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
+- [X] T038 [US3] Add `deleteAllFor(User $user): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
 - [ ] T039 [US3] Implement `app/Modules/Staff/Services/StaffManagementService.php` (R8, R9)
