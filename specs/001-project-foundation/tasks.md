@@ -521,7 +521,7 @@ mandated layers.
 
 **Purpose**: An opt-in, localhost-only phpMyAdmin.
 
-- [ ] T039 Add the `phpmyadmin` service to `compose.yaml` and `PMA_PORT` to `.env.example`
+- [X] T039 Add the `phpmyadmin` service to `compose.yaml` and `PMA_PORT` to `.env.example`
   - Scope:
     - `image: phpmyadmin:5.2.3-apache`; `profiles: [tools]`
     - ports `"127.0.0.1:${PMA_PORT:-8081}:80"`
@@ -535,7 +535,7 @@ mandated layers.
     - `docker compose --profile tools config --services` → also `phpmyadmin`
   - Depends: T027
 
-- [ ] T040 Verify phpMyAdmin login and exposure (quickstart V9)
+- [X] T040 Verify phpMyAdmin login and exposure (quickstart V9)
   - Accept: the login form shows (no auto-login); `DB_USERNAME`/`DB_PASSWORD` log in and show `clinic`; it is bound only to `127.0.0.1`.
   - Verify:
     - `docker compose --profile tools up -d phpmyadmin`
