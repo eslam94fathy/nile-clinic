@@ -508,7 +508,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T033, T036
 
-- [ ] T038 [US5] Verify the localization story (quickstart V6, SC-005)
+- [X] T038 [US5] Verify the localization story (quickstart V6, SC-005)
   - Verify: `docker compose exec app php artisan test --filter="LocaleSelectionTest|JsonErrorsTest|TranslationParityTest"` → all pass
   - Depends: T032, T035, T037
 
