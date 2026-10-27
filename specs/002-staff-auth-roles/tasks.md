@@ -248,7 +248,7 @@ the old token gets `401`.
     Later stories add methods to the same pair.
   - Depends: T006
 
-- [ ] T021 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
+- [X] T021 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Scope:
     - `issueFor(User $user): string` → `$user->createToken('api')->plainTextToken`
     - `deleteCurrent(User $user): void` → deletes `$user->currentAccessToken()`
