@@ -34,7 +34,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **Purpose**: Add the approved dependency and configuration (D1, D2).
 
-- [ ] T001 Install Sanctum in `composer.json` and `composer.lock` (approved D1)
+- [X] T001 Install Sanctum in `composer.json` and `composer.lock` (approved D1)
   - Scope: `docker compose exec app composer require laravel/sanctum:^4.3`. Do **not** run
     `php artisan install:api` (it would create `routes/api.php`; research R1).
   - Accept: `composer.json` requires `"laravel/sanctum": "^4.3"`; no other new package.
