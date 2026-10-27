@@ -134,7 +134,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec app composer test` → 19 passed
   - Depends: T002, T004, T007, T008
 
-- [ ] T010 Create the module skeleton: `app/Modules/Staff/Providers/StaffServiceProvider.php`, `app/Modules/Staff/routes/api.php`, `bootstrap/providers.php`
+- [X] T010 Create the module skeleton: `app/Modules/Staff/Providers/StaffServiceProvider.php`, `app/Modules/Staff/routes/api.php`, `bootstrap/providers.php`
   - Scope:
     - Provider `boot()`: load `routes/api.php` with `api` middleware and `api/v1` prefix (same as
       `SystemServiceProvider`); `loadTranslationsFrom(__DIR__.'/../lang', 'staff')`.
