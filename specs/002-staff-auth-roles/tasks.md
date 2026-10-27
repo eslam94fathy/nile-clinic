@@ -377,7 +377,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=LastAdministratorTest` → fails
   - Depends: T027, T029
 
-- [ ] T033 [P] [US3] Write `tests/Feature/Staff/AdminSetPasswordTest.php`
+- [X] T033 [P] [US3] Write `tests/Feature/Staff/AdminSetPasswordTest.php`
   - Scope: `PUT /staff/{id}/password` → `204`; old password fails, new works; every earlier token
     of that member → `401`; length and confirmation rules as in T030.
   - Verify: `docker compose exec app php artisan test --filter=AdminSetPasswordTest` → fails
