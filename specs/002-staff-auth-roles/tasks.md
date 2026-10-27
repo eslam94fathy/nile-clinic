@@ -425,7 +425,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - `setPassword(User, string $password)` — update and `deleteAllFor()` in one transaction
   - Depends: T036, T037, T038
 
-- [ ] T040 [P] [US3] Create Form Requests in `app/Modules/Staff/Http/Requests/`: `ListStaffRequest.php`, `StoreStaffMemberRequest.php`, `UpdateStaffMemberRequest.php`, `SetStaffMemberPasswordRequest.php`
+- [X] T040 [P] [US3] Create Form Requests in `app/Modules/Staff/Http/Requests/`: `ListStaffRequest.php`, `StoreStaffMemberRequest.php`, `UpdateStaffMemberRequest.php`, `SetStaffMemberPasswordRequest.php`
   - Scope:
     - `authorize()` → `$this->user()->can(<ability>, User::class)` (`viewAny`, `create`, `update`, `setPassword`)
     - List: `role` → `nullable|`enum `Role`; `is_active` → `nullable|boolean`; `page` → `nullable|integer|min:1`;
