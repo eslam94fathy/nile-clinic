@@ -28,9 +28,9 @@ class SignInRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // ASCII only: the email collation would otherwise match look-alike letters to an
-            // account, letting variants dodge the per-email rate limit (research R7).
-            'email' => ['required', 'string', 'ascii', 'email', 'max:255'],
+            // Printable ASCII only: the email collation would otherwise match look-alike letters and
+            // ignore control characters, letting variants dodge the per-email rate limit (research R7).
+            'email' => ['required', 'string', 'regex:/^[\x21-\x7E]+$/D', 'email', 'max:255'],
             'password' => ['required', 'string'],
         ];
     }

@@ -141,6 +141,21 @@ class SignInTest extends TestCase
         $this->attempt('sara@clinic.test', UserFactory::PASSWORD, $locale)->assertOk();
     }
 
+    /**
+     * The collation also ignores control characters (sa\x01ra matches sara), so only printable
+     * ASCII is accepted; the check must not depend on the email parser rejecting them.
+     */
+    public function test_control_characters_inside_emails_are_rejected(): void
+    {
+        User::factory()->create(['email' => 'sara@clinic.test']);
+
+        foreach (["sa\x01ra@clinic.test", "sa\x1Fra@clinic.test", "sa\x7Fra@clinic.test", 'sa ra@clinic.test'] as $email) {
+            $this->attempt($email, UserFactory::PASSWORD)
+                ->assertUnprocessable()
+                ->assertJsonValidationErrorFor('email');
+        }
+    }
+
     public function test_client_address_limit_applies_across_emails(): void
     {
         $user = User::factory()->create(['email' => 'known@clinic.test']);
