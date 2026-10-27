@@ -284,7 +284,7 @@ the old token gets `401`.
   - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|email|max:255`,
     `password` → `required|string`. `authorize()` → `true`.
 
-- [ ] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
+- [X] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
   - Scope:
     - `StaffMemberResource`: exactly `id`, `name`, `email`, `role` (enum value), `is_active`,
       `created_at`, `updated_at` (ISO 8601). Default `data` wrapper.
