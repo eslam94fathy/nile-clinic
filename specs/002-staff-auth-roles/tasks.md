@@ -505,7 +505,7 @@ the other gets `401`, the old password fails.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T045 [US5] Write `tests/Feature/Staff/OwnPasswordChangeTest.php`
+- [X] T045 [US5] Write `tests/Feature/Staff/OwnPasswordChangeTest.php`
   - Scope: `PUT /api/v1/auth/password` → `204`; current token `200`, other token `401`; old password
     fails, new works; wrong `current_password` → `422` `validation.current_password` (en and ar);
     11-char or unconfirmed new password → `422`; no token → `401`.
