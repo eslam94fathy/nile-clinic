@@ -472,7 +472,7 @@ mandated layers.
 
 ### Implementation for User Story 5
 
-- [ ] T034 [US5] Implement `app/Http/Middleware/SetLocaleFromHeader.php`
+- [X] T034 [US5] Implement `app/Http/Middleware/SetLocaleFromHeader.php`
   - Scope (deterministic; does not rely on how Symfony matches regions):
     1. Go through `$request->getLanguages()` in order (already sorted by q-value).
     2. For each entry, take the base language: lowercase, keep the part before the first `_` or `-`.
