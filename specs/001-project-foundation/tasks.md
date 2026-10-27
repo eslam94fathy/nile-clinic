@@ -564,7 +564,7 @@ mandated layers.
   - Verify: manual walk-through in T044
   - Depends: T038, T040
 
-- [ ] T042 [P] Write `docs/troubleshooting.md` (FR-025)
+- [X] T042 [P] Write `docs/troubleshooting.md` (FR-025)
   - Scope:
     - port in use (`APP_PORT`, `PMA_PORT`)
     - DB not ready or unhealthy (`docker compose ps`, `logs mysql`)
