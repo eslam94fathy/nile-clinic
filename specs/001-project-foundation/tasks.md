@@ -283,7 +283,7 @@ mandated layers.
   - Verify: covered by T022
   - Depends: T016
 
-- [ ] T018 [P] [US1] Create `app/Modules/System/Http/Resources/HealthResource.php`
+- [X] T018 [P] [US1] Create `app/Modules/System/Http/Resources/HealthResource.php`
   - Scope:
     - Extends `JsonResource`; `public static $wrap = null;`
     - `toArray()` returns exactly `status` and `checks.database` from the service result.
