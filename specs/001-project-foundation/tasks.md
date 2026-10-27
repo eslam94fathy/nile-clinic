@@ -254,7 +254,7 @@ mandated layers.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T015 [US1] Write the health endpoint feature test in `tests/Feature/System/HealthEndpointTest.php`
+- [X] T015 [US1] Write the health endpoint feature test in `tests/Feature/System/HealthEndpointTest.php`
   - Scope (per `contracts/health.openapi.yaml`, enums `status: ok | unavailable`, `checks.database: ok | unavailable`, `additionalProperties: false`):
     - (a) `GET /api/v1/health` → 200, `assertExactJson(['status' => 'ok', 'checks' => ['database' => 'ok']])`
     - (b) bind a fake `DatabaseStatusRepository` returning `false` → 503, `assertExactJson(['status' => 'unavailable', 'checks' => ['database' => 'unavailable']])`
