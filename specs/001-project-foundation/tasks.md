@@ -521,7 +521,7 @@ mandated layers.
 
 **Purpose**: An opt-in, localhost-only phpMyAdmin.
 
-- [ ] T039 Add the `phpmyadmin` service to `compose.yaml` and `PMA_PORT` to `.env.example`
+- [X] T039 Add the `phpmyadmin` service to `compose.yaml` and `PMA_PORT` to `.env.example`
   - Scope:
     - `image: phpmyadmin:5.2.3-apache`; `profiles: [tools]`
     - ports `"127.0.0.1:${PMA_PORT:-8081}:80"`
