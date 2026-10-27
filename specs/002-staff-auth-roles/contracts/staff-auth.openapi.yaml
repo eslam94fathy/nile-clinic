@@ -52,8 +52,8 @@ paths:
           description: >
             Validation error; wrong credentials, unknown email, or deactivated account (one
             generic message, `auth.failed`); or too many attempts (`auth.throttle`, includes the
-            seconds to wait). After 5 failures per email and client within 60 s, attempts are
-            refused for 60 s.
+            seconds to wait). Attempts are refused for 60 s after 5 failures for one email from
+            any client, or 20 attempts from one client for any email, within 60 s.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ValidationError' }

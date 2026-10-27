@@ -206,7 +206,7 @@ the old token gets `401`.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T016 [P] [US1] Write `tests/Feature/Staff/SignInTest.php`
+- [X] T016 [P] [US1] Write `tests/Feature/Staff/SignInTest.php`
   - Scope (`POST /api/v1/auth/sign-in`, contract `signIn`):
     - success → `200`, `data.token` non-empty, `data.token_type` = `Bearer`, `data.user` matches
       `StaffMember` (no `password` key)
@@ -220,19 +220,19 @@ the old token gets `401`.
   - Verify: `docker compose exec app php artisan test --filter=SignInTest` → fails
   - Depends: T013, T015
 
-- [ ] T017 [P] [US1] Write `tests/Feature/Staff/SignOutTest.php`
+- [X] T017 [P] [US1] Write `tests/Feature/Staff/SignOutTest.php`
   - Scope: two sign-ins for one account (two tokens); sign out with the first → `204`; first token
     → `401` on `GET /auth/me`; second token → `200`. Without a token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=SignOutTest` → fails
   - Depends: T013
 
-- [ ] T018 [P] [US1] Write `tests/Feature/Staff/OwnProfileTest.php`
+- [X] T018 [P] [US1] Write `tests/Feature/Staff/OwnProfileTest.php`
   - Scope: `GET /api/v1/auth/me` → `200`, `data` has exactly `id`, `name`, `email`, `role`,
     `is_active`, `created_at`, `updated_at`; each role returns its own value; no token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=OwnProfileTest` → fails
   - Depends: T013
 
-- [ ] T019 [P] [US1] Write `tests/Feature/Staff/TokenExpiryTest.php`
+- [X] T019 [P] [US1] Write `tests/Feature/Staff/TokenExpiryTest.php`
   - Scope (use `$this->travel()`):
     - signed in, then 7 h 59 m idle → `200`
     - signed in, then 8 h 1 m idle → `401`
@@ -243,12 +243,12 @@ the old token gets `401`.
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
+- [X] T020 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
   - Scope: method `findByEmail(string $email): ?User` (exact match on the stored lower-cased value).
     Later stories add methods to the same pair.
   - Depends: T006
 
-- [ ] T021 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
+- [X] T021 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Scope:
     - `issueFor(User $user): string` → `$user->createToken('api')->plainTextToken`
     - `deleteCurrent(User $user): void` → deletes `$user->currentAccessToken()`
@@ -256,35 +256,38 @@ the old token gets `401`.
       `COALESCE(last_used_at, created_at) < $cutoff`
   - Depends: T006
 
-- [ ] T022 [US1] Bind both repositories in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T022 [US1] Bind both repositories in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope: `register()`: bind each contract to its implementation.
   - Depends: T020, T021
 
-- [ ] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
+- [X] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
   - Scope:
     - `signIn(string $email, string $password, string $ip): array{token: string, user: User}`:
-      key `$email.'|'.$ip`; if `RateLimiter::tooManyAttempts($key, 5)` throw
-      `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($key)])])`;
+      keys `sign-in:email:<email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
+      `RateLimiter::hit(…, 60)` **before** checking; if either count is over its max throw
+      `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => <longer wait>])])`;
       look up via `findByEmail`; if missing, still run `Hash::check` against a fixed dummy Argon2id
-      hash; on any failure (missing, wrong password, inactive) `RateLimiter::hit($key, 60)` and throw
-      `['email' => __('auth.failed')]`; on success `RateLimiter::clear($key)`, delete idle tokens
+      hash; on any failure (missing, wrong password, inactive) throw
+      `['email' => __('auth.failed')]`; on success clear only the email key, delete idle tokens
       (`now()->subMinutes(config('sanctum.idle_timeout_minutes'))`), issue a token.
+    - (Revised after a security review: the original single `email|ip` key allowed guessing one
+      account from many addresses; see research R7. `SignInTest` covers both limits.)
     - `signOut(User $user): void` → `deleteCurrent`.
     - `isTokenUsable(PersonalAccessToken $token, bool $isValid): bool` → `$isValid` and
       tokenable is active and `($token->last_used_at ?? $token->created_at)` is after the idle cutoff.
     - No queries here; no logging of emails or passwords.
   - Depends: T022
 
-- [ ] T024 [US1] Register the token callback in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T024 [US1] Register the token callback in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope: in `boot()`:
     `Sanctum::authenticateAccessTokensUsing(fn ($token, bool $isValid) => $this->app->make(AuthenticationService::class)->isTokenUsable($token, $isValid));`
   - Depends: T023
 
-- [ ] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
+- [X] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
   - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|email|max:255`,
     `password` → `required|string`. `authorize()` → `true`.
 
-- [ ] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
+- [X] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
   - Scope:
     - `StaffMemberResource`: exactly `id`, `name`, `email`, `role` (enum value), `is_active`,
       `created_at`, `updated_at` (ISO 8601). Default `data` wrapper.
@@ -292,7 +295,7 @@ the old token gets `401`.
       `user` = `StaffMemberResource`.
   - Depends: T006
 
-- [ ] T027 [US1] Create `app/Modules/Staff/Http/Controllers/AuthController.php` and add routes to `app/Modules/Staff/routes/api.php`
+- [X] T027 [US1] Create `app/Modules/Staff/Http/Controllers/AuthController.php` and add routes to `app/Modules/Staff/routes/api.php`
   - Scope:
     - `signIn(SignInRequest)` → `SignInResource` (200); `signOut(Request)` → `204`;
       `me(Request)` → `StaffMemberResource`. No logic beyond calling the service.
