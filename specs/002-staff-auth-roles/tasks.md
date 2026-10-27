@@ -99,7 +99,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: three cases with those exact values.
   - Verify: covered by T008/T009
 
-- [ ] T006 Create the model in `app/Modules/Staff/Models/User.php`
+- [X] T006 Create the model in `app/Modules/Staff/Models/User.php`
   - Scope:
     - `class User extends Authenticatable` using `HasApiTokens` (Sanctum) and `HasFactory`
     - `$fillable = ['name', 'email', 'password', 'role', 'is_active']`
