@@ -383,7 +383,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Verify: `docker compose exec app php artisan test --filter=AdminSetPasswordTest` → fails
   - Depends: T027, T029
 
-- [ ] T034 [P] [US3] Write `tests/Feature/Staff/AuthorizationMatrixTest.php` (SC-002)
+- [X] T034 [P] [US3] Write `tests/Feature/Staff/AuthorizationMatrixTest.php` (SC-002)
   - Scope: data provider over the 7 staff endpoints × `receptionist`, `doctor` → `403` with
     `auth.forbidden`, and nothing changed in the database; administrator → not `403`; no token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=AuthorizationMatrixTest` → fails
