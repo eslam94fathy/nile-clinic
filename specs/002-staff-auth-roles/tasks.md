@@ -328,7 +328,7 @@ the old token gets `401`.
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Create `app/Modules/Staff/Policies/StaffMemberPolicy.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T029 [US2] Create `app/Modules/Staff/Policies/StaffMemberPolicy.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope: the seven abilities, each `(User $actor): bool` → `$actor->is_active && $actor->isAdministrator()`
     (class-level, so non-administrators get `403` before any lookup and cannot probe ids).
     `boot()`: `Gate::policy(User::class, StaffMemberPolicy::class)`.
