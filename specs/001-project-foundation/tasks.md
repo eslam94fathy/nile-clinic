@@ -129,7 +129,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **⚠️ CRITICAL**: No user story work begins until T010 passes.
 
-- [ ] T008 Write the initial `.env.example` for the Docker stack
+- [X] T008 Write the initial `.env.example` for the Docker stack
   - Scope:
     - Replace the skeleton values with:
       - `APP_NAME="Nile Clinic"`, `APP_ENV=local`, `APP_KEY=`, `APP_DEBUG=true`, `APP_URL=http://localhost:8080`, `APP_PORT=8080`
