@@ -157,7 +157,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose config | grep -A3 "app:"` → no `env_file` entry
   - Depends: T003, T006, T007, T008
 
-- [ ] T010 Start the stack and verify container networking to MySQL (AC-1, AC-2)
+- [X] T010 Start the stack and verify container networking to MySQL (AC-1, AC-2)
   - Scope: runtime verification only; fix earlier tasks if this fails.
   - Accept:
     - all 3 services are running and `mysql` is healthy
