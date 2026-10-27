@@ -29,6 +29,8 @@ fixed by Constitution Principle II (Laravel REST API, MySQL, Docker Compose); ex
 - Q: Health verification via a versioned endpoint or framework commands only? → A: Add public
   `GET /api/v1/health` reporting app and database status without sensitive details (FR-020).
 - Q: Domain code layout? → A: Self-contained modules under `app/Modules/<Domain>/` (FR-023).
+- Scope addition (user request during planning): a phpMyAdmin web GUI for the local MySQL
+  database, development only (FR-026).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -260,6 +262,17 @@ the selected locale in each case via a framework-provided message.
   missing environment file or application key, permission/line-ending issues on Windows hosts, and
   how to inspect service logs.
 
+**Database GUI (development only)**
+
+- **FR-026**: The local environment MUST offer a phpMyAdmin web GUI for the development database.
+  It MUST:
+  - be reachable only from the developer's own machine (localhost);
+  - connect to the database over the internal container network, without publishing the
+    database port;
+  - require a MySQL login (no stored or automatic credentials);
+  - start only when explicitly requested;
+  - be documented as development-only and never used with real patient data.
+
 ### Out of Scope
 
 - Patient, doctor, specialty, scheduling, appointment, queue, encounter, payment, report, and audit
@@ -300,6 +313,7 @@ the selected locale in each case via a framework-provided message.
 | AC-6 | Project structure and architecture rules documented | US4, FR-021–FR-023, SC-006 |
 | AC-7 | en/ar localization foundation without invented messages | US5, FR-017, FR-018, SC-005 |
 | AC-8 | Setup and troubleshooting documented | FR-024, FR-025 |
+| — | Database GUI (added scope) | FR-026 |
 
 ## Open Decisions Deferred to Planning
 

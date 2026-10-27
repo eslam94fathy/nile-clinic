@@ -1,0 +1,64 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Foundation
+  version: 1.0.0
+  description: >
+    Contract for the only endpoint introduced by feature 001 (FR-020).
+    Public, unauthenticated, read-only. Response shape is identical for every locale.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Report application and database availability
+      parameters:
+        - in: header
+          name: Accept-Language
+          required: false
+          description: >
+            Optional. Supported values en, ar (regional variants such as ar-EG map to ar).
+            Missing, malformed, or unsupported values fall back to en. Does not change the
+            response structure.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Application running and database reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+                checks:
+                  database: ok
+        '503':
+          description: Application running but database unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: unavailable
+                checks:
+                  database: unavailable
+components:
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        checks:
+          type: object
+          additionalProperties: false
+          required: [database]
+          properties:
+            database:
+              type: string
+              enum: [ok, unavailable]
