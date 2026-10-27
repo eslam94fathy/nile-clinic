@@ -548,7 +548,7 @@ mandated layers.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T041 [P] Write `README.md` (FR-024)
+- [X] T041 [P] Write `README.md` (FR-024)
   - Scope:
     - project summary
     - prerequisites (Docker + Compose v2+, no host PHP)
@@ -564,7 +564,7 @@ mandated layers.
   - Verify: manual walk-through in T044
   - Depends: T038, T040
 
-- [ ] T042 [P] Write `docs/troubleshooting.md` (FR-025)
+- [X] T042 [P] Write `docs/troubleshooting.md` (FR-025)
   - Scope:
     - port in use (`APP_PORT`, `PMA_PORT`)
     - DB not ready or unhealthy (`docker compose ps`, `logs mysql`)
@@ -579,11 +579,11 @@ mandated layers.
   - Verify: manual checklist against FR-025
   - Depends: T038, T040
 
-- [ ] T043 Run code style checks with the skeleton's Pint
+- [X] T043 Run code style checks with the skeleton's Pint
   - Verify: `docker compose exec app vendor/bin/pint --test` → exit 0 (if it fails, run `vendor/bin/pint` and re-run the test suite)
   - Depends: T038
 
-- [ ] T044 Full quickstart validation from a clean, isolated stack (V1–V9)
+- [X] T044 Full quickstart validation from a clean, isolated stack (V1–V9)
   - Scope:
     - `git clone` the branch into a new temp folder outside the repo (a real fresh checkout: no `vendor/`, no `.env`).
     - From that clone, follow **only** `README.md` with project name `-p nileverify`, `APP_PORT=8090`, `PMA_PORT=8091`, timing from clone to a migrated, healthy stack (excluding image downloads; pull images first with `docker compose pull`).
@@ -593,7 +593,7 @@ mandated layers.
   - Verify: the commands in `specs/001-project-foundation/quickstart.md`
   - Depends: T041, T042, T043
 
-- [ ] T045 Record the actual verification results in `specs/001-project-foundation/verification.md`
+- [X] T045 Record the actual verification results in `specs/001-project-foundation/verification.md`
   - Scope:
     - For each V-step, record the date, command, actual output summary, and pass/fail. Report failures as failures (Constitution VIII).
     - Record the measured setup duration from T044.
