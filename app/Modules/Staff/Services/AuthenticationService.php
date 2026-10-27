@@ -6,6 +6,7 @@ use App\Modules\Staff\Models\User;
 use App\Modules\Staff\Repositories\Contracts\AccessTokenRepository;
 use App\Modules\Staff\Repositories\Contracts\StaffMemberRepository;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -81,6 +82,23 @@ class AuthenticationService
     public function signOut(User $user): void
     {
         $this->tokens->deleteCurrent($user);
+    }
+
+    /**
+     * Change the signed-in member's password and end their other sessions; the token used for
+     * this request stays valid (FR-023). The current password is checked by the Form Request.
+     */
+    public function changeOwnPassword(User $user, string $password): void
+    {
+        DB::transaction(function () use ($user, $password) {
+            $this->staffMembers->update($user, ['password' => $password]);
+
+            $current = $user->currentAccessToken();
+
+            $current instanceof PersonalAccessToken
+                ? $this->tokens->deleteAllExcept($user, $current)
+                : $this->tokens->deleteAllFor($user);
+        });
     }
 
     /**

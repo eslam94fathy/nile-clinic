@@ -517,7 +517,7 @@ the other gets `401`, the old password fails.
 - [X] T046 [US5] Add `deleteAllExcept(User $user, PersonalAccessToken $keep): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
-- [ ] T047 [US5] Add `changeOwnPassword(User $user, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
+- [X] T047 [US5] Add `changeOwnPassword(User $user, string $password): void` to `app/Modules/Staff/Services/AuthenticationService.php`
   - Scope: in one `DB::transaction()`: update the password (via `StaffMemberRepository::update`) and
     `deleteAllExcept($user, $user->currentAccessToken())`.
   - Depends: T037 (or add `update()` to the repository here if US3 is not done), T046
