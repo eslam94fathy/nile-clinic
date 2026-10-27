@@ -35,7 +35,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **Purpose**: Branch, repository hygiene, container images, and the Laravel skeleton.
 
-- [ ] T001 Create and switch to the feature branch `001-project-foundation` (approved D6)
+- [X] T001 Create and switch to the feature branch `001-project-foundation` (approved D6)
   - Scope: git only; no file changes.
   - Accept: current branch is `001-project-foundation`, created from `main` at the plan commit.
   - Verify: `git switch -c 001-project-foundation` then `git branch --show-current` → `001-project-foundation`
