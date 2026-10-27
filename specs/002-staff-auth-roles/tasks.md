@@ -567,7 +567,7 @@ the other gets `401`, the old password fails.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T052
 
-- [ ] T054 Record the results in `specs/002-staff-auth-roles/verification.md`
+- [X] T054 Record the results in `specs/002-staff-auth-roles/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; report failures as
     failures (Constitution VIII).
   - Depends: T053
