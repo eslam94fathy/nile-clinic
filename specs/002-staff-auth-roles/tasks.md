@@ -243,7 +243,7 @@ the old token gets `401`.
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
+- [X] T020 [P] [US1] Create `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
   - Scope: method `findByEmail(string $email): ?User` (exact match on the stored lower-cased value).
     Later stories add methods to the same pair.
   - Depends: T006
