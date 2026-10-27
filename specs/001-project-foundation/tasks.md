@@ -267,7 +267,7 @@ mandated layers.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Create the repository interface `app/Modules/System/Repositories/Contracts/DatabaseStatusRepository.php`
+- [X] T016 [P] [US1] Create the repository interface `app/Modules/System/Repositories/Contracts/DatabaseStatusRepository.php`
   - Scope: namespace `App\Modules\System\Repositories\Contracts`; one method `isReachable(): bool`. No base interface.
   - Accept: the interface is autoloadable (PSR-4 `App\` → `app/`).
   - Verify: `docker compose exec app composer dump-autoload` → exit 0
