@@ -98,7 +98,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker run --rm -v "${PWD}:/var/www/html" nile-clinic-app:dev php artisan about` exits 0
   - Depends: T004
 
-- [ ] T006 [P] Create the nginx site config in `docker/nginx/default.conf`
+- [X] T006 [P] Create the nginx site config in `docker/nginx/default.conf`
   - Scope:
     - `root /var/www/html/public`; `index index.php`
     - `try_files $uri $uri/ /index.php?$query_string`
