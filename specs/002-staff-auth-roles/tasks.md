@@ -226,7 +226,7 @@ the old token gets `401`.
   - Verify: `docker compose exec app php artisan test --filter=SignOutTest` → fails
   - Depends: T013
 
-- [ ] T018 [P] [US1] Write `tests/Feature/Staff/OwnProfileTest.php`
+- [X] T018 [P] [US1] Write `tests/Feature/Staff/OwnProfileTest.php`
   - Scope: `GET /api/v1/auth/me` → `200`, `data` has exactly `id`, `name`, `email`, `role`,
     `is_active`, `created_at`, `updated_at`; each role returns its own value; no token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=OwnProfileTest` → fails
