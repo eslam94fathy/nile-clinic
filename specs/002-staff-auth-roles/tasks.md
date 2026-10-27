@@ -42,7 +42,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec app composer show laravel/sanctum` → version `v4.3.x`
     - `git diff composer.json` → only the Sanctum line added
 
-- [ ] T002 Publish and configure `config/sanctum.php` and the `personal_access_tokens` migration (R1, R2)
+- [X] T002 Publish and configure `config/sanctum.php` and the `personal_access_tokens` migration (R1, R2)
   - Scope:
     - `docker compose exec app php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"`
     - In `config/sanctum.php` set `'guard' => []` (token-only, no cookie/session auth),
