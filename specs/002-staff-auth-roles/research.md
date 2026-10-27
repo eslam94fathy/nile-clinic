@@ -120,7 +120,7 @@ approved on 2026-10-27 and are listed in the plan's Decisions table.
   but not full-width letters). Keying on the matched account id instead made throttling differ
   between existing and unknown emails, revealing which accounts exist. `Normalizer` (NFKC) is not
   available because the image omits `intl`. So sign-in and account forms accept ASCII emails only
-  (printable ASCII, `regex:/^[!-~]+$/D`; the collation also ignores control characters,
+  (printable ASCII, `regex:/^[\x21-\x7E]+$/D`; the collation also ignores control characters,
   so plain `ascii` is not enough by itself), rejected before any lookup or counting; for these the collation only
   folds case, which is already lower-cased, so the key and the lookup always agree.
 - **Timing**: an unknown email still runs one hash check against a fixed dummy hash, so response

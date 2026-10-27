@@ -285,7 +285,7 @@ the old token gets `401`.
   - Depends: T023
 
 - [X] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
-  - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|regex:/^[!-~]+$/D|email|max:255` (printable ASCII: research R7),
+  - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|regex:/^[\x21-\x7E]+$/D|email|max:255` (printable ASCII: research R7),
     `password` → `required|string`. `authorize()` → `true`.
 
 - [X] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
@@ -430,7 +430,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - `authorize()` → `$this->user()->can(<ability>, User::class)` (`viewAny`, `create`, `update`, `setPassword`)
     - List: `role` → `nullable|`enum `Role`; `is_active` → `nullable|boolean`; `page` → `nullable|integer|min:1`;
       `per_page` → `nullable|integer|min:1|max:100` (default 15)
-    - Store: `name` → `required|string|max:255` (trimmed); `email` → `required|string|regex:/^[!-~]+$/D|email|max:255|`
+    - Store: `name` → `required|string|max:255` (trimmed); `email` → `required|string|regex:/^[\x21-\x7E]+$/D|email|max:255|`
       `Rule::unique('users', 'email')` (trimmed, lower-cased in `prepareForValidation()`);
       `role` → `required|`enum `Role`; `password` → `PasswordRules::rules()`
     - Update: same fields with `sometimes`, email unique `->ignore($id)`; at least one of `name`, `email`, `role`
