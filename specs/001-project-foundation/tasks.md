@@ -498,7 +498,7 @@ mandated layers.
     - `ls lang/en` → the four files
   - Depends: T010
 
-- [ ] T037 [US5] Add the Arabic framework translations to `lang/ar/` (approved D4)
+- [X] T037 [US5] Add the Arabic framework translations to `lang/ar/` (approved D4)
   - Scope:
     - Create `lang/ar/{auth,pagination,passwords,validation}.php` from the MIT-licensed Laravel-Lang `lang` project.
     - Header comment recording the source repository and commit/version.
