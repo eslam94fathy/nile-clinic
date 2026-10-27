@@ -545,7 +545,7 @@ the other gets `401`, the old password fails.
   - Verify: `docker compose exec app php artisan test --filter=StaffMessagesTest` → pass
   - Depends: T041, T048
 
-- [ ] T050 [P] Update `docs/architecture.md`
+- [X] T050 [P] Update `docs/architecture.md`
   - Scope: under Layers/Routes, add "Route parameters are plain ids loaded through the repository;
     implicit route-model binding is not used (it queries outside the repository and its 404 names
     the model class)"; add the `Staff` module and its translations as a second example in one short
