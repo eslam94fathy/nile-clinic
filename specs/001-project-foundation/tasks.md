@@ -243,7 +243,7 @@ mandated layers.
 
 ### Migrations (AC-3)
 
-- [ ] T014 [US1] Verify the development migration workflow (FR-011)
+- [X] T014 [US1] Verify the development migration workflow (FR-011)
   - Scope: run the migrations; no new migrations are written.
   - Accept: only the skeleton `cache` and `jobs` migrations apply; a re-run is a no-op.
   - Verify:
