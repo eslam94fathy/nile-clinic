@@ -75,9 +75,11 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `composer.json` requires `laravel/framework ^13.x` and PHP `^8.3`
     - `artisan` exists; `vendor/` and `.env` are git-ignored
     - no SQLite file remains; Spec Kit files are unchanged (`git status` shows no changes under `.specify/` or `specs/`)
+    - `composer.lock` exists and is **not** git-ignored (it pins exact package versions, FR-002); docs use `composer install`, never `composer update`, for setup
   - Verify:
     - `docker run --rm -v "${PWD}:/var/www/html" nile-clinic-app:dev php artisan --version` → `Laravel Framework 13.`
     - `git check-ignore vendor .env` → prints both
+    - `git check-ignore composer.lock` → no output (exit 1)
   - Depends: T003
 
 - [ ] T005 Remove frontend, web-route, and default user scaffolding (approved D3, D5)
@@ -141,9 +143,9 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 - [ ] T009 Create `compose.yaml` with the `app`, `web`, and `mysql` services
   - Scope (per plan §Compose responsibilities):
-    - `app`: build `docker/php`; bind-mount `./:/var/www/html`; `env_file: .env`; `depends_on: mysql: condition: service_healthy`.
+    - `app`: build `docker/php`; bind-mount `./:/var/www/html`; **no `env_file` and no DB/APP variables in `environment`** (Laravel reads `.env` from the mount; real env vars would block `phpunit.xml` overrides — analysis C1); `depends_on: mysql: condition: service_healthy`.
     - `web`: `nginx:1.30.6-alpine`; ports `"127.0.0.1:${APP_PORT:-8080}:80"`; mounts `./public:/var/www/html/public:ro` and `docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro`; depends on `app`.
-    - `mysql`: `mysql:9.7.4`; **no `ports`**; environment `MYSQL_DATABASE=${DB_DATABASE}`, `MYSQL_USER=${DB_USERNAME}`, `MYSQL_PASSWORD=${DB_PASSWORD}`, `MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}`, `DB_TEST_DATABASE=${DB_TEST_DATABASE}`; volumes `mysql-data:/var/lib/mysql` and `./docker/mysql/init:/docker-entrypoint-initdb.d:ro`; healthcheck `mysqladmin ping -h localhost`.
+    - `mysql`: `mysql:9.7.4`; **no `ports`**; `command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]` (MySQL 8+ defaults to `utf8mb4_0900_ai_ci`; this aligns server, `clinic`, `clinic_testing`, and Laravel's connection collation); environment `MYSQL_DATABASE=${DB_DATABASE}`, `MYSQL_USER=${DB_USERNAME}`, `MYSQL_PASSWORD=${DB_PASSWORD}`, `MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}`, `DB_TEST_DATABASE=${DB_TEST_DATABASE}`; volumes `mysql-data:/var/lib/mysql` and `./docker/mysql/init:/docker-entrypoint-initdb.d:ro`; healthcheck `mysqladmin ping -h localhost`.
     - Top-level `volumes: mysql-data: {}`.
     - No `version:` key; no `latest` tags.
   - Accept: the config is valid; only `web` publishes a port, and only on `127.0.0.1`.
@@ -151,6 +153,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `cp .env.example .env`
     - `docker compose config --quiet` → exit 0
     - `docker compose config | grep -n "published"` → exactly one entry (web)
+    - `docker compose config | grep -A3 "app:"` → no `env_file` entry
   - Depends: T003, T006, T007, T008
 
 - [ ] T010 Start the stack and verify container networking to MySQL (AC-1, AC-2)
@@ -167,6 +170,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec app php artisan db:show` → host `mysql`, database `clinic`, MySQL `9.7.4`
     - `docker compose port mysql 3306` → no mapping (non-zero exit / empty)
     - `docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SHOW DATABASES"'` → lists `clinic` and `clinic_testing`
+    - `docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SELECT SCHEMA_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME IN (\"clinic\",\"clinic_testing\")"'` → both `utf8mb4_unicode_ci`
   - Depends: T009
 
 - [ ] T011 [P] Configure API routing and JSON-only errors in `bootstrap/app.php` (FR-016, FR-019)
@@ -189,14 +193,25 @@ command does not behave as written, **stop and report**; don't substitute an unv
 - [ ] T013 Point the test suite at the MySQL test database in `phpunit.xml`
   - Scope:
     - Remove the commented SQLite lines.
-    - Set `<env name="DB_CONNECTION" value="mysql"/>` and `<env name="DB_DATABASE" value="clinic_testing"/>`.
+    - Set `<env name="DB_CONNECTION" value="mysql" force="true"/>` and `<env name="DB_DATABASE" value="clinic_testing" force="true"/>`.
     - Keep the skeleton's `APP_ENV=testing`, `CACHE_STORE=array`, `SESSION_DRIVER=array`, `QUEUE_CONNECTION=sync`.
     - No passwords in this file (the credentials come from `.env`).
-  - Accept: the remaining `tests/Unit/ExampleTest.php` passes against MySQL.
+  - Accept: the isolation guard (T023) passes. No test that uses `RefreshDatabase` may run before T023 passes.
   - Verify: `docker compose exec app php artisan test` → passes, exit 0
   - Depends: T010
 
-**Checkpoint**: Stack runs, DB reachable over the Compose network, tests run on `clinic_testing`.
+- [ ] T023 Write the isolation guard test in `tests/Feature/Infrastructure/TestDatabaseIsolationTest.php` (moved into Phase 2 — analysis C1)
+  - Scope:
+    - assert `config('database.default') === 'mysql'`
+    - assert `DB::connection()->getDatabaseName() === 'clinic_testing'`
+    - the test exists to stop the suite ever running against development data
+    - it must NOT use `RefreshDatabase`
+  - Accept: passes under `phpunit.xml`; it would fail if `DB_DATABASE` resolved to `clinic`.
+  - Verify: `docker compose exec app php artisan test --filter=TestDatabaseIsolationTest` → pass
+  - Depends: T013
+
+**Checkpoint**: Stack runs, DB reachable over the Compose network, and T023 passes, so tests can't
+touch `clinic`.
 
 ---
 
@@ -229,7 +244,7 @@ mandated layers.
     - Synthetic data only.
   - Accept: the test exists and fails (route missing) before T021.
   - Verify: `docker compose exec app php artisan test --filter=HealthEndpointTest` → fails before implementation
-  - Depends: T013
+  - Depends: T013, T023
 
 ### Implementation for User Story 1
 
@@ -306,14 +321,7 @@ mandated layers.
 
 **Independent Test**: Run the suite twice; it passes both times with exit 0, and the `clinic` database is unchanged.
 
-- [ ] T023 [P] [US2] Write the isolation guard test in `tests/Feature/Infrastructure/TestDatabaseIsolationTest.php`
-  - Scope:
-    - assert `config('database.default') === 'mysql'`
-    - assert `DB::connection()->getDatabaseName() === 'clinic_testing'`
-    - the test exists to stop the suite ever running against development data
-  - Accept: passes under `phpunit.xml`; it would fail if `DB_DATABASE` pointed at `clinic`.
-  - Verify: `docker compose exec app php artisan test --filter=TestDatabaseIsolationTest` → pass
-  - Depends: T013
+*(The isolation guard T023 now lives in Phase 2; it is a prerequisite for this story.)*
 
 - [ ] T024 [US2] Verify the single test command and its exit codes (FR-013)
   - Scope:
@@ -444,19 +452,21 @@ mandated layers.
 ### Implementation for User Story 5
 
 - [ ] T034 [US5] Implement `app/Http/Middleware/SetLocaleFromHeader.php`
-  - Scope:
-    - Take `$request->getPreferredLanguage(...)` over the supported locales and their regional forms, reduced to the base language.
-    - Keep it only if it is in `config('app.supported_locales')`; otherwise use `config('app.fallback_locale')`.
-    - Call `App::setLocale()`.
-    - No headers are echoed back; no logging.
+  - Scope (deterministic; does not rely on how Symfony matches regions):
+    1. Go through `$request->getLanguages()` in order (already sorted by q-value).
+    2. For each entry, take the base language: lowercase, keep the part before the first `_` or `-`.
+    3. Use the first base language that is in `config('app.supported_locales')`.
+    4. If none matches (or the header is missing or malformed), use `config('app.fallback_locale')`.
+    5. Call `App::setLocale($locale)`.
+    - No headers are echoed back; no logging; no DB.
   - Accept: pure HTTP concern; no DB.
   - Verify: covered by T031
   - Depends: T012
 
 - [ ] T035 [US5] Append the middleware to the `api` group in `bootstrap/app.php`
   - Scope: `->withMiddleware(fn (Middleware $m) => $m->api(append: [SetLocaleFromHeader::class]))`
-  - Accept: T031 passes.
-  - Verify: `docker compose exec app php artisan test --filter=LocaleSelectionTest` → pass
+  - Accept: middleware is registered; the locale-resolution cases in T031 pass. The Arabic message-text cases may fail until T037; the full pass is checked in T038.
+  - Verify: `docker compose exec app php artisan route:list --path=api -v` shows `SetLocaleFromHeader` in the api middleware
   - Depends: T011, T031, T034
 
 - [ ] T036 [P] [US5] Publish the English framework translations to `lang/en/`
@@ -552,14 +562,19 @@ mandated layers.
 
 - [ ] T044 Full quickstart validation from a clean, isolated stack (V1–V9)
   - Scope:
-    - Use a separate Compose project so development data is untouched: `APP_PORT=8090 PMA_PORT=8091 docker compose -p nileverify up -d --build`, then V2–V9 with `-p nileverify`.
+    - `git clone` the branch into a new temp folder outside the repo (a real fresh checkout: no `vendor/`, no `.env`).
+    - From that clone, follow **only** `README.md` with project name `-p nileverify`, `APP_PORT=8090`, `PMA_PORT=8091`, timing from clone to a migrated, healthy stack (excluding image downloads; pull images first with `docker compose pull`).
+    - Then run V2–V9 with `-p nileverify`, so development data is untouched.
     - Tear down with `docker compose -p nileverify down`. Removing its volume (`down -v`) deletes only the verification volume, but still **requires explicit approval** at that time.
-  - Accept: every V-step's expected outcome is observed (AC-1 to AC-8, FR-026).
+  - Accept: every V-step's expected outcome is observed (AC-1 to AC-8, FR-026); setup time ≤ 15 min (SC-001).
   - Verify: the commands in `specs/001-project-foundation/quickstart.md`
   - Depends: T041, T042, T043
 
 - [ ] T045 Record the actual verification results in `specs/001-project-foundation/verification.md`
-  - Scope: for each V-step, record the date, command, actual output summary, and pass/fail. Report failures as failures (Constitution VIII).
+  - Scope:
+    - For each V-step, record the date, command, actual output summary, and pass/fail. Report failures as failures (Constitution VIII).
+    - Record the measured setup duration from T044.
+    - If a second developer machine is available, repeat T044 there and record it; otherwise record SC-002's second-machine part as **not verified** (never as passed).
   - Accept: the file exists and matches the observed results.
   - Depends: T044
 
@@ -570,9 +585,9 @@ mandated layers.
 ### Phase Dependencies
 
 - **Phase 1 (Setup)**: T001 first; then T002/T003/T006 in parallel; T004→T005; T007 after T002.
-- **Phase 2 (Foundational)**: T008→T009→T010 (gate); then T011, T012, T013 (T011 and T012 parallel).
+- **Phase 2 (Foundational)**: T008→T009→T010 (gate); then T011, T012, T013 (T011 and T012 parallel); T013→T023 (test-isolation gate before any `RefreshDatabase` test).
 - **US1 (Phase 3)**: after T010 (T014) and T013 (T015+). The MVP.
-- **US2 (Phase 4)**: after T013; T024 needs T022 so the full suite exists.
+- **US2 (Phase 4)**: after T023; T024 needs T022 so the full suite exists.
 - **US3 (Phase 5)**: after T010; independent of US1/US2.
 - **US4 (Phase 6)**: after T021 (needs the worked example).
 - **US5 (Phase 7)**: after T011–T013; independent of US1.
@@ -587,8 +602,8 @@ T001 → T003 → T004 → T005 → T008 ┐
 T001 → T006 ───────────────────── T009 → T010 ─┬→ T011 ─┬→ T032
                                               │        └→ T035
                                               ├→ T012 → T034 → T035
-                                              ├→ T013 → T015/T016/T018 → … → T021 → T022 → T024 → T025
-                                              │        └→ T023, T031, T033
+                                              ├→ T013 → T023 → T015/T016/T018 → … → T021 → T022 → T024 → T025
+                                              │        └→ T031, T033
                                               ├→ T014
                                               ├→ T026 → T027 → T028 ; T027 → T039 → T040
                                               └→ T036 → T037

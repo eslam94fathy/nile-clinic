@@ -72,7 +72,7 @@ All version facts below were verified on 2026-10-27 against the sources listed a
 ## R9 — Locale selection (FR-017)
 
 - **Decision**: A cross-cutting middleware `App\Http\Middleware\SetLocaleFromHeader`, appended to the `api` middleware group. It resolves the request's preferred language against the supported list `['en', 'ar']` (configured in `config/app.php` as `supported_locales`) and calls `App::setLocale()`. Missing, malformed, or unsupported values resolve to `en`.
-- **Rationale**: Uses Symfony's `Request::getPreferredLanguage()`, which ships with Laravel and handles quality values. Regional subtags (`ar-EG`, `en-US`) are reduced to their base language before matching; tests cover each case in SC-005.
+- **Rationale**: Uses Symfony's `Request::getLanguages()` (ships with Laravel, q-value ordered) with explicit base-language reduction. Regional subtags (`ar-EG`, `en-US`) are reduced to their base language before matching; tests cover each case in SC-005.
 - **Alternatives**: A third-party localization package — unnecessary; rejected.
 
 ## R10 — Arabic framework translations (FR-018)

@@ -12,8 +12,9 @@ framework infrastructure, needed for configured drivers and to prove the migrati
 | `clinic` (`DB_DATABASE`) | Development data | MySQL image on first volume init (`MYSQL_DATABASE`) |
 | `clinic_testing` (`DB_TEST_DATABASE`) | Isolated automated tests (FR-014) | Init script `docker/mysql/init/01-create-test-database.sh` on first volume init |
 
-Both use server defaults `utf8mb4` / `utf8mb4_unicode_ci` (matching Laravel's MySQL connection
-defaults), InnoDB engine (FR-007).
+Both use `utf8mb4` / `utf8mb4_unicode_ci`, set explicitly on the MySQL server via Compose
+`command` (MySQL's own default is `utf8mb4_0900_ai_ci`), matching Laravel's MySQL connection
+defaults; InnoDB engine (FR-007).
 
 ## Tables (framework infrastructure only)
 

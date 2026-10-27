@@ -94,9 +94,9 @@ Tracking is empty.
 
 | Service | Image/Build | Ports | Volumes | Notes |
 |---------|-------------|-------|---------|-------|
-| `app` | build `docker/php` | none | `./:/var/www/html` | `depends_on: mysql (service_healthy)`; env from `.env` |
+| `app` | build `docker/php` | none | `./:/var/www/html` | `depends_on: mysql (service_healthy)`; **no `env_file`/`environment` for app settings** (Laravel reads `.env` via the bind mount, so `phpunit.xml` can override DB settings) |
 | `web` | `nginx:1.30.6-alpine` | `127.0.0.1:${APP_PORT:-8080}:80` | `./public` (read-only), `docker/nginx/default.conf` | Forwards `*.php` to `app:9000` |
-| `mysql` | `mysql:9.7.4` | **none** | `mysql-data:/var/lib/mysql`, `docker/mysql/init` (read-only) | Healthcheck `mysqladmin ping`; env `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` mapped from `.env`, with `${VAR:?}` so a missing secret fails fast |
+| `mysql` | `mysql:9.7.4` | **none** | `mysql-data:/var/lib/mysql`, `docker/mysql/init` (read-only) | Healthcheck `mysqladmin ping`; `command` sets server charset `utf8mb4` / collation `utf8mb4_unicode_ci`; env `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` mapped from `.env`, with `${VAR:?}` so a missing secret fails fast |
 
 | `phpmyadmin` | `phpmyadmin:5.2.3-apache` | `127.0.0.1:${PMA_PORT:-8081}:80` | none | `profiles: [tools]` (starts only with `--profile tools`); `PMA_HOST=mysql`; no `PMA_USER`/`PMA_PASSWORD`, so a login form is required; `PMA_ARBITRARY` unset, so only `mysql` can be reached; `depends_on: mysql (service_healthy)` |
 
@@ -118,7 +118,7 @@ as destructive and opt-in (FR-012).
   - Unused skeleton keys (mail, Redis, AWS, Vite) are removed.
 - `.env` is git-ignored (skeleton default). `APP_KEY` is generated inside the container.
 - `.gitattributes` forces LF line endings so shell and config files work on Windows checkouts.
-- `phpunit.xml` overrides `DB_DATABASE` with the test database name and holds no secrets.
+- `phpunit.xml` overrides `DB_CONNECTION`/`DB_DATABASE` with `force="true"` (so a stray container env var can never redirect tests to `clinic`) and holds no secrets.
 
 ## MySQL Connection and Persistent Storage
 
@@ -133,7 +133,8 @@ as destructive and opt-in (FR-012).
 
 1. Create the skeleton with `composer create-project laravel/laravel:^13` inside the built `app`
    image, into a temporary directory. Move it into the repository root, merging the skeleton's
-   `.gitignore` with the existing one (keep `.idea/`). Spec Kit files are untouched.
+   `.gitignore` with the existing one (keep `.idea/`). Spec Kit files are untouched. Commit
+   `composer.lock`.
 2. Remove frontend and session scaffolding (D3 and D5): `package.json`, `vite.config.js`,
    `resources/css`, `resources/js`, `welcome.blade.php`, `routes/web.php`, the `/up` route, the
    users migration, `User` model, `UserFactory`, and the npm part of the `composer dev` script.
