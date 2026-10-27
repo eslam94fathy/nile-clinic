@@ -186,7 +186,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: same keys and placeholders in both files.
   - Depends: T010
 
-- [ ] T015 Extend `tests/Feature/Localization/TranslationParityTest.php` to module translations
+- [X] T015 Extend `tests/Feature/Localization/TranslationParityTest.php` to module translations
   - Scope: also compare every `app/Modules/*/lang/en/*.php` with its `ar` sibling (same flattened
     keys); keep the existing `lang/` check and its non-empty assertion.
   - Accept: passes with T014; fails if an `ar` key is removed (check locally, do not commit that).
