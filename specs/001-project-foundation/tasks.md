@@ -142,7 +142,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `git diff --stat .env.example`; manual review against plan §Environment Configuration
   - Depends: T005
 
-- [ ] T009 Create `compose.yaml` with the `app`, `web`, and `mysql` services
+- [X] T009 Create `compose.yaml` with the `app`, `web`, and `mysql` services
   - Scope (per plan §Compose responsibilities):
     - `app`: build `docker/php`; bind-mount `./:/var/www/html` plus named volume `vendor:/var/www/html/vendor` (D8); **no `env_file` and no DB/APP variables in `environment`** (Laravel reads `.env` from the mount; real env vars would block `phpunit.xml` overrides — analysis C1); `depends_on: mysql: condition: service_healthy`.
     - `web`: `nginx:1.30.6-alpine`; ports `"127.0.0.1:${APP_PORT:-8080}:80"`; mounts `./public:/var/www/html/public:ro` and `docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro`; depends on `app`.
