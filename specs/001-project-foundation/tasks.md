@@ -320,7 +320,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan route:list --path=api` → `GET|HEAD api/v1/health … system.health`
   - Depends: T017, T020
 
-- [ ] T022 [US1] Verify the health behavior end to end (quickstart V5)
+- [X] T022 [US1] Verify the health behavior end to end (quickstart V5)
   - Accept: T015 passes; live 200/503 behavior; no internals in the 503 body.
   - Verify:
     - `docker compose exec app php artisan test --filter=HealthEndpointTest` → pass
