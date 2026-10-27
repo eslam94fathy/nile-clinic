@@ -105,6 +105,23 @@ All version facts below were verified on 2026-10-27 against the sources listed a
 - **Decision**: Add `.gitattributes` forcing LF for text files (critical for `*.sh` init scripts and `docker/**`). Document that cloning into the WSL2 filesystem greatly improves bind-mount performance on Windows.
 - **Rationale**: The current repo shows CRLF conversion warnings, and a CRLF shell script breaks the MySQL init step.
 
+## R16 — `vendor/` in a named volume (approved D8, 2026-10-27)
+
+- **Decision**: The `app` service bind-mounts the project (`./:/var/www/html`) but mounts
+  `vendor/` from a named volume `vendor` (`vendor:/var/www/html/vendor`). The PHP image pre-creates
+  `/var/www/html/vendor` owned by `app`, so a fresh volume is writable by the non-root user.
+- **Evidence**: T004's first attempt — `composer create-project` onto the Windows bind mount
+  (`C:\Eslam\nile-clinic`) — failed: `unzip ... exceeded the timeout of 300 seconds`
+  (laravel/framework, phpunit/phpunit and others not installed).
+- **Rationale**: Thousands of `vendor/` files on the Windows/Docker Desktop file share are too slow
+  for installs and for runtime autoloading; a Linux named volume avoids that without moving the repo.
+- **Consequences**: `vendor/` is not visible on the Windows host (IDE completion for framework
+  classes needs the container's PHP or is unavailable); `composer install` must run inside the
+  container (already the documented workflow); `composer.lock` stays on the bind mount and is
+  committed. Each Compose project (e.g. the `nileverify` validation stack) gets its own volume.
+- **Alternatives**: Raise Composer's timeout (works, but slow everywhere); move the repo into the
+  WSL2 filesystem (fastest, but requires relocating the repo) — not chosen.
+
 ## R15 — Database GUI (user request, FR-026)
 
 - **Decision**: Official image `phpmyadmin:5.2.3-apache` as Compose service `phpmyadmin`, under

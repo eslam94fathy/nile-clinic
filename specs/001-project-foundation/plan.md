@@ -88,13 +88,14 @@ Tracking is empty.
 - Build args `UID`/`GID` (default 1000) create user `app`; FPM runs as `app`.
 - Dev PHP config `docker/php/conf.d/app.ini` (memory limit, `expose_php=Off`, timezone UTC).
 - Source is **bind-mounted** (`./:/var/www/html`), not copied, for local development; `vendor/`
-  is installed by `composer install` inside the container.
+  lives in the named volume `vendor` (D8) and is installed by `composer install` inside the
+  container. The image pre-creates `/var/www/html/vendor` owned by `app` so a fresh volume is writable.
 
 ### Compose responsibilities (`compose.yaml`)
 
 | Service | Image/Build | Ports | Volumes | Notes |
 |---------|-------------|-------|---------|-------|
-| `app` | build `docker/php` | none | `./:/var/www/html` | `depends_on: mysql (service_healthy)`; **no `env_file`/`environment` for app settings** (Laravel reads `.env` via the bind mount, so `phpunit.xml` can override DB settings) |
+| `app` | build `docker/php` | none | `./:/var/www/html`, `vendor:/var/www/html/vendor` (named volume, D8) | `depends_on: mysql (service_healthy)`; **no `env_file`/`environment` for app settings** (Laravel reads `.env` via the bind mount, so `phpunit.xml` can override DB settings) |
 | `web` | `nginx:1.30.6-alpine` | `127.0.0.1:${APP_PORT:-8080}:80` | `./public` (read-only), `docker/nginx/default.conf` | Forwards `*.php` to `app:9000` |
 | `mysql` | `mysql:9.7.4` | **none** | `mysql-data:/var/lib/mysql`, `docker/mysql/init` (read-only) | Healthcheck `mysqladmin ping`; `command` sets server charset `utf8mb4` / collation `utf8mb4_unicode_ci`; env `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` mapped from `.env`, with `${VAR:?}` so a missing secret fails fast |
 
@@ -267,6 +268,7 @@ See [quickstart.md](quickstart.md) (V1–V9). In summary:
 | D4 | Arabic framework translations | **Copied** from Laravel-Lang (MIT) and reviewed; no package |
 | D5 | Default web routes, welcome view, `/up` | **Removed**; the only endpoint is `/api/v1/health` |
 | D6 | Working branch | **`001-project-foundation`** created before implementation |
+| D8 | `vendor/` location (after T004 bind-mount timeout) | **Named volume `vendor`** mounted at `/var/www/html/vendor` (research R16) |
 | D7 | Database GUI (user request) | **phpMyAdmin `5.2.3-apache`**, opt-in profile `tools`, `127.0.0.1` only (FR-026, research R15) |
 
 ## Risks, Assumptions, and Rollback
@@ -276,7 +278,8 @@ See [quickstart.md](quickstart.md) (V1–V9). In summary:
 | Risk | Mitigation |
 |------|------------|
 | PHP 8.5 or MySQL 9.7 incompatibility in a skeleton dependency | Full test run at step 3; fall back to 8.4.27 / 8.4.13 by changing one image tag (approved alternatives) |
-| Slow bind mounts on Windows (repo at `C:\Eslam\...`) | Document cloning into WSL2; acceptable for now |
+| Slow bind mounts on Windows (repo at `C:\Eslam\...`) | **Materialized in T004** (Composer unzip timeout). Mitigated by D8: `vendor/` in a named volume. WSL2 clone still documented as the fastest option |
+| `vendor/` not visible on the Windows host (D8) | Documented in README; run PHP tooling inside the container |
 | CRLF breaks the MySQL init script | `.gitattributes` LF rule; troubleshooting entry |
 | Test DB missing because the volume pre-existed the init script | Documented non-destructive `CREATE DATABASE` + `GRANT` command |
 | Host port 8080 in use | `APP_PORT` variable |

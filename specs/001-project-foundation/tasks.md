@@ -47,12 +47,13 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `git check-attr eol -- docker/mysql/init/01-create-test-database.sh` → `eol: lf`
   - Depends: T001
 
-- [ ] T003 [P] Create the PHP-FPM image in `docker/php/Dockerfile` and `docker/php/conf.d/app.ini`
+- [X] T003 [P] Create the PHP-FPM image in `docker/php/Dockerfile` and `docker/php/conf.d/app.ini`
   - Scope:
     - `FROM php:8.5.12-fpm-trixie`
     - apt `git`, `unzip`; `docker-php-ext-install pdo_mysql pcntl`
     - `COPY --from=composer:2.10.3 /usr/bin/composer /usr/bin/composer`
     - build args `UID`/`GID` (default 1000) create user `app`; `USER app`; `WORKDIR /var/www/html`
+    - (added by D8) pre-create `/var/www/html/vendor` owned by `app`, so the named `vendor` volume is writable
     - `app.ini`: `expose_php=Off`, `memory_limit=256M`, `date.timezone=UTC`
     - No other extensions (research R13).
   - Accept: the image builds; PHP is 8.5.12; `pdo_mysql` and `pcntl` are loaded; Composer is 2.10.3; the process runs as non-root `app`.
@@ -64,12 +65,12 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker run --rm nile-clinic-app:dev whoami` → `app`
   - Depends: T001. If the `composer:2.10.3` tag does not exist, stop and report (research R4).
 
-- [ ] T004 Create the Laravel 13 skeleton inside the container and move it into the repository root
-  - Scope:
-    - Run `docker run --rm -v "${PWD}:/work" -w /work nile-clinic-app:dev composer create-project "laravel/laravel:^13" .skeleton`
+- [X] T004 Create the Laravel 13 skeleton inside the container and move it into the repository root
+  - Scope (revised by D8 after the first attempt timed out unzipping `vendor/` onto the Windows bind mount):
+    - Run `docker run --rm -v "${PWD}:/work" -w /work nile-clinic-app:dev composer create-project "laravel/laravel:^13" .skeleton --no-install --no-scripts --no-interaction` (skeleton files only; no `.env`, no SQLite file, no `vendor/`).
     - Move the contents of `.skeleton/` into the root, then delete `.skeleton/`.
     - Merge the skeleton `.gitignore` with the existing one, keeping `.idea/`.
-    - Delete the generated `database/database.sqlite`.
+    - Install dependencies into a temporary named volume and generate `composer.lock`: `docker run --rm -v "${PWD}:/var/www/html" -v nile-clinic-t004-vendor:/var/www/html/vendor nile-clinic-app:dev composer install --no-interaction`. The Compose `vendor` volume (T009) gets its own install in T010. Removing the temporary volume needs explicit approval.
     - Do NOT touch `CLAUDE.md`, `.claude/`, `.specify/`, `specs/`.
   - Accept:
     - `composer.json` requires `laravel/framework ^13.x` and PHP `^8.3`
@@ -77,7 +78,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - no SQLite file remains; Spec Kit files are unchanged (`git status` shows no changes under `.specify/` or `specs/`)
     - `composer.lock` exists and is **not** git-ignored (it pins exact package versions, FR-002); docs use `composer install`, never `composer update`, for setup
   - Verify:
-    - `docker run --rm -v "${PWD}:/var/www/html" nile-clinic-app:dev php artisan --version` → `Laravel Framework 13.`
+    - `docker run --rm -v "${PWD}:/var/www/html" -v nile-clinic-t004-vendor:/var/www/html/vendor nile-clinic-app:dev php artisan --version` → `Laravel Framework 13.`
     - `git check-ignore vendor .env` → prints both
     - `git check-ignore composer.lock` → no output (exit 1)
   - Depends: T003
@@ -143,10 +144,10 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 - [ ] T009 Create `compose.yaml` with the `app`, `web`, and `mysql` services
   - Scope (per plan §Compose responsibilities):
-    - `app`: build `docker/php`; bind-mount `./:/var/www/html`; **no `env_file` and no DB/APP variables in `environment`** (Laravel reads `.env` from the mount; real env vars would block `phpunit.xml` overrides — analysis C1); `depends_on: mysql: condition: service_healthy`.
+    - `app`: build `docker/php`; bind-mount `./:/var/www/html` plus named volume `vendor:/var/www/html/vendor` (D8); **no `env_file` and no DB/APP variables in `environment`** (Laravel reads `.env` from the mount; real env vars would block `phpunit.xml` overrides — analysis C1); `depends_on: mysql: condition: service_healthy`.
     - `web`: `nginx:1.30.6-alpine`; ports `"127.0.0.1:${APP_PORT:-8080}:80"`; mounts `./public:/var/www/html/public:ro` and `docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro`; depends on `app`.
     - `mysql`: `mysql:9.7.4`; **no `ports`**; `command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]` (MySQL 8+ defaults to `utf8mb4_0900_ai_ci`; this aligns server, `clinic`, `clinic_testing`, and Laravel's connection collation); environment `MYSQL_DATABASE=${DB_DATABASE}`, `MYSQL_USER=${DB_USERNAME}`, `MYSQL_PASSWORD=${DB_PASSWORD}`, `MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}`, `DB_TEST_DATABASE=${DB_TEST_DATABASE}`; volumes `mysql-data:/var/lib/mysql` and `./docker/mysql/init:/docker-entrypoint-initdb.d:ro`; healthcheck `mysqladmin ping -h localhost`.
-    - Top-level `volumes: mysql-data: {}`.
+    - Top-level `volumes: mysql-data: {}` and `vendor: {}`.
     - No `version:` key; no `latest` tags.
   - Accept: the config is valid; only `web` publishes a port, and only on `127.0.0.1`.
   - Verify:
@@ -543,6 +544,7 @@ mandated layers.
     - tests: `composer test` (the documented command; it clears cached config first). Warn: never run `php artisan config:cache` in development; the guard in `tests/TestCase.php` aborts if tests ever target a database other than `clinic_testing`
     - environment variables (pointer to `.env.example`)
     - phpMyAdmin usage
+    - `vendor/` lives in a Docker volume (D8): it is not visible on the host; run Composer, Artisan, Pint, and tests inside the `app` container
     - links to `docs/`
   - Accept: a new developer can follow it alone (SC-001).
   - Verify: manual walk-through in T044
@@ -555,7 +557,7 @@ mandated layers.
     - missing `.env` or `APP_KEY`
     - `clinic_testing` missing because the volume predates the init script (non-destructive `CREATE DATABASE` + `GRANT` via `docker compose exec mysql`)
     - CRLF in shell scripts
-    - Windows bind-mount performance (clone into WSL2) and permissions
+    - Windows bind-mount performance (clone into WSL2) and permissions; Composer unzip timeouts if `vendor/` is ever bind-mounted (why D8 uses a volume); an empty `vendor/` folder on the host is the volume mount point
     - Compose "required variable" errors
     - phpMyAdmin login issues
     - viewing logs (`docker compose logs -f <service>`, `storage/logs`)
