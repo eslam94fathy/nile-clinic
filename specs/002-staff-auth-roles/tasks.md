@@ -461,7 +461,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T042 [US4] Write `tests/Feature/Staff/CreateAdministratorCommandTest.php`
+- [X] T042 [US4] Write `tests/Feature/Staff/CreateAdministratorCommandTest.php`
   - Scope (`$this->artisan(...)->expectsQuestion(...)`):
     - `staff:create-admin --name="Test Admin" --email=Admin@Clinic.test`, password and confirmation
       answered → exit `0`, output contains the `administrator_created` text, one active administrator
