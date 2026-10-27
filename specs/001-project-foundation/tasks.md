@@ -439,7 +439,7 @@ mandated layers.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T031 [P] [US5] Write `tests/Feature/Localization/LocaleSelectionTest.php`
+- [X] T031 [P] [US5] Write `tests/Feature/Localization/LocaleSelectionTest.php`
   - Scope:
     - Register a **test-only** route inside the test (`Route::middleware('api')->post('api/v1/_test/locale', …)` validating a `required` field; not shipped).
     - Data provider:
