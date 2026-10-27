@@ -232,7 +232,7 @@ the old token gets `401`.
   - Verify: `docker compose exec app php artisan test --filter=OwnProfileTest` → fails
   - Depends: T013
 
-- [ ] T019 [P] [US1] Write `tests/Feature/Staff/TokenExpiryTest.php`
+- [X] T019 [P] [US1] Write `tests/Feature/Staff/TokenExpiryTest.php`
   - Scope (use `$this->travel()`):
     - signed in, then 7 h 59 m idle → `200`
     - signed in, then 8 h 1 m idle → `401`
