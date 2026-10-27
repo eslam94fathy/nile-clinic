@@ -185,7 +185,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/up` → `404`
   - Depends: T010
 
-- [ ] T012 [P] Add supported locales to `config/app.php`
+- [X] T012 [P] Add supported locales to `config/app.php`
   - Scope: add `'supported_locales' => ['en', 'ar'],` next to `locale` and `fallback_locale`. Leave the env-driven `locale`/`fallback_locale` as they are.
   - Accept: `config('app.supported_locales') === ['en','ar']`; fallback `en`.
   - Verify: `docker compose exec app php artisan config:show app.supported_locales` → `en`, `ar`
