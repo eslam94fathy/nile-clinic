@@ -209,7 +209,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan test` → passes, exit 0
   - Depends: T010
 
-- [ ] T023 Write the isolation guard test in `tests/Feature/Infrastructure/TestDatabaseIsolationTest.php` (moved into Phase 2 — analysis C1)
+- [X] T023 Write the isolation guard test in `tests/Feature/Infrastructure/TestDatabaseIsolationTest.php` (moved into Phase 2 — analysis C1)
   - Scope:
     - assert `config('database.default') === 'mysql'`
     - assert `DB::connection()->getDatabaseName() === 'clinic_testing'`
