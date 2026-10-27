@@ -97,6 +97,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `config/auth.php` provider references are left as framework config (no model class is loaded at boot)
   - Verify: `docker run --rm -v "${PWD}:/var/www/html" nile-clinic-app:dev php artisan about` exits 0
   - Depends: T004
+  - Follow-up (approved 2026-10-27): `.npmrc` (npm-only config from the skeleton) deleted.
 
 - [X] T006 [P] Create the nginx site config in `docker/nginx/default.conf`
   - Scope:
@@ -169,7 +170,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec app composer install` → exit 0
     - `docker compose exec app php artisan key:generate` → `Application key set successfully.`
     - `docker compose exec app php artisan db:show` → host `mysql`, database `clinic`, MySQL `9.7.4`
-    - `docker compose port mysql 3306` → no mapping (non-zero exit / empty)
+    - `docker inspect $(docker compose ps -q mysql) --format '{{json .HostConfig.PortBindings}}'` → `{}`, and a TCP connect from the host to `127.0.0.1:3306` is refused (revised: on Compose v5.3.1 `docker compose port mysql 3306` prints `invalid IP:0` with exit 0, so it is not a reliable check)
     - `docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SHOW DATABASES"'` → lists `clinic` and `clinic_testing`
     - `docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SELECT SCHEMA_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME IN (\"clinic\",\"clinic_testing\")"'` → both `utf8mb4_unicode_ci`
   - Depends: T009
@@ -184,6 +185,9 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `curl -s -o /dev/null -w "%{http_code} %{content_type}" http://localhost:8080/api/v1/nope` → `404 application/json`
     - `curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/up` → `404`
   - Depends: T010
+  - Follow-up (approved 2026-10-27): `config/filesystems.php` local disk `'serve' => false`, removing the
+    framework's public `GET`/`PUT storage/{path}` routes (not approved endpoints, D5).
+    Verify: `php artisan route:list` → "Your application doesn't have any routes." (until T021).
 
 - [X] T012 [P] Add supported locales to `config/app.php`
   - Scope: add `'supported_locales' => ['en', 'ar'],` next to `locale` and `fallback_locale`. Leave the env-driven `locale`/`fallback_locale` as they are.
@@ -352,10 +356,11 @@ mandated layers.
 - [ ] T025 [US2] Verify development data is untouched and results are repeatable (SC-002)
   - Accept: dev table counts and migration status are identical before and after two test runs.
   - Verify:
-    - `docker compose exec app php artisan db:show --counts > before.txt` (scratch, not committed)
+    - Snapshot `clinic` only, via MySQL as the app user (scratch file, not committed):
+      `echo "SELECT TABLE_NAME, TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA='clinic' ORDER BY TABLE_NAME; CHECKSUM TABLE <each clinic table>;" | docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -N' > before.txt`
     - `docker compose exec app php artisan test` (×2, both pass)
-    - `docker compose exec app php artisan db:show --counts > after.txt`
-    - `diff before.txt after.txt` → no differences
+    - Same snapshot `> after.txt`; `diff before.txt after.txt` → no differences
+    - (Revised: `db:show --counts` needs the `intl` extension, which the image deliberately omits, and `db:show` lists tables from every visible database, so it cannot isolate `clinic`.)
   - Depends: T024
 
 **Checkpoint**: US2 complete.

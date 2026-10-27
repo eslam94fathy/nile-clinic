@@ -46,11 +46,12 @@ docker compose exec app php artisan db:show
 Expected: connection `mysql`, host `mysql`, database `clinic`, MySQL 9.7.x.
 
 ```sh
-docker compose port mysql 3306
+docker inspect $(docker compose ps -q mysql) --format '{{json .HostConfig.PortBindings}}'
 ```
 
-Expected: no published port (empty output / error). The database is reachable only inside the
-Compose network.
+Expected: `{}` (no published port), and connecting from the host to `127.0.0.1:3306` is refused.
+The database is reachable only inside the Compose network. (Do not rely on
+`docker compose port mysql 3306`: on Compose v5.3.1 it prints `invalid IP:0` and exits 0.)
 
 ## V4 — Migrations (AC-3, FR-011)
 

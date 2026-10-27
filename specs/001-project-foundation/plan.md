@@ -241,7 +241,7 @@ See [quickstart.md](quickstart.md) (V1–V9). In summary:
 |-------|---------|----------|
 | Start | `docker compose up -d --build && docker compose ps` | 3 services running; mysql healthy |
 | DB link | `docker compose exec app php artisan db:show` | host `mysql`, MySQL 9.7.x |
-| No DB port | `docker compose port mysql 3306` | no mapping |
+| No DB port | `docker inspect $(docker compose ps -q mysql) --format '{{json .HostConfig.PortBindings}}'` | `{}`; host TCP to 3306 refused |
 | Migrate | `php artisan migrate` (twice) | applies, then "Nothing to migrate" |
 | Health | `curl -i localhost:8080/api/v1/health` | 200 `{"status":"ok","checks":{"database":"ok"}}` |
 | Health down | stop mysql, then curl | 503 `unavailable`, no internals |
