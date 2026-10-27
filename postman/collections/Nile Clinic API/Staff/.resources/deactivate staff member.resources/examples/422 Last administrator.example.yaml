@@ -1,0 +1,14 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/staff/1/deactivate'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message": "This change would leave the clinic without an active administrator."}

@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  Reports whether the API can reach its database. Public, no input. 200 with "ok", or 503 with
+  "unavailable" and no internal details.
+method: GET
+url: '{{base_url}}/health'
+order: 1000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the health contract body', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json()).to.eql({ status: 'ok', checks: { database: 'ok' } });
+      });
+examples: './.resources/health check.resources/examples'

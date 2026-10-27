@@ -1,0 +1,39 @@
+$kind: http-request
+description: |-
+  Sign in with email and password. Stores the returned token in the collection variable `token`,
+  which every other request sends as `Authorization: Bearer {{token}}`. Unknown email, wrong
+  password, and deactivated account all get the same 422 message. Emails are printable ASCII;
+  case and surrounding spaces are ignored.
+method: POST
+url: '{{base_url}}/auth/sign-in'
+order: 1000
+auth:
+  type: noauth
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{admin_email}}",
+      "password": "{{admin_password}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with a Bearer token and the account', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.token_type).to.eql('Bearer');
+        pm.expect(data.token).to.be.a('string').and.not.empty;
+        pm.expect(data.user.role).to.eql('administrator');
+        pm.expect(data.user).to.not.have.property('password');
+        pm.collectionVariables.set('token', data.token);
+      });
+examples: './.resources/sign in.resources/examples'

@@ -1,0 +1,14 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/staff/999999'
+  method: GET
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message": "No staff member was found."}

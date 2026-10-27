@@ -1,0 +1,6 @@
+$kind: collection
+name: Staff
+description: |-
+  Staff account management, administrators only (feature 002, US3). Receptionists and doctors
+  get 403. Ids are numeric; unknown ids get 404.
+order: 3000

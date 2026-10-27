@@ -1,0 +1,7 @@
+$kind: collection
+name: Auth
+description: |-
+  Sign in, the signed-in member's own account, and sign out (feature 002, US1 and US5).
+  Tokens expire after 8 hours without a request. After 5 failed attempts for one email, or 20
+  from one address, within a minute, sign-in is refused for up to a minute.
+order: 2000

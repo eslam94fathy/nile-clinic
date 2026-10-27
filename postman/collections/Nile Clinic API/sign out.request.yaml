@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Ends only the token used for this request (other devices stay signed in). Runs last, after the
+  Staff folder, and clears the `token` variable.
+method: POST
+url: '{{base_url}}/auth/sign-out'
+order: 9000
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('204 No Content', () => pm.response.to.have.status(204));
+      pm.collectionVariables.set('token', '');

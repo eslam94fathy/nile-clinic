@@ -1,0 +1,22 @@
+$kind: http-request
+description: One staff account by id. Unknown id → 404 with a translated message.
+method: GET
+url: '{{base_url}}/staff/:staffMember'
+order: 3000
+pathVariables:
+  - key: staffMember
+    value: '{{staff_member_id}}'
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the created account', () => {
+        pm.response.to.have.status(200);
+        pm.expect(String(pm.response.json().data.id)).to.eql(pm.collectionVariables.get('staff_member_id'));
+      });
+examples: './.resources/get staff member.resources/examples'

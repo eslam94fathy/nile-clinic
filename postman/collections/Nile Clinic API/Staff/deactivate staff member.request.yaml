@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Deactivate an account and end all of its tokens immediately. Idempotent. Refused with 422 if it
+  is the only active administrator. Runs last in this folder, so a collection run leaves the
+  synthetic member it created deactivated.
+method: POST
+url: '{{base_url}}/staff/:staffMember/deactivate'
+order: 7000
+pathVariables:
+  - key: staffMember
+    value: '{{staff_member_id}}'
+headers:
+  - key: Accept
+    value: application/json
+  - key: Accept-Language
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 and deactivated', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.is_active).to.eql(false);
+      });
+examples: './.resources/deactivate staff member.resources/examples'
