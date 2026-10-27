@@ -174,7 +174,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SELECT SCHEMA_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME IN (\"clinic\",\"clinic_testing\")"'` → both `utf8mb4_unicode_ci`
   - Depends: T009
 
-- [ ] T011 [P] Configure API routing and JSON-only errors in `bootstrap/app.php` (FR-016, FR-019)
+- [X] T011 [P] Configure API routing and JSON-only errors in `bootstrap/app.php` (FR-016, FR-019)
   - Scope:
     - `withRouting(commands: __DIR__.'/../routes/console.php')` only (no `web`, no `health: '/up'`)
     - `withExceptions`: `$exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*'));`
