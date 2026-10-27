@@ -30,7 +30,7 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: { type: string, format: email, maxLength: 255 }
+                email: { type: string, format: email, maxLength: 255, pattern: '^[ -~]+$', description: ASCII only (research R7) }
                 password: { type: string }
       responses:
         '200':
@@ -163,7 +163,7 @@ paths:
               required: [name, email, role, password, password_confirmation]
               properties:
                 name: { type: string, maxLength: 255 }
-                email: { type: string, format: email, maxLength: 255 }
+                email: { type: string, format: email, maxLength: 255, pattern: '^[ -~]+$', description: ASCII only (research R7) }
                 role: { $ref: '#/components/schemas/Role' }
                 password: { type: string, minLength: 12, maxLength: 72 }
                 password_confirmation: { type: string }
@@ -211,7 +211,7 @@ paths:
               minProperties: 1
               properties:
                 name: { type: string, maxLength: 255 }
-                email: { type: string, format: email, maxLength: 255 }
+                email: { type: string, format: email, maxLength: 255, pattern: '^[ -~]+$', description: ASCII only (research R7) }
                 role: { $ref: '#/components/schemas/Role' }
       responses:
         '200':

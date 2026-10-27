@@ -116,25 +116,29 @@ class SignInTest extends TestCase
         );
     }
 
-    public function test_email_limit_counts_variants_that_reach_the_same_account(): void
+    /**
+     * The email collation matches look-alike letters (e.g. full-width) to the same account. Such
+     * emails are rejected before lookup or counting, identically whether or not an account exists,
+     * so they can neither get around the per-email limit nor reveal which accounts exist.
+     */
+    #[DataProvider('locales')]
+    public function test_non_ascii_emails_are_rejected_before_lookup_or_counting(string $locale): void
     {
         User::factory()->create(['email' => 'sara@clinic.test']);
 
-        // Full-width letters: the database collation matches these to the same account, so they
-        // must share one counter. (Accents are already folded by the rate limiter's key cleaning.)
-        foreach (['ｓara', 'sａra', 'saｒa', 'sarａ', 'ｓａｒａ'] as $i => $variant) {
-            $this->fromAddress('10.0.1.'.($i + 1))
-                ->attempt("{$variant}@clinic.test", 'wrong-password-1')
-                ->assertJsonPath('errors.email.0', $this->authLine('en', 'failed'));
+        $existing = $this->attempt('ｓara@clinic.test', UserFactory::PASSWORD, $locale);
+        $missing = $this->attempt('ｎobody@clinic.test', UserFactory::PASSWORD, $locale);
+
+        $existing->assertUnprocessable()->assertJsonValidationErrorFor('email');
+        $this->assertSame($existing->json(), $missing->json());
+        $this->assertStringNotContainsString($this->authLine($locale, 'failed'), json_encode($existing->json()));
+
+        // Rejected attempts were not counted against the real account.
+        foreach (['ｓara', 'sａra', 'saｒa', 'sarａ', 'ｓａｒａ', 'ｓara'] as $variant) {
+            $this->attempt("{$variant}@clinic.test", 'wrong-password-1', $locale)->assertUnprocessable();
         }
 
-        $throttled = $this->fromAddress('10.0.1.99')->attempt('sara@clinic.test', UserFactory::PASSWORD);
-
-        $throttled->assertUnprocessable();
-        $this->assertMatchesRegularExpression(
-            $this->linePattern($this->authLine('en', 'throttle')),
-            $throttled->json('errors.email.0'),
-        );
+        $this->attempt('sara@clinic.test', UserFactory::PASSWORD, $locale)->assertOk();
     }
 
     public function test_client_address_limit_applies_across_emails(): void

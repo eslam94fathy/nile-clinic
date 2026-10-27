@@ -30,7 +30,10 @@ introduced here from scratch. Patients do not have accounts; there is no patient
   new password; no email reset in this feature (FR-024).
 - Security review (during US1 implementation): one combined email-and-client limit let attempts
   spread across many addresses guess one account. → A: Two separate limits, 5 failures per email
-  and 20 attempts per client, counted before checking (FR-007).
+  and 20 attempts per client, counted before checking (FR-007). Follow-up reviews: look-alike
+  emails (full-width letters) matched the same account under the database collation, letting
+  variants dodge the per-email limit; keying on the account id instead revealed which accounts
+  exist. → A: Emails are ASCII only, rejected at validation before any lookup (edge cases, R7).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -172,7 +175,8 @@ works.
 ### Edge Cases
 
 - Email matching ignores letter case and surrounding spaces (`Sara@Clinic.test` and
-  `sara@clinic.test` are the same account).
+  `sara@clinic.test` are the same account). Emails must be ASCII; look-alike letters (for
+  example full-width) are rejected rather than matched.
 - A deactivated account still blocks its email from being reused by a new account.
 - An administrator cannot deactivate their own account or remove their own administrator role if
   they are the last active administrator (US3 scenario 7); if other administrators exist, they may.

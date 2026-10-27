@@ -263,15 +263,16 @@ the old token gets `401`.
 - [X] T023 [US1] Implement `app/Modules/Staff/Services/AuthenticationService.php` (R2, R7)
   - Scope:
     - `signIn(string $email, string $password, string $ip): array{token: string, user: User}`:
-      look up the account first; keys `sign-in:account:<id or unknown:email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
+      keys `sign-in:email:<email>` (max 5) and `sign-in:ip:<ip>` (max 20), both
       `RateLimiter::hit(…, 60)` **before** checking; if either count is over its max throw
       `ValidationException::withMessages(['email' => __('auth.throttle', ['seconds' => <longer wait>])])`;
       look up via `findByEmail`; if missing, still run `Hash::check` against a fixed dummy Argon2id
       hash; on any failure (missing, wrong password, inactive) throw
       `['email' => __('auth.failed')]`; on success clear only the email key, delete idle tokens
       (`now()->subMinutes(config('sanctum.idle_timeout_minutes'))`), issue a token.
-    - (Revised after a security review: the original single `email|ip` key allowed guessing one
-      account from many addresses; see research R7. `SignInTest` covers both limits.)
+    - (Revised after security reviews: the original single `email|ip` key allowed guessing one
+      account from many addresses, and look-alike emails dodged the per-email key; see research R7.
+      `SignInTest` covers both limits and the ASCII rule.)
     - `signOut(User $user): void` → `deleteCurrent`.
     - `isTokenUsable(PersonalAccessToken $token, bool $isValid): bool` → `$isValid` and
       tokenable is active and `($token->last_used_at ?? $token->created_at)` is after the idle cutoff.
@@ -284,7 +285,7 @@ the old token gets `401`.
   - Depends: T023
 
 - [X] T025 [P] [US1] Create `app/Modules/Staff/Http/Requests/SignInRequest.php`
-  - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|email|max:255`,
+  - Scope: `prepareForValidation()` trims and lower-cases `email`; rules `email` → `required|string|ascii|email|max:255` (ascii: research R7),
     `password` → `required|string`. `authorize()` → `true`.
 
 - [X] T026 [P] [US1] Create `app/Modules/Staff/Http/Resources/StaffMemberResource.php` and `app/Modules/Staff/Http/Resources/SignInResource.php`
@@ -429,7 +430,7 @@ their token and sign-in fail; reactivate, they sign in again.
     - `authorize()` → `$this->user()->can(<ability>, User::class)` (`viewAny`, `create`, `update`, `setPassword`)
     - List: `role` → `nullable|`enum `Role`; `is_active` → `nullable|boolean`; `page` → `nullable|integer|min:1`;
       `per_page` → `nullable|integer|min:1|max:100` (default 15)
-    - Store: `name` → `required|string|max:255` (trimmed); `email` → `required|string|email|max:255|`
+    - Store: `name` → `required|string|max:255` (trimmed); `email` → `required|string|ascii|email|max:255|`
       `Rule::unique('users', 'email')` (trimmed, lower-cased in `prepareForValidation()`);
       `role` → `required|`enum `Role`; `password` → `PasswordRules::rules()`
     - Update: same fields with `sometimes`, email unique `->ignore($id)`; at least one of `name`, `email`, `role`

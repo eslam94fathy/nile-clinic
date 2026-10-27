@@ -32,7 +32,7 @@ There is no `remember_token` or `email_verified_at`: the API has no sessions and
 | Field | Rule | Source |
 |-------|------|--------|
 | `name` | required, string, 1–255 after trimming | FR-001 |
-| `email` | required, valid email, ≤ 255, unique among **all** accounts including deactivated | FR-001, edge cases |
+| `email` | required, **ASCII only**, valid email, ≤ 255, unique among **all** accounts including deactivated | FR-001, edge cases, R7 |
 | `role` | required, one of the three `Role` values | FR-002, FR-003 |
 | `password` | required, string, 12–72 characters, confirmed | FR-022 |
 | `current_password` | required, matches the signed-in account's password | FR-023 |
