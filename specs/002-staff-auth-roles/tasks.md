@@ -556,7 +556,7 @@ the other gets `401`, the old password fails.
     roles, link to the contract). Troubleshooting: "401 after a while" (idle expiry, deactivation,
     password reset) and "422 too many attempts" (wait the given seconds).
 
-- [ ] T052 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
+- [X] T052 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0
