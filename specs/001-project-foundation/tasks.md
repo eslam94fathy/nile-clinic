@@ -548,7 +548,7 @@ mandated layers.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T041 [P] Write `README.md` (FR-024)
+- [X] T041 [P] Write `README.md` (FR-024)
   - Scope:
     - project summary
     - prerequisites (Docker + Compose v2+, no host PHP)
