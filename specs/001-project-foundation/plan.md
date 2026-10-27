@@ -213,8 +213,10 @@ docs/architecture.md  docs/troubleshooting.md  README.md
   are never edited. `migrate:fresh`, `db:wipe`, and `down -v` are documented as destructive.
 - **Test**: `docker compose exec app composer test` (clears config, then `php artisan test`) runs
   against `clinic_testing` with `RefreshDatabase`. A non-zero exit means failure. A
-  `beforeRefreshingDatabase()` guard in `tests/TestCase.php` aborts any run whose connection is not
-  `clinic_testing`.
+  guard in `tests/TestCase.php` (a `setUpTraits()` override calling `ensureTestingDatabase()` before
+  any `RefreshDatabase`/`DatabaseMigrations`/`DatabaseTruncation`/`DatabaseTransactions` setup) aborts
+  any test whose connection is not `clinic_testing`. (Laravel's `beforeRefreshingDatabase()` hook was
+  rejected: it lives inside the `RefreshDatabase` trait, so the trait's empty version would win.)
 - **Foundation tests**:
   - `tests/Feature/System/HealthEndpointTest`: 200 with the contract body; 503 when the
     container binds a fake `DatabaseStatusRepository` that returns `false`; no internal details
@@ -226,7 +228,8 @@ docs/architecture.md  docs/troubleshooting.md  README.md
   - `tests/Feature/Api/JsonErrorsTest`: an unknown `/api/v1/*` path returns a JSON 404 with an
     identical structure across locales.
   - `tests/Feature/Infrastructure/TestDatabaseIsolationTest`: suite targets `clinic_testing` and the
-    `beforeRefreshingDatabase()` guard throws for any other database (runs first, in Phase 2).
+    `ensureTestingDatabase()` guard throws for any other database, including through the real
+    `RefreshDatabase` setup path (runs first, in Phase 2).
   - `tests/Feature/Localization/TranslationParityTest`: every `lang/en/*.php` file has a matching
     `lang/ar/*.php` file with identical keys.
 
@@ -335,7 +338,7 @@ bootstrap/app.php  bootstrap/providers.php
 config/app.php
 lang/en/*.php  lang/ar/*.php
 database/migrations/   (skeleton cache + jobs only)
-tests/TestCase.php                       (beforeRefreshingDatabase guard)
+tests/TestCase.php                       (setUpTraits / ensureTestingDatabase guard)
 tests/Feature/Infrastructure/TestDatabaseIsolationTest.php
 tests/Feature/System/HealthEndpointTest.php
 tests/Feature/Localization/LocaleSelectionTest.php

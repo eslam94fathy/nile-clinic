@@ -191,16 +191,20 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan config:show app.supported_locales` → `en`, `ar`
   - Depends: T010
 
-- [ ] T013 Point the test suite at the MySQL test database in `phpunit.xml`
+- [X] T013 Point the test suite at the MySQL test database in `phpunit.xml`
   - Scope:
     - Remove the commented SQLite lines.
     - Set `<env name="DB_CONNECTION" value="mysql" force="true"/>` and `<env name="DB_DATABASE" value="clinic_testing" force="true"/>`.
     - Keep the skeleton's `APP_ENV=testing`, `CACHE_STORE=array`, `SESSION_DRIVER=array`, `QUEUE_CONNECTION=sync`.
     - No passwords in this file (the credentials come from `.env`).
-    - In `tests/TestCase.php`, implement `protected function beforeRefreshingDatabase(): void`
-      that throws a `RuntimeException` unless `DB::connection()->getDatabaseName() === 'clinic_testing'`
-      (runs before every `RefreshDatabase` migration; protects `clinic` even if config is cached — analysis R1).
-      If `DatabaseMigrations` or `DatabaseTruncation` are adopted later, they must get the same guard.
+    - In `tests/TestCase.php`, override `setUpTraits()`: if the test uses `RefreshDatabase`,
+      `DatabaseMigrations`, `DatabaseTruncation`, or `DatabaseTransactions`, call
+      `ensureTestingDatabase()` **before** `parent::setUpTraits()`. `ensureTestingDatabase()` throws a
+      `RuntimeException` unless `DB::connection()->getDatabaseName() === 'clinic_testing'`
+      (protects `clinic` even if config is cached — analysis R1).
+      (Revised 2026-10-27, approved: the original `beforeRefreshingDatabase()` hook is declared
+      inside the `RefreshDatabase` trait, so a test using the trait would run the trait's empty
+      version instead of the guard — verified in the container.)
   - Accept: the isolation guard (T023) passes. No test that uses `RefreshDatabase` may run before T023 passes.
   - Verify: `docker compose exec app php artisan test` → passes, exit 0
   - Depends: T010
@@ -211,9 +215,12 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - assert `DB::connection()->getDatabaseName() === 'clinic_testing'`
     - the test exists to stop the suite ever running against development data
     - it must NOT use `RefreshDatabase`
-    - a second test proves the per-run guard: set `config(['database.connections.mysql.database' => 'clinic'])`,
-      call `DB::purge('mysql')`, assert `$this->beforeRefreshingDatabase()` throws `RuntimeException`,
+    - a second test proves the guard: set `config(['database.connections.mysql.database' => 'clinic'])`,
+      call `DB::purge('mysql')`, assert `$this->ensureTestingDatabase()` throws `RuntimeException`,
       then restore the config and purge again (the guard throws before any migration, so `clinic` is never touched)
+    - a third test, in a class that **uses `RefreshDatabase`**, proves the real trait path: after its normal
+      setup on `clinic_testing`, point the connection at `clinic`, purge, call `$this->setUpTraits()`, and assert
+      `RuntimeException`; then restore the config and purge
   - Accept: both tests pass; the suite cannot refresh any database other than `clinic_testing`, on any run.
   - Verify: `docker compose exec app php artisan test --filter=TestDatabaseIsolationTest` → pass
   - Depends: T013
@@ -541,7 +548,7 @@ mandated layers.
     - first-time setup: copy `.env`, `up -d --build`, `composer install`, `key:generate`, `migrate`
     - daily start/stop
     - migrations: the "never edit applied migrations" rule; destructive commands (`migrate:fresh`, `db:wipe`, `down -v`) marked opt-in
-    - tests: `composer test` (the documented command; it clears cached config first). Warn: never run `php artisan config:cache` in development; the guard in `tests/TestCase.php` aborts if tests ever target a database other than `clinic_testing`
+    - tests: `composer test` (the documented command; it clears cached config first). Warn: never run `php artisan config:cache` in development; the `setUpTraits()` guard in `tests/TestCase.php` aborts any database-trait test whose connection is not `clinic_testing`
     - environment variables (pointer to `.env.example`)
     - phpMyAdmin usage
     - `vendor/` lives in a Docker volume (D8): it is not visible on the host; run Composer, Artisan, Pint, and tests inside the `app` container
