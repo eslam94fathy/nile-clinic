@@ -145,7 +145,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan route:list --path=api` → still only `api/v1/health`
   - Depends: T009
 
-- [ ] T011 [P] Write the failing refusal-message test in `tests/Feature/Api/AuthErrorsTest.php`
+- [X] T011 [P] Write the failing refusal-message test in `tests/Feature/Api/AuthErrorsTest.php`
   - Scope:
     - Register two **test-only** routes in `setUp()`:
       `Route::middleware(['api', 'auth:sanctum'])->get('api/v1/_test/protected', fn () => 'ok')` and
