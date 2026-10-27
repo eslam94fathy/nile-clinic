@@ -292,7 +292,7 @@ the old token gets `401`.
       `user` = `StaffMemberResource`.
   - Depends: T006
 
-- [ ] T027 [US1] Create `app/Modules/Staff/Http/Controllers/AuthController.php` and add routes to `app/Modules/Staff/routes/api.php`
+- [X] T027 [US1] Create `app/Modules/Staff/Http/Controllers/AuthController.php` and add routes to `app/Modules/Staff/routes/api.php`
   - Scope:
     - `signIn(SignInRequest)` → `SignInResource` (200); `signOut(Request)` → `204`;
       `me(Request)` → `StaffMemberResource`. No logic beyond calling the service.
