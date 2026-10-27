@@ -34,7 +34,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **Purpose**: Add the approved dependency and configuration (D1, D2).
 
-- [ ] T001 Install Sanctum in `composer.json` and `composer.lock` (approved D1)
+- [X] T001 Install Sanctum in `composer.json` and `composer.lock` (approved D1)
   - Scope: `docker compose exec app composer require laravel/sanctum:^4.3`. Do **not** run
     `php artisan install:api` (it would create `routes/api.php`; research R1).
   - Accept: `composer.json` requires `"laravel/sanctum": "^4.3"`; no other new package.
@@ -42,7 +42,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
     - `docker compose exec app composer show laravel/sanctum` → version `v4.3.x`
     - `git diff composer.json` → only the Sanctum line added
 
-- [ ] T002 Publish and configure `config/sanctum.php` and the `personal_access_tokens` migration (R1, R2)
+- [X] T002 Publish and configure `config/sanctum.php` and the `personal_access_tokens` migration (R1, R2)
   - Scope:
     - `docker compose exec app php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"`
     - In `config/sanctum.php` set `'guard' => []` (token-only, no cookie/session auth),
@@ -54,7 +54,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan tinker --execute="var_dump(config('sanctum.guard'), config('sanctum.expiration'), config('sanctum.idle_timeout_minutes'));"` → `array(0)`, `NULL`, `int(480)`
   - Depends: T001
 
-- [ ] T003 [P] Publish `config/hashing.php` and switch to Argon2id; lower its cost in `phpunit.xml` (approved D2, R3)
+- [X] T003 [P] Publish `config/hashing.php` and switch to Argon2id; lower its cost in `phpunit.xml` (approved D2, R3)
   - Scope:
     - `docker compose exec app php artisan config:publish hashing`
     - Set `'driver' => env('HASH_DRIVER', 'argon2id')`; leave the `argon` block's env keys
