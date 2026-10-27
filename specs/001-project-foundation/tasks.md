@@ -456,7 +456,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan test --filter=LocaleSelectionTest` → fails
   - Depends: T012, T013
 
-- [ ] T032 [P] [US5] Write `tests/Feature/Api/JsonErrorsTest.php`
+- [X] T032 [P] [US5] Write `tests/Feature/Api/JsonErrorsTest.php`
   - Scope: `GET /api/v1/does-not-exist` with `Accept: text/html` → 404 JSON; same structure under `ar` and `en`.
   - Accept: passes once T011 is in place (a regression guard for FR-019).
   - Verify: `docker compose exec app php artisan test --filter=JsonErrorsTest` → pass
