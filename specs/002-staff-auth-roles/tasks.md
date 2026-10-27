@@ -111,7 +111,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Accept: `password` never appears in `toArray()`.
   - Depends: T004, T005
 
-- [ ] T007 [P] Create the factory in `database/factories/UserFactory.php` (synthetic data only, Constitution XII)
+- [X] T007 [P] Create the factory in `database/factories/UserFactory.php` (synthetic data only, Constitution XII)
   - Scope:
     - Model `App\Modules\Staff\Models\User`
     - defaults: `name` = `fake()->name()`, `email` = `fake()->unique()->userName().'@clinic.test'`,
