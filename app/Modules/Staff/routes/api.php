@@ -13,6 +13,7 @@ Route::post('/auth/sign-in', [AuthController::class, 'signIn'])->name('staff.aut
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/sign-out', [AuthController::class, 'signOut'])->name('staff.auth.sign-out');
     Route::get('/auth/me', [AuthController::class, 'me'])->name('staff.auth.me');
+    Route::put('/auth/password', [AuthController::class, 'changePassword'])->name('staff.auth.password');
 
     // Staff management (administrators only). {staffMember} is a plain id loaded through the
     // repository, not route-model binding (research R10).

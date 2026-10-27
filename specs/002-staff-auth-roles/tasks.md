@@ -522,7 +522,7 @@ the other gets `401`, the old password fails.
     `deleteAllExcept($user, $user->currentAccessToken())`.
   - Depends: T037 (or add `update()` to the repository here if US3 is not done), T046
 
-- [ ] T048 [US5] Create `app/Modules/Staff/Http/Requests/ChangeOwnPasswordRequest.php`, add `AuthController::changePassword`, and route `PUT auth/password` → `staff.auth.password` in `app/Modules/Staff/routes/api.php`
+- [X] T048 [US5] Create `app/Modules/Staff/Http/Requests/ChangeOwnPasswordRequest.php`, add `AuthController::changePassword`, and route `PUT auth/password` → `staff.auth.password` in `app/Modules/Staff/routes/api.php`
   - Scope: rules `current_password` → `required|string|current_password:sanctum`; `password` →
     `PasswordRules::rules()`; controller returns `204`.
   - Accept: T045 passes.

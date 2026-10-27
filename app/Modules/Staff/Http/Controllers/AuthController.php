@@ -3,6 +3,7 @@
 namespace App\Modules\Staff\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Staff\Http\Requests\ChangeOwnPasswordRequest;
 use App\Modules\Staff\Http\Requests\SignInRequest;
 use App\Modules\Staff\Http\Resources\SignInResource;
 use App\Modules\Staff\Http\Resources\StaffMemberResource;
@@ -38,5 +39,12 @@ class AuthController extends Controller
     public function me(Request $request): StaffMemberResource
     {
         return StaffMemberResource::make($request->user());
+    }
+
+    public function changePassword(ChangeOwnPasswordRequest $request): Response
+    {
+        $this->authentication->changeOwnPassword($request->user(), $request->validated('password'));
+
+        return response()->noContent();
     }
 }
