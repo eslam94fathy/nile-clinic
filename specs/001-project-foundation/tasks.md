@@ -342,7 +342,7 @@ mandated layers.
 
 *(The isolation guard T023 now lives in Phase 2; it is a prerequisite for this story.)*
 
-- [ ] T024 [US2] Verify the single test command and its exit codes (FR-013)
+- [X] T024 [US2] Verify the single test command and its exit codes (FR-013)
   - Scope:
     - Confirm the skeleton `composer.json` `test` script (`config:clear` + `php artisan test`) works.
     - Then temporarily add a failing assertion locally, confirm a non-zero exit, and revert it (never committed).
@@ -353,7 +353,7 @@ mandated layers.
     - `git status` → no leftover change
   - Depends: T022, T023
 
-- [ ] T025 [US2] Verify development data is untouched and results are repeatable (SC-002)
+- [X] T025 [US2] Verify development data is untouched and results are repeatable (SC-002)
   - Accept: dev table counts and migration status are identical before and after two test runs.
   - Verify:
     - Snapshot `clinic` only, via MySQL as the app user (scratch file, not committed):
