@@ -411,7 +411,7 @@ their token and sign-in fail; reactivate, they sign in again.
 - [X] T038 [US3] Add `deleteAllFor(User $user): void` to `app/Modules/Staff/Repositories/Contracts/AccessTokenRepository.php` and `app/Modules/Staff/Repositories/SanctumAccessTokenRepository.php`
   - Depends: T021
 
-- [ ] T039 [US3] Implement `app/Modules/Staff/Services/StaffManagementService.php` (R8, R9)
+- [X] T039 [US3] Implement `app/Modules/Staff/Services/StaffManagementService.php` (R8, R9)
   - Scope:
     - `list(?Role, ?bool, int)`, `find(int $id): User` (throws `StaffMemberNotFoundException`)
     - `create(array): User` — active by default; a `UniqueConstraintViolationException` becomes a
