@@ -373,7 +373,7 @@ mandated layers.
 
 **Independent Test**: Review `.env.example` and the ignore rules; Compose refuses to start without the required secrets.
 
-- [ ] T026 [US3] Document every variable in `.env.example`
+- [X] T026 [US3] Document every variable in `.env.example`
   - Scope: one comment line per variable or group (purpose, local default, "change before use" for passwords). No new variables beyond T008, except those later tasks add (T039).
   - Accept: 100% of the variables used by `compose.yaml` and `config/*` are present and commented (SC-003).
   - Verify:
@@ -381,7 +381,7 @@ mandated layers.
     - manual check that each `${VAR}` in `compose.yaml` appears in `.env.example`
   - Depends: T010
 
-- [ ] T027 [US3] Fail fast on missing secrets in `compose.yaml`
+- [X] T027 [US3] Fail fast on missing secrets in `compose.yaml`
   - Scope: use `${DB_PASSWORD:?DB_PASSWORD is required}`, `${MYSQL_ROOT_PASSWORD:?…}`, and `${DB_USERNAME:?…}` in the `mysql` service.
   - Accept: Compose errors clearly when they are unset.
   - Verify:
@@ -389,12 +389,13 @@ mandated layers.
     - `docker compose config --quiet` with `.env` → exit 0
   - Depends: T026
 
-- [ ] T028 [US3] Verify that no secrets or real data are tracked (FR-010, Constitution XII)
+- [X] T028 [US3] Verify that no secrets or real data are tracked (FR-010, Constitution XII)
   - Accept: `.env` is ignored and untracked; no password other than the placeholders appears in tracked files.
   - Verify:
     - `git check-ignore .env` → `.env`
     - `git ls-files .env` → empty
-    - `git grep -nE "PASSWORD=.+" -- . ':!.env.example'` → no matches
+    - `git grep -nE "PASSWORD=.+" -- . ':!.env.example' ':!specs/'` → no matches
+    - (Revised: `specs/` is excluded because the plan and tasks quote the `.env.example` placeholders, `${VAR}` references, and this pattern itself; none is a secret.)
   - Depends: T027
 
 **Checkpoint**: US3 complete.
