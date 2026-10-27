@@ -408,7 +408,7 @@ mandated layers.
 
 **Independent Test**: Using only `docs/architecture.md`, a reviewer answers "where does X go and what may it do?" for every FR-021 layer.
 
-- [ ] T029 [P] [US4] Write `docs/architecture.md`
+- [X] T029 [P] [US4] Write `docs/architecture.md`
   - Scope (per plan §Directory Conventions):
     - the module tree `app/Modules/<Domain>/…`
     - for each layer (routes, controllers, Form Requests, API Resources, Policies/Gates, Services/Actions, repository contracts and implementations, models, migrations, factories, translations, tests): its location, responsibility, and prohibitions
