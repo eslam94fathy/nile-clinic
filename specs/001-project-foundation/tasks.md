@@ -108,7 +108,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker run --rm -v "${PWD}/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" --add-host app:127.0.0.1 nginx:1.30.6-alpine nginx -t` → `syntax is ok`
   - Depends: T001
 
-- [ ] T007 [P] Create the test-database init script `docker/mysql/init/01-create-test-database.sh`
+- [X] T007 [P] Create the test-database init script `docker/mysql/init/01-create-test-database.sh`
   - Scope:
     - POSIX `sh`, LF line endings
     - uses `$MYSQL_ROOT_PASSWORD`, `$MYSQL_USER`, `$DB_TEST_DATABASE`
