@@ -116,6 +116,46 @@ class SignInTest extends TestCase
         );
     }
 
+    /**
+     * The email collation matches look-alike letters (e.g. full-width) to the same account. Such
+     * emails are rejected before lookup or counting, identically whether or not an account exists,
+     * so they can neither get around the per-email limit nor reveal which accounts exist.
+     */
+    #[DataProvider('locales')]
+    public function test_non_ascii_emails_are_rejected_before_lookup_or_counting(string $locale): void
+    {
+        User::factory()->create(['email' => 'sara@clinic.test']);
+
+        $existing = $this->attempt('ｓara@clinic.test', UserFactory::PASSWORD, $locale);
+        $missing = $this->attempt('ｎobody@clinic.test', UserFactory::PASSWORD, $locale);
+
+        $existing->assertUnprocessable()->assertJsonValidationErrorFor('email');
+        $this->assertSame($existing->json(), $missing->json());
+        $this->assertStringNotContainsString($this->authLine($locale, 'failed'), json_encode($existing->json()));
+
+        // Rejected attempts were not counted against the real account.
+        foreach (['ｓara', 'sａra', 'saｒa', 'sarａ', 'ｓａｒａ', 'ｓara'] as $variant) {
+            $this->attempt("{$variant}@clinic.test", 'wrong-password-1', $locale)->assertUnprocessable();
+        }
+
+        $this->attempt('sara@clinic.test', UserFactory::PASSWORD, $locale)->assertOk();
+    }
+
+    /**
+     * The collation also ignores control characters (sa\x01ra matches sara), so only printable
+     * ASCII is accepted; the check must not depend on the email parser rejecting them.
+     */
+    public function test_control_characters_inside_emails_are_rejected(): void
+    {
+        User::factory()->create(['email' => 'sara@clinic.test']);
+
+        foreach (["sa\x01ra@clinic.test", "sa\x1Fra@clinic.test", "sa\x7Fra@clinic.test", 'sa ra@clinic.test'] as $email) {
+            $this->attempt($email, UserFactory::PASSWORD)
+                ->assertUnprocessable()
+                ->assertJsonValidationErrorFor('email');
+        }
+    }
+
     public function test_client_address_limit_applies_across_emails(): void
     {
         $user = User::factory()->create(['email' => 'known@clinic.test']);

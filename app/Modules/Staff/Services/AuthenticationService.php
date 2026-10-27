@@ -46,6 +46,8 @@ class AuthenticationService
      */
     public function signIn(string $email, string $password, string $ip): array
     {
+        // The email is lower-cased ASCII (SignInRequest), so this key and the case-insensitive
+        // lookup always agree, and it is built the same way whether or not an account exists.
         $emailKey = 'sign-in:email:'.$email;
         $ipKey = 'sign-in:ip:'.$ip;
 
