@@ -484,10 +484,11 @@ mandated layers.
   - Verify: covered by T031
   - Depends: T012
 
-- [ ] T035 [US5] Append the middleware to the `api` group in `bootstrap/app.php`
+- [X] T035 [US5] Append the middleware to the `api` group in `bootstrap/app.php`
   - Scope: `->withMiddleware(fn (Middleware $m) => $m->api(append: [SetLocaleFromHeader::class]))`
   - Accept: middleware is registered; the locale-resolution cases in T031 pass. The Arabic message-text cases may fail until T037; the full pass is checked in T038.
-  - Verify: `docker compose exec app php artisan route:list --path=api -v` shows `SetLocaleFromHeader` in the api middleware
+  - Verify: `docker compose exec app php artisan tinker --execute="print_r(app(Illuminate\Contracts\Http\Kernel::class)->getMiddlewareGroups()['api']);"` lists `App\Http\Middleware\SetLocaleFromHeader`
+    - (Revised: `route:list --path=api -v` and `-vv` show only the group name `api`, not its members. The router's own group list is empty in console commands, so the HTTP kernel is queried instead.)
   - Depends: T011, T031, T034
 
 - [X] T036 [P] [US5] Publish the English framework translations to `lang/en/`
