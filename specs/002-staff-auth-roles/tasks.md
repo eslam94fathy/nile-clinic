@@ -206,7 +206,7 @@ the old token gets `401`.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T016 [P] [US1] Write `tests/Feature/Staff/SignInTest.php`
+- [X] T016 [P] [US1] Write `tests/Feature/Staff/SignInTest.php`
   - Scope (`POST /api/v1/auth/sign-in`, contract `signIn`):
     - success → `200`, `data.token` non-empty, `data.token_type` = `Bearer`, `data.user` matches
       `StaffMember` (no `password` key)
