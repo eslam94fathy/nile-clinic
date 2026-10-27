@@ -408,7 +408,7 @@ mandated layers.
 
 **Independent Test**: Using only `docs/architecture.md`, a reviewer answers "where does X go and what may it do?" for every FR-021 layer.
 
-- [ ] T029 [P] [US4] Write `docs/architecture.md`
+- [X] T029 [P] [US4] Write `docs/architecture.md`
   - Scope (per plan §Directory Conventions):
     - the module tree `app/Modules/<Domain>/…`
     - for each layer (routes, controllers, Form Requests, API Resources, Policies/Gates, Services/Actions, repository contracts and implementations, models, migrations, factories, translations, tests): its location, responsibility, and prohibitions
@@ -420,7 +420,7 @@ mandated layers.
   - Verify: manual checklist against FR-021's layer list (SC-006)
   - Depends: T021
 
-- [ ] T030 [US4] Verify the System module follows the documented rules
+- [X] T030 [US4] Verify the System module follows the documented rules
   - Accept: no DB access outside repositories; the controller depends on the service only; the service depends on the interface only.
   - Verify:
     - `grep -rnE "Facades\\\\DB|DB::" app/Modules --include=*.php` → matches only `MySqlDatabaseStatusRepository.php`
