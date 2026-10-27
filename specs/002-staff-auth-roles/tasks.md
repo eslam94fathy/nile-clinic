@@ -398,7 +398,7 @@ their token and sign-in fail; reactivate, they sign in again.
   - Scope: each with `render()` returning JSON `{"message": …}`: `404` `__('staff::messages.not_found')`;
     `422` `__('staff::messages.last_administrator')`.
 
-- [ ] T037 [US3] Add staff-management methods to `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
+- [X] T037 [US3] Add staff-management methods to `app/Modules/Staff/Repositories/Contracts/StaffMemberRepository.php` and `app/Modules/Staff/Repositories/EloquentStaffMemberRepository.php`
   - Scope:
     - `findById(int $id): ?User`
     - `create(array $attributes): User`
