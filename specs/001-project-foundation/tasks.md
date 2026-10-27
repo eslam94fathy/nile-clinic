@@ -373,7 +373,7 @@ mandated layers.
 
 **Independent Test**: Review `.env.example` and the ignore rules; Compose refuses to start without the required secrets.
 
-- [ ] T026 [US3] Document every variable in `.env.example`
+- [X] T026 [US3] Document every variable in `.env.example`
   - Scope: one comment line per variable or group (purpose, local default, "change before use" for passwords). No new variables beyond T008, except those later tasks add (T039).
   - Accept: 100% of the variables used by `compose.yaml` and `config/*` are present and commented (SC-003).
   - Verify:
