@@ -77,7 +77,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Create the `users` migration in `database/migrations/<timestamp>_create_users_table.php`
+- [X] T004 Create the `users` migration in `database/migrations/<timestamp>_create_users_table.php`
   - Scope: `docker compose exec app php artisan make:migration create_users_table`, then exactly
     the columns in data-model.md:
     - `id` bigint unsigned auto-increment primary key
