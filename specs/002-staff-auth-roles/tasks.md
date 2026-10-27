@@ -159,7 +159,7 @@ command does not behave as written, **stop and report**; don't substitute an unv
   - Verify: `docker compose exec app php artisan test --filter=AuthErrorsTest` → fails
   - Depends: T009
 
-- [ ] T012 [P] Add the refusal keys to `lang/en/auth.php` and `lang/ar/auth.php`
+- [X] T012 [P] Add the refusal keys to `lang/en/auth.php` and `lang/ar/auth.php`
   - Scope: add, in both files, after `throttle`:
     - en: `'unauthenticated' => 'You are not signed in.'`, `'forbidden' => 'You are not allowed to perform this action.'`
     - ar: `'unauthenticated' => 'لم تقم بتسجيل الدخول.'`, `'forbidden' => 'غير مسموح لك بتنفيذ هذا الإجراء.'`
