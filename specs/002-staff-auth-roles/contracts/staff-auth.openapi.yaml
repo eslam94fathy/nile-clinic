@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Staff Authentication and Roles
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 002. All responses are JSON, and field names and structure
+    are identical in every locale; only `message` texts change with Accept-Language (en, ar;
+    fallback en). Except for sign-in, every endpoint requires `Authorization: Bearer <token>`.
+    A token expires after 8 hours without a request (FR-009).
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /auth/sign-in:
+    post:
+      operationId: signIn
+      summary: Sign in with email and password (FR-005–FR-007)
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 255 }
+                password: { type: string }
+      responses:
+        '200':
+          description: Signed in. The token is shown only in this response.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [token, token_type, user]
+                    properties:
+                      token: { type: string, example: '42|Xn3k…' }
+                      token_type: { type: string, const: Bearer }
+                      user: { $ref: '#/components/schemas/StaffMember' }
+        '422':
+          description: >
+            Validation error; wrong credentials, unknown email, or deactivated account (one
+            generic message, `auth.failed`); or too many attempts (`auth.throttle`, includes the
+            seconds to wait). After 5 failures per email and client within 60 s, attempts are
+            refused for 60 s.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              example:
+                message: These credentials do not match our records.
+                errors:
+                  email: [These credentials do not match our records.]
+
+  /auth/sign-out:
+    post:
+      operationId: signOut
+      summary: End the token used for this request only (FR-008)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '204': { description: Signed out; the token no longer works }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auth/me:
+    get:
+      operationId: getOwnProfile
+      summary: The signed-in staff member's profile (FR-011)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Own profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auth/password:
+    put:
+      operationId: changeOwnPassword
+      summary: Change own password; ends all other tokens (FR-023)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string }
+                password: { type: string, minLength: 12, maxLength: 72 }
+                password_confirmation: { type: string }
+      responses:
+        '204': { description: Password changed; the current token stays valid }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /staff:
+    get:
+      operationId: listStaff
+      summary: List staff accounts (administrators only, FR-017)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - in: query
+          name: role
+          schema: { $ref: '#/components/schemas/Role' }
+        - in: query
+          name: is_active
+          schema: { type: boolean }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+      responses:
+        '200':
+          description: >
+            One page of staff, ordered by name then id. Uses Laravel's standard paginated
+            resource shape (`data`, `links`, `meta`).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/StaffMember' }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      operationId: createStaffMember
+      summary: Create a staff account (administrators only, FR-016)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, role, password, password_confirmation]
+              properties:
+                name: { type: string, maxLength: 255 }
+                email: { type: string, format: email, maxLength: 255 }
+                role: { $ref: '#/components/schemas/Role' }
+                password: { type: string, minLength: 12, maxLength: 72 }
+                password_confirmation: { type: string }
+      responses:
+        '201':
+          description: Created and active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /staff/{staffMember}:
+    parameters:
+      - $ref: '#/components/parameters/StaffMemberId'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      operationId: getStaffMember
+      summary: View one staff account (administrators only)
+      responses:
+        '200':
+          description: The account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateStaffMember
+      summary: Change name, email, or role (administrators only, FR-018, FR-021)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, maxLength: 255 }
+                email: { type: string, format: email, maxLength: 255 }
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation error, or the change would leave no active administrator
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationError'
+                  - $ref: '#/components/schemas/Message'
+
+  /staff/{staffMember}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/StaffMemberId'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    post:
+      operationId: deactivateStaffMember
+      summary: Deactivate and end all tokens (administrators only, FR-019, FR-021)
+      responses:
+        '200':
+          description: Deactivated (idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: The account is the last active administrator
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+
+  /staff/{staffMember}/reactivate:
+    parameters:
+      - $ref: '#/components/parameters/StaffMemberId'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    post:
+      operationId: reactivateStaffMember
+      summary: Reactivate a deactivated account (administrators only, FR-019)
+      responses:
+        '200':
+          description: Active again (idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/StaffMember' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /staff/{staffMember}/password:
+    parameters:
+      - $ref: '#/components/parameters/StaffMemberId'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    put:
+      operationId: setStaffMemberPassword
+      summary: Set a new password and end all of that account's tokens (administrators only, FR-020)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, password_confirmation]
+              properties:
+                password: { type: string, minLength: 12, maxLength: 72 }
+                password_confirmation: { type: string }
+      responses:
+        '204': { description: Password set }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: The `token` value returned by sign-in.
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      description: en or ar (regional variants map to the base language); anything else falls back to en.
+      schema: { type: string }
+    StaffMemberId:
+      in: path
+      name: staffMember
+      required: true
+      schema: { type: integer, minimum: 1 }
+
+  schemas:
+    Role:
+      type: string
+      enum: [administrator, receptionist, doctor]
+    StaffMember:
+      type: object
+      required: [id, name, email, role, is_active, created_at, updated_at]
+      description: Never includes the password, its hash, or tokens (FR-028).
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/Role' }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, description: Translated per Accept-Language }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: Missing, malformed, expired, or revoked token, or a deactivated account (FR-010)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: You are not signed in. }
+    Forbidden:
+      description: Signed in, but the role does not allow this action (FR-013)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: You are not allowed to perform this action. }
+    NotFound:
+      description: No staff account with this id
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
