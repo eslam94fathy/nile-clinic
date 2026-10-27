@@ -220,7 +220,7 @@ the old token gets `401`.
   - Verify: `docker compose exec app php artisan test --filter=SignInTest` → fails
   - Depends: T013, T015
 
-- [ ] T017 [P] [US1] Write `tests/Feature/Staff/SignOutTest.php`
+- [X] T017 [P] [US1] Write `tests/Feature/Staff/SignOutTest.php`
   - Scope: two sign-ins for one account (two tokens); sign out with the first → `204`; first token
     → `401` on `GET /auth/me`; second token → `200`. Without a token → `401`.
   - Verify: `docker compose exec app php artisan test --filter=SignOutTest` → fails
