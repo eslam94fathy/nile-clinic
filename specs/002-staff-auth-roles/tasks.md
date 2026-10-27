@@ -562,7 +562,7 @@ the other gets `401`, the old password fails.
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T049, T050, T051
 
-- [ ] T053 Run quickstart Q1–Q7 from `specs/002-staff-auth-roles/quickstart.md` on the development stack
+- [X] T053 Run quickstart Q1–Q7 from `specs/002-staff-auth-roles/quickstart.md` on the development stack
   - Scope: follow `specs/002-staff-auth-roles/quickstart.md`; synthetic `*.clinic.test` accounts only.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T052
