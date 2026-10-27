@@ -349,7 +349,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T030 [P] [US3] Write `tests/Feature/Staff/StaffManagementTest.php`
+- [X] T030 [P] [US3] Write `tests/Feature/Staff/StaffManagementTest.php`
   - Scope:
     - `POST /staff` → `201`, account active, the new member can sign in
     - duplicate email (also when the existing owner is deactivated, and with different case) → `422` `errors.email`
