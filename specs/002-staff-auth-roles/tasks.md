@@ -539,35 +539,35 @@ the other gets `401`, the old password fails.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T049 [P] Write `tests/Feature/Staff/StaffMessagesTest.php` (SC-007)
+- [X] T049 [P] Write `tests/Feature/Staff/StaffMessagesTest.php` (SC-007)
   - Scope: for `en` and `ar`: 401, 403, 404, 422 sign-in failure, 422 throttle, 422 last-administrator,
     each `message` equal to its translation file value, with identical JSON keys across locales.
   - Verify: `docker compose exec app php artisan test --filter=StaffMessagesTest` → pass
   - Depends: T041, T048
 
-- [ ] T050 [P] Update `docs/architecture.md`
+- [X] T050 [P] Update `docs/architecture.md`
   - Scope: under Layers/Routes, add "Route parameters are plain ids loaded through the repository;
     implicit route-model binding is not used (it queries outside the repository and its 404 names
     the model class)"; add the `Staff` module and its translations as a second example in one short
     paragraph; mention `prependToPriorityList` for locale-before-auth.
 
-- [ ] T051 [P] Update `README.md` and `docs/troubleshooting.md`
+- [X] T051 [P] Update `README.md` and `docs/troubleshooting.md`
   - Scope: README: short "Signing in" section (sign-in, `Authorization: Bearer`, 8-hour idle expiry,
     roles, link to the contract). Troubleshooting: "401 after a while" (idle expiry, deactivation,
     password reset) and "422 too many attempts" (wait the given seconds).
 
-- [ ] T052 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
+- [X] T052 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T049, T050, T051
 
-- [ ] T053 Run quickstart Q1–Q7 from `specs/002-staff-auth-roles/quickstart.md` on the development stack
+- [X] T053 Run quickstart Q1–Q7 from `specs/002-staff-auth-roles/quickstart.md` on the development stack
   - Scope: follow `specs/002-staff-auth-roles/quickstart.md`; synthetic `*.clinic.test` accounts only.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T052
 
-- [ ] T054 Record the results in `specs/002-staff-auth-roles/verification.md`
+- [X] T054 Record the results in `specs/002-staff-auth-roles/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; report failures as
     failures (Constitution VIII).
   - Depends: T053

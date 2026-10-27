@@ -46,7 +46,7 @@ has no Requests, Policies, Models, or `lang/` because it needs none.
 
 | Layer | Location | Responsible for | Must not |
 |-------|----------|-----------------|----------|
-| Routes | `app/Modules/<Domain>/routes/api.php` | Mapping URIs to controllers; naming routes `<domain>.<name>` | Contain closures with logic; declare their own `api/v1` prefix (the provider adds it) |
+| Routes | `app/Modules/<Domain>/routes/api.php` | Mapping URIs to controllers; naming routes `<domain>.<name>`; route parameters are plain ids (`whereNumber`) that the service loads through the repository | Contain closures with logic; declare their own `api/v1` prefix (the provider adds it); use implicit route-model binding (it queries outside the repository, and its 404 names the model class) |
 | Controllers | `Http/Controllers/` | HTTP orchestration: receive a Form Request, authorize via a Policy, call one Service/Action, return an API Resource and status code | Contain business logic; run queries or use `DB`, Eloquent, or models' query methods; return models or raw arrays |
 | Form Requests | `Http/Requests/` | Input validation rules; `authorize()` delegating to a Policy | Contain business rules or queries beyond what validation rules need |
 | API Resources | `Http/Resources/` | The only place that shapes response JSON; stable field names in every locale | Run queries; translate field names; expose medical notes or sensitive data in listings |
@@ -75,7 +75,14 @@ has no Requests, Policies, Models, or `lang/` because it needs none.
   (`DB::transaction(...)` is the one `DB` call allowed outside repositories) and calls repositories
   inside it. Repositories never open transactions themselves, so a workflow composes several of
   them atomically. Concurrent booking uses locking inside such a transaction.
-- **Authorization** happens through Policies/Gates only, for every protected resource.
+- **Authorization** happens through Policies/Gates only, for every protected resource. Check
+  class-level abilities (`can('update', User::class)`) before loading a record when the decision
+  depends only on the actor's role, so refused users get 403 before any lookup and cannot probe
+  which ids exist.
+- **Locale before authentication**: `SetLocaleFromHeader` is placed ahead of
+  `AuthenticatesRequests` in the middleware priority list (`bootstrap/app.php`,
+  `prependToPriorityList`). Without it, `auth:sanctum` runs first and 401 responses ignore
+  `Accept-Language`.
 
 ## API versioning
 
@@ -116,3 +123,20 @@ has no Requests, Policies, Models, or `lang/` because it needs none.
 The endpoint is public and takes no input, so it has no Form Request or Policy. Its feature test
 (`tests/Feature/System/HealthEndpointTest.php`) swaps the repository binding for a fake to test the
 503 path, which works only because the service depends on the interface.
+
+## Second example: the Staff module
+
+The Staff module (feature 002) uses every layer the System module does not:
+
+- **Form Requests** validate input and call `authorize()` on `StaffMemberPolicy`; shared rules live
+  in `Support/` (`EmailRules`, `PasswordRules`) so the API and the `staff:create-admin` command use
+  one definition.
+- **A Policy** (`StaffMemberPolicy`), registered with `Gate::policy()` in `StaffServiceProvider`.
+- **Two services**: `AuthenticationService` (sign-in, rate limits, token validity) and
+  `StaffManagementService` (account workflows; it owns the transactions, including the locked
+  last-administrator check).
+- **Translations** in `app/Modules/Staff/lang/{en,ar}/messages.php`, used as
+  `__('staff::messages.not_found')`; domain exceptions render them with `render()` and are not
+  logged (`report()` is empty), because they are refused requests, not faults.
+- **A console command** registered in the provider with `$this->commands([...])`; it is thin like
+  a controller and calls the same service as the API.

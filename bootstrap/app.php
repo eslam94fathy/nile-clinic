@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(append: [SetLocaleFromHeader::class]);
 
+        // API only: never redirect guests to a "login" page (the framework default, which fails
+        // with a 500 because no such route exists); the 401 JSON below is rendered instead.
+        $middleware->redirectGuestsTo(null);
+
         // auth:sanctum outranks the api group in the framework's priority list; without this,
         // 401 responses would ignore Accept-Language (research R6).
         $middleware->prependToPriorityList(

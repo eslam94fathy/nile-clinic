@@ -5,8 +5,9 @@ Laravel 13 and MySQL 9.7, run locally with Docker Compose. Endpoints live under 
 messages are available in English (`en`, the fallback) and Arabic (`ar`), selected with the
 `Accept-Language` header.
 
-This foundation ships one endpoint, `GET /api/v1/health`. See [docs/](#documentation) for the
-architecture and troubleshooting guides.
+It currently provides a health check (`GET /api/v1/health`) and staff sign-in with three roles
+(administrator, receptionist, doctor). See [docs/](#documentation) for the architecture and
+troubleshooting guides.
 
 ## Prerequisites
 
@@ -56,6 +57,31 @@ curl http://localhost:8080/api/v1/health          # {"status":"ok","checks":{"da
 The first `up` creates the MySQL data volume, the `clinic` database, and the separate
 `clinic_testing` database used by the tests. That data stays in the `mysql-data` volume between
 restarts.
+
+## Signing in
+
+Only clinic staff have accounts; each has exactly one role: administrator, receptionist, or
+doctor. Administrators manage staff accounts through `/api/v1/staff`.
+
+```sh
+curl -X POST http://localhost:8080/api/v1/auth/sign-in \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"<your password>"}'
+```
+
+The response holds `data.token`. Send it on every other request as
+`Authorization: Bearer <token>`.
+
+- A token stops working after **8 hours without a request**; each request restarts the 8 hours.
+  `POST /api/v1/auth/sign-out` ends it at once.
+- Deactivating an account or an administrator setting a new password ends all of that account's
+  tokens. Changing your own password (`PUT /api/v1/auth/password`) ends your other tokens only.
+- After 5 failed attempts for one email, or 20 attempts from one address, within a minute,
+  sign-in is refused for up to a minute.
+- Emails must be printable ASCII; letter case and surrounding spaces are ignored.
+
+Every endpoint, field, and response is described in
+[specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml](specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml).
 
 ## Daily use
 
