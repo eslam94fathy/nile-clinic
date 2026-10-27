@@ -490,7 +490,7 @@ mandated layers.
   - Verify: `docker compose exec app php artisan route:list --path=api -v` shows `SetLocaleFromHeader` in the api middleware
   - Depends: T011, T031, T034
 
-- [ ] T036 [P] [US5] Publish the English framework translations to `lang/en/`
+- [X] T036 [P] [US5] Publish the English framework translations to `lang/en/`
   - Scope: `php artisan lang:publish`; commit only the generated `lang/en/*.php`; no business messages.
   - Accept: `lang/en/{auth,pagination,passwords,validation}.php` exist.
   - Verify:
