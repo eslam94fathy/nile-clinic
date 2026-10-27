@@ -474,7 +474,7 @@ their token and sign-in fail; reactivate, they sign in again.
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Create `app/Modules/Staff/Console/CreateAdministratorCommand.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
+- [X] T043 [US4] Create `app/Modules/Staff/Console/CreateAdministratorCommand.php` and register it in `app/Modules/Staff/Providers/StaffServiceProvider.php`
   - Scope:
     - Signature `staff:create-admin {--name=} {--email=}`; asks for missing options; password via
       `secret()` twice (never an option, R12).

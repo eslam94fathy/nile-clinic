@@ -2,6 +2,7 @@
 
 namespace App\Modules\Staff\Providers;
 
+use App\Modules\Staff\Console\CreateAdministratorCommand;
 use App\Modules\Staff\Models\User;
 use App\Modules\Staff\Policies\StaffMemberPolicy;
 use App\Modules\Staff\Repositories\Contracts\AccessTokenRepository;
@@ -38,6 +39,10 @@ class StaffServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'staff');
 
         Gate::policy(User::class, StaffMemberPolicy::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([CreateAdministratorCommand::class]);
+        }
 
         // Idle expiry and deactivated accounts are checked on every token request (research R2).
         Sanctum::authenticateAccessTokensUsing(
