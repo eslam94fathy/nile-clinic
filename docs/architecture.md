@@ -27,7 +27,8 @@ app/
 │       ├── Providers/<Domain>ServiceProvider.php  # bindings, routes, policies, translations
 │       ├── routes/api.php                     # loaded with prefix api/v1 + api middleware
 │       └── lang/{en,ar}/*.php                 # module messages: __('<domain>::file.key')
-└── Providers/AppServiceProvider.php
+├── Providers/AppServiceProvider.php
+└── Support/                                   # helpers shared by two or more modules (e.g. ArabicName)
 bootstrap/providers.php                        # lists each module provider explicitly
 database/migrations/                           # all migrations (root, Laravel ordering)
 database/factories/                            # model factories (synthetic data only)
@@ -70,7 +71,7 @@ has no Requests, Policies, Models, or `lang/` because it needs none.
   concrete class.
 - **There is no generic base repository.** Each repository serves one aggregate with explicit
   methods (`findActiveByDoctor`, not `findBy(array $criteria)`). Shared helpers are added only when
-  two real repositories need the same thing.
+  two real repositories need the same thing; they live in `app/Support/`.
 - **Transaction ownership**: the Service or Action that runs a workflow opens the transaction
   (`DB::transaction(...)` is the one `DB` call allowed outside repositories) and calls repositories
   inside it. Repositories never open transactions themselves, so a workflow composes several of
