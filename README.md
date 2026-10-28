@@ -161,5 +161,6 @@ Open <http://localhost:8081> (`PMA_PORT`) and log in with `DB_USERNAME` / `DB_PA
 - [docs/architecture.md](docs/architecture.md): module layout, where each layer goes and what it
   must not do, API versioning, and how to register a module.
 - [docs/troubleshooting.md](docs/troubleshooting.md): common setup and runtime problems.
+- [docs/roadmap.md](docs/roadmap.md): feature build order, dependencies, and status.
 - [specs/001-project-foundation/](specs/001-project-foundation/): the specification, plan, and
   tasks for this foundation.
