@@ -20,9 +20,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/specialties/{specialty}/reactivate', [SpecialtyStatusController::class, 'reactivate'])->name('specialties.reactivate');
     });
 
+    Route::get('/doctors', [DoctorController::class, 'index'])->name('doctors.index');
     Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
+    Route::get('/doctors/me', [DoctorController::class, 'me'])->name('doctors.me');
 
     Route::whereNumber('doctor')->group(function () {
+        Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])->name('doctors.show');
         Route::patch('/doctors/{doctor}', [DoctorController::class, 'update'])->name('doctors.update');
     });
 });

@@ -426,7 +426,7 @@ search by part of a name; only the expected doctors appear.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T030 [US3] Write `tests/Feature/Doctors/BrowseDoctorsTest.php`
+- [X] T030 [US3] Write `tests/Feature/Doctors/BrowseDoctorsTest.php`
   - Scope (receptionist unless stated; doctor and administrator also get `200` on reads):
     - `?specialty_id=` lists only doctors with it (including when the specialty is deactivated)
     - `?name=` matches part of the account name: case and repeated spaces ignored; `احمد` finds
@@ -446,7 +446,7 @@ search by part of a name; only the expected doctors appear.
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Add `paginate(array $filters, int $perPage): LengthAwarePaginator` to `DoctorRepository` and `EloquentDoctorRepository`
+- [X] T031 [US3] Add `paginate(array $filters, int $perPage): LengthAwarePaginator` to `DoctorRepository` and `EloquentDoctorRepository`
   - Scope (R4, R10):
     - join `users` on `users.id = doctors.user_id`; `select('doctors.*')`
     - `name`: `whereRaw(<expr> LIKE ?)` where `<expr>` is built from `ArabicName::VARIANTS`:
@@ -459,12 +459,12 @@ search by part of a name; only the expected doctors appear.
     - order by `users.name`, then `doctors.id`; eager-load `user`, `specialties`; `withQueryString()`
   - Depends: T025
 
-- [ ] T032 [US3] Add `list(array $filters, int $perPage)` and `findOwn(User $user)` to `app/Modules/Doctors/Services/DoctorService.php`
+- [X] T032 [US3] Add `list(array $filters, int $perPage)` and `findOwn(User $user)` to `app/Modules/Doctors/Services/DoctorService.php`
   - Scope: `list` → repository `paginate`; `findOwn` → `findByUserId($user->id)` or
     `DoctorNotFoundException`.
   - Depends: T026, T031
 
-- [ ] T033 [P] [US3] Create `app/Modules/Doctors/Http/Requests/ListDoctorsRequest.php`
+- [X] T033 [P] [US3] Create `app/Modules/Doctors/Http/Requests/ListDoctorsRequest.php`
   - Scope: `authorize()` → `viewAny` on `Doctor::class`; rules: `name` `nullable|string|min:1|max:255`,
     `specialty_id` `nullable|integer|min:1`, `is_active` `nullable|boolean`, `page` `nullable|integer|min:1`,
     `per_page` `nullable|integer|min:1|max:100`; `filters()` (only sent, non-empty; `is_active` via
@@ -472,11 +472,11 @@ search by part of a name; only the expected doctors appear.
     `ListPatientsRequest`; `attributes()` from `doctors::attributes`.
   - Depends: T013
 
-- [ ] T034 [P] [US3] Create `app/Modules/Doctors/Http/Resources/DoctorSummaryResource.php`
+- [X] T034 [P] [US3] Create `app/Modules/Doctors/Http/Resources/DoctorSummaryResource.php`
   - Scope: keys exactly `id`, `name`, `title`, `is_active`, `specialties` (FR-015).
   - Depends: T008, T021
 
-- [ ] T035 [US3] Add `index()`, `show()`, `me()` to `DoctorController`; add the routes
+- [X] T035 [US3] Add `index()`, `show()`, `me()` to `DoctorController`; add the routes
   - Scope: `index(ListDoctorsRequest)` → `DoctorSummaryResource::collection(...)`;
     `show(int $doctor)` → `Gate::authorize('view', Doctor::class)` then `find`;
     `me(Request $request)` → `Gate::authorize('viewOwn', Doctor::class)` then `findOwn($request->user())`.
