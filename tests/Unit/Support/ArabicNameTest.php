@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Patients;
+namespace Tests\Unit\Support;
 
-use App\Modules\Patients\Support\ArabicName;
+use App\Support\ArabicName;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

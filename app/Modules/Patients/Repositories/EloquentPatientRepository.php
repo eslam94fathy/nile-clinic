@@ -4,7 +4,7 @@ namespace App\Modules\Patients\Repositories;
 
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
-use App\Modules\Patients\Support\ArabicName;
+use App\Support\ArabicName;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class EloquentPatientRepository implements PatientRepository
