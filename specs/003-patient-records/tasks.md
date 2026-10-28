@@ -459,7 +459,7 @@ and see the new values with the same `id`.
 **Purpose**: Patient data out of logs (D3), the endpoint authorization matrix, both locales,
 documentation, and verification.
 
-- [ ] T033 [P] Write the failing test `tests/Feature/Infrastructure/QueryErrorLoggingTest.php` (D3, R7, FR-017)
+- [X] T033 [P] Write the failing test `tests/Feature/Infrastructure/QueryErrorLoggingTest.php` (D3, R7, FR-017)
   - Scope: `Log::spy()`; build
     `new QueryException('mysql', 'insert into patients (full_name, national_id) values (?, ?)', ['Synthetic Name', '29001010100001'], new PDOException("SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '29001010100001'"))`
     and call `report($e)`. Assert exactly one `error` log call whose message and context, JSON-
@@ -467,7 +467,7 @@ documentation, and verification.
   - Verify: `docker compose exec app php artisan test --filter=QueryErrorLoggingTest` → fails
   - Depends: T032
 
-- [ ] T034 Report `QueryException` without bound values in `bootstrap/app.php` (approved D3)
+- [X] T034 Report `QueryException` without bound values in `bootstrap/app.php` (approved D3)
   - Scope: in `withExceptions`, add with a comment citing research R7:
     `$exceptions->report(function (QueryException $e) { Log::error('Database query failed.', ['connection' => $e->getConnectionName(), 'sql' => $e->getSql(), 'sqlstate' => $e->errorInfo[0] ?? null, 'driver_code' => $e->errorInfo[1] ?? null]); })->stop();`
     Do **not** log `$e->getMessage()` or the previous exception's message: MySQL error text can
@@ -477,7 +477,7 @@ documentation, and verification.
   - Verify: `docker compose exec app php artisan test --filter=QueryErrorLoggingTest` → pass
   - Depends: T033
 
-- [ ] T035 [P] Write `tests/Feature/Patients/PatientAuthorizationTest.php` (SC-005)
+- [X] T035 [P] Write `tests/Feature/Patients/PatientAuthorizationTest.php` (SC-005)
   - Scope: endpoints `list`, `register`, `show`, `update` (with valid bodies):
     - doctor × each → `403` with `auth.forbidden`, and the patient row and count unchanged
     - administrator and receptionist × each → `2xx`
@@ -488,20 +488,20 @@ documentation, and verification.
   - Verify: `docker compose exec app php artisan test --filter=PatientAuthorizationTest` → pass
   - Depends: T032
 
-- [ ] T036 [P] Write `tests/Feature/Patients/PatientMessagesTest.php` (FR-016, SC-007)
+- [X] T036 [P] Write `tests/Feature/Patients/PatientMessagesTest.php` (FR-016, SC-007)
   - Scope: for `en` and `ar` (`Accept-Language`): `404` → `patients::messages.not_found`; `422` on
     `phone` whose message contains the translated attribute `patients::attributes.phone`; `422`
     `nothing_to_update`; `403` (doctor) → `auth.forbidden`; JSON keys identical across locales.
   - Verify: `docker compose exec app php artisan test --filter=PatientMessagesTest` → pass
   - Depends: T032
 
-- [ ] T037 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T037 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: roadmap: 003 `Done` with the spec link, 004 `Next`. README: a short "Patients" section
     after "Signing in": administrators and receptionists register, search, view, and update
     patients under `/api/v1/patients`; doctors have no patient access yet; name search ignores
     Arabic letter variants; link `specs/003-patient-records/contracts/patients.openapi.yaml`.
 
-- [ ] T038 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
+- [X] T038 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0
