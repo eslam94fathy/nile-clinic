@@ -19,6 +19,13 @@ class EloquentPatientRepository implements PatientRepository
         return Patient::query()->create($attributes);
     }
 
+    public function update(Patient $patient, array $attributes): Patient
+    {
+        $patient->fill($attributes)->save();
+
+        return $patient;
+    }
+
     public function paginate(array $filters, int $perPage): LengthAwarePaginator
     {
         return Patient::query()
