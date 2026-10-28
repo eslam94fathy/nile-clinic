@@ -1,0 +1,47 @@
+$kind: http-request
+description: |-
+  One page of patients ordered by name, then id. Filters combine with AND. Name search ignores
+  case, extra spaces, and the Arabic variants أ/إ/آ = ا, ة = ه, ى = ي. Items have exactly id,
+  full_name, sex, date_of_birth, phone.
+method: GET
+url: '{{base_url}}/patients?per_page=15'
+order: 2000
+queryParams:
+  - key: 'name'
+    value: 'سلمى'
+    description: 'Part of the full name'
+    disabled: true
+  - key: 'phone'
+    value: '01000000021'
+    description: 'Exact, after removing spaces and dashes'
+    disabled: true
+  - key: 'national_id'
+    value: '29004120100021'
+    description: 'Exact'
+    disabled: true
+  - key: 'id'
+    value: '{{patient_id}}'
+    description: 'Exact patient number'
+    disabled: true
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    description: '1–100, default 15'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 paginated, summary fields only', () => {
+        pm.response.to.have.status(200);
+        const body = pm.response.json();
+        pm.expect(body).to.have.keys('data', 'links', 'meta');
+        body.data.forEach((p) => pm.expect(p).to.have.keys('id', 'full_name', 'sex', 'date_of_birth', 'phone'));
+      });
+examples: './.resources/list patients.resources/examples'

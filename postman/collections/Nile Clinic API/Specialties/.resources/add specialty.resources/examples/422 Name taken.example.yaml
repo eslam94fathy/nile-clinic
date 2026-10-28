@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/specialties'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The English name has already been taken.","errors":{"name_en":["The English name has already been taken."]}}
+order: 2000

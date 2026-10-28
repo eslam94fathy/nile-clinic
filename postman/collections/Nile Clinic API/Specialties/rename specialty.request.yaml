@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  Change one or both names. An empty body gets 422 on `fields`; unknown id: 404.
+method: PATCH
+url: '{{base_url}}/specialties/:specialty'
+order: 3000
+pathVariables:
+  - key: 'specialty'
+    value: '{{specialty_id}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "name_en": "Postman Specialty {{specialty_suffix}} Renamed"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the new English name', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.name_en).to.include('Renamed');
+      });
+examples: './.resources/rename specialty.resources/examples'

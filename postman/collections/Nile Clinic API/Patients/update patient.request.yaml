@@ -1,0 +1,40 @@
+$kind: http-request
+description: |-
+  Partial update: send only the fields to change; `null` clears an optional field. The patient
+  number never changes. An empty body gets 422 on `fields`.
+method: PATCH
+url: '{{base_url}}/patients/:patient'
+order: 4000
+pathVariables:
+  - key: 'patient'
+    value: '{{patient_id}}'
+    description: 'The patient number'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "address": "12 Synthetic St, Cairo",
+      "emergency_contact": {
+        "name": "منى حسن",
+        "relationship": "sister",
+        "phone": "01000000022"
+      }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the new details', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.address).to.eql('12 Synthetic St, Cairo');
+        pm.expect(data.emergency_contact.phone).to.eql('01000000022');
+      });
+examples: './.resources/update patient.resources/examples'

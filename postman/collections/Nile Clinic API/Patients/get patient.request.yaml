@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  The full record, including national ID, address, and emergency contact. Unknown id: 404.
+method: GET
+url: '{{base_url}}/patients/:patient'
+order: 3000
+pathVariables:
+  - key: 'patient'
+    value: '{{patient_id}}'
+    description: 'The patient number'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the full record', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('patient_id')));
+        pm.expect(pm.response.json().data).to.have.property('national_id');
+      });
+examples: './.resources/get patient.resources/examples'

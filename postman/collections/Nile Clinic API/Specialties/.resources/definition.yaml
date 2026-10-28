@@ -1,0 +1,8 @@
+$kind: collection
+name: Specialties
+description: |-
+  Specialty catalog (feature 004, US1). Every active staff member can list it; only
+  administrators add, rename, deactivate, and reactivate. Specialties always return both
+  `name_en` and `name_ar`, whatever the request language, and are never deleted. Contract:
+  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.
+order: 5000

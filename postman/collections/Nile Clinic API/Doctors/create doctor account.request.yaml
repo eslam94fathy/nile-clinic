@@ -1,0 +1,37 @@
+$kind: http-request
+description: |-
+  Staff account with the doctor role for the profile below (same endpoint as
+  "Staff/create staff member"). The id is stored in `doctor_user_id`.
+method: POST
+url: '{{base_url}}/staff'
+order: 1000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "name": "Postman Doctor",
+      "email": "{{new_doctor_email}}",
+      "role": "doctor",
+      "password": "postman-doctor-pass-1",
+      "password_confirmation": "postman-doctor-pass-1"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: 'pm.collectionVariables.set(''new_doctor_email'', ''postman-doctor-'' + Date.now() + ''@clinic.test'');'
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 with the doctor role', () => {
+        pm.response.to.have.status(201);
+        pm.expect(pm.response.json().data.role).to.eql('doctor');
+        pm.collectionVariables.set('doctor_user_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/create doctor account.resources/examples'
