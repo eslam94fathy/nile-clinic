@@ -7,8 +7,10 @@ use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Doctors\Repositories\Contracts\SpecialtyRepository;
 use App\Modules\Staff\Enums\Role;
+use App\Modules\Staff\Models\User;
 use App\Modules\Staff\Repositories\Contracts\StaffMemberRepository;
 use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -25,11 +27,30 @@ class DoctorService
     ) {}
 
     /**
+     * @param  array{name?: string, specialty_id?: int, is_active?: bool}  $filters
+     * @return LengthAwarePaginator<int, Doctor>
+     */
+    public function list(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->doctors->paginate($filters, $perPage);
+    }
+
+    /**
      * @throws DoctorNotFoundException
      */
     public function find(int $id): Doctor
     {
         return $this->doctors->findById($id) ?? throw new DoctorNotFoundException;
+    }
+
+    /**
+     * The profile linked to this doctor's own account (FR-017).
+     *
+     * @throws DoctorNotFoundException when none has been created yet
+     */
+    public function findOwn(User $user): Doctor
+    {
+        return $this->doctors->findByUserId($user->id) ?? throw new DoctorNotFoundException;
     }
 
     /**
