@@ -83,6 +83,22 @@ The response holds `data.token`. Send it on every other request as
 Every endpoint, field, and response is described in
 [specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml](specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml).
 
+## Patients
+
+Administrators and receptionists register, search, view, and update patients under
+`/api/v1/patients`. Doctors have no patient access yet; a later feature links them to their own
+patients.
+
+- The patient number is the record's `id`.
+- Search by `name` (part of the name), `phone`, `national_id`, or `id`. Name search ignores letter
+  case, extra spaces, and the Arabic variants أ/إ/آ = ا, ة = ه, ى = ي.
+- Lists show only number, name, sex, date of birth, and phone; national ID, address, and emergency
+  contact appear only when one patient is opened.
+- Patients are never deleted; mistakes are corrected with `PATCH /api/v1/patients/{id}`.
+
+Every endpoint, field, and response is described in
+[specs/003-patient-records/contracts/patients.openapi.yaml](specs/003-patient-records/contracts/patients.openapi.yaml).
+
 ## Daily use
 
 ```sh

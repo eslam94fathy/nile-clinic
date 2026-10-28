@@ -87,7 +87,11 @@ Facts below were checked on 2026-10-28 against the running development stack (La
   errors and `PatientNotFoundException` are not reported at all.
 - **Alternatives**: Leaving the default — an unexpected database error on registration would log a
   patient's name, phone, or national ID. Turning off query-exception logging — loses the signal
-  that something failed.
+  that something failed. Laravel 13.38's per-connection `mask_bindings_in_exception_messages`
+  option (found during implementation, T034) — keeps placeholders in the SQL part of the message,
+  but the message still starts with the driver's text (MySQL's `Duplicate entry '…'` includes the
+  value), and the default report adds a stack trace with arguments (`zend.exception_ignore_args`
+  is `Off` in the development image). So it is not enough on its own.
 
 ## R8 — Search parameters (FR-011) *(approved — D2)*
 

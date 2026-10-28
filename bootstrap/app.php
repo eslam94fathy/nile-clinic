@@ -3,10 +3,12 @@
 use App\Http\Middleware\SetLocaleFromHeader;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -44,4 +46,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => __('auth.forbidden')], 403);
             }
         });
+
+        // The default report includes the SQL with its bound values, the driver's message (for
+        // example "Duplicate entry '…'"), and a stack trace with arguments; any of these can hold
+        // patient details. Log only placeholder SQL and error codes (research R7, approved D3).
+        $exceptions->report(function (QueryException $e) {
+            Log::error('Database query failed.', [
+                'connection' => $e->getConnectionName(),
+                'sql' => $e->getSql(),
+                'sqlstate' => $e->errorInfo[0] ?? null,
+                'driver_code' => $e->errorInfo[1] ?? null,
+            ]);
+        })->stop();
     })->create();
