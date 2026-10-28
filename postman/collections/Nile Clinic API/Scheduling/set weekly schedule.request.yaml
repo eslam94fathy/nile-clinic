@@ -1,0 +1,75 @@
+$kind: http-request
+description: |-
+  Replace the whole weekly schedule. appointment_minutes: 5–240, multiple of 5. Per day at
+  most 4 periods, not overlapping or touching, each at least one appointment long; times
+  `HH:MM` on 5-minute steps (end may be `24:00`). Gaps between periods are breaks. Every day
+  here so the slots request below finds slots whatever day the run is on.
+method: PUT
+url: '{{base_url}}/doctors/:doctor/schedule'
+order: 1000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "appointment_minutes": 20,
+      "periods": [
+        {
+          "day": "sunday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "monday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "tuesday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "wednesday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "thursday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "friday",
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "day": "saturday",
+          "start": "09:00",
+          "end": "13:00"
+        }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with all seven days', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.appointment_minutes).to.eql(20);
+        pm.expect(data.days.map((d) => d.day)).to.eql(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+        pm.expect(data.days[0].periods).to.eql([{ start: '09:00', end: '13:00' }]);
+      });
+examples: './.resources/set weekly schedule.resources/examples'

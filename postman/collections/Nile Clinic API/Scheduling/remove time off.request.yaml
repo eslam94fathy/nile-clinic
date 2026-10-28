@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  Allowed until the time off has ended; then 422. Its future slots are offered again.
+method: DELETE
+url: '{{base_url}}/doctors/:doctor/time-off/:timeOff'
+order: 6000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+  - key: 'timeOff'
+    value: '{{time_off_id}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: 'pm.test(''204 No Content'', () => pm.response.to.have.status(204));'
+examples: './.resources/remove time off.resources/examples'

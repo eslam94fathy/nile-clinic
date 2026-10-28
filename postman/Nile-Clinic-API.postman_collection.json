@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`, and\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Auth/sign out. Select the **Nile Clinic Local** environment and set `admin_email` /\n`admin_password` to an administrator created with `php artisan staff:create-admin`. All data must\nbe synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`, and\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Auth/sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -3237,6 +3237,1047 @@
       ]
     },
     {
+      "name": "Scheduling",
+      "description": "Weekly schedules, time off, and bookable slots (feature 005). Every active staff member can\nread them; only administrators change them; `/doctors/me/…` is for doctors. All dates and\ntimes are the clinic's wall clock (`CLINIC_TIMEZONE`, default Africa/Cairo). Runs after\nDoctors (uses `doctor_id`) and clears the schedule at the end. Contract:\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.",
+      "item": [
+        {
+          "name": "set weekly schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with all seven days', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.appointment_minutes).to.eql(20);",
+                  "  pm.expect(data.days.map((d) => d.day)).to.eql(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);",
+                  "  pm.expect(data.days[0].periods).to.eql([{ start: '09:00', end: '13:00' }]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointment_minutes\": 20,\n  \"periods\": [\n    {\n      \"day\": \"sunday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"monday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"tuesday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"wednesday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"thursday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"friday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    },\n    {\n      \"day\": \"saturday\",\n      \"start\": \"09:00\",\n      \"end\": \"13:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "schedule"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Replace the whole weekly schedule. appointment_minutes: 5–240, multiple of 5. Per day at\nmost 4 periods, not overlapping or touching, each at least one appointment long; times\n`HH:MM` on 5-minute steps (end may be `24:00`). Gaps between periods are breaks. Every day\nhere so the slots request below finds slots whatever day the run is on."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor_id\":2,\"appointment_minutes\":20,\"days\":[{\"day\":\"sunday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"monday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"tuesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"wednesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"thursday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"friday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"saturday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]}],\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "422 Overlapping periods",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"On Sunday, periods must not overlap or touch.\",\"errors\":{\"periods.1\":[\"On Sunday, periods must not overlap or touch.\"]}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get weekly schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the saved schedule', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.days).to.have.length(7);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "schedule"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "All seven days, sunday … saturday; a day without periods is a day off. A doctor without a\nschedule gets appointment_minutes null and seven empty days."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor_id\":2,\"appointment_minutes\":20,\"days\":[{\"day\":\"sunday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"monday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"tuesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"wednesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"thursday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"friday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"saturday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]}],\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/999999/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "999999",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No doctor was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "list slots",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Clinic dates from tomorrow (UTC tomorrow is never before the clinic's today in Egypt).",
+                  "const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('slots_from', day(1));",
+                  "pm.collectionVariables.set('slots_to', day(7));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with slots of 20 minutes', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.length).to.be.above(0);",
+                  "  data.forEach((s) => pm.expect(s).to.have.keys('date', 'start', 'end'));",
+                  "  pm.expect(data[0]).to.include({ date: pm.collectionVariables.get('slots_from'), start: '09:00', end: '09:20' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/slots?from={{slots_from}}&to={{slots_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{slots_from}}",
+                  "description": "First date; not before the clinic's today"
+                },
+                {
+                  "key": "to",
+                  "value": "{{slots_to}}",
+                  "description": "Last date (inclusive); at most 31 days and 90 days ahead"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Bookable slots in date and time order: each period cut by the appointment length. Past\nslots, time off, and inactive doctors give none. The pre-request script sets a 7-day range\nfrom tomorrow."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/slots?from=2026-11-01&to=2026-11-01",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-01"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"date\":\"2026-11-01\",\"start\":\"09:00\",\"end\":\"09:20\"},{\"date\":\"2026-11-01\",\"start\":\"09:20\",\"end\":\"09:40\"},{\"date\":\"2026-11-01\",\"start\":\"09:40\",\"end\":\"10:00\"}]}"
+            },
+            {
+              "name": "422 Range too long",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/slots?from=2026-11-01&to=2026-12-15",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-12-15"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The date range can be at most 31 days.\",\"errors\":{\"to\":[\"The date range can be at most 31 days.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record time off",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 for part of one day', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ start_time: '09:00', end_time: '10:00' });",
+                  "  pm.collectionVariables.set('time_off_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"{{slots_from}}\",\n  \"end_date\": \"{{slots_from}}\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"reason\": \"Postman synthetic meeting\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/time-off",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "time-off"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Whole days (start_date to end_date, no times) or part of one day (both times, same date).\nstart_date not before the clinic's today; overlapping entries allowed. Every staff member\ncan read `reason`: no medical or personal details. The id is stored in `time_off_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/time-off",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "time-off"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"doctor_id\":2,\"start_date\":\"2026-11-01\",\"end_date\":\"2026-11-01\",\"start_time\":\"09:00\",\"end_time\":\"10:00\",\"reason\":\"Postman synthetic meeting\",\"created_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "422 Times on several days",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/time-off",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "time-off"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Times can only be given for time off on a single day.\",\"errors\":{\"start_time\":[\"Times can only be given for time off on a single day.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list time off",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 including the new entry', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.map((t) => t.id)).to.include(Number(pm.collectionVariables.get('time_off_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/time-off?from={{slots_from}}&to={{slots_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "time-off"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{slots_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{slots_to}}",
+                  "description": "At most 366 days after from; past dates allowed"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Time off overlapping the range, ordered by start. The slots in it are no longer offered."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/time-off?from=2026-11-01&to=2026-11-30",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "time-off"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-30"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":1,\"doctor_id\":2,\"start_date\":\"2026-11-01\",\"end_date\":\"2026-11-01\",\"start_time\":\"09:00\",\"end_time\":\"10:00\",\"reason\":\"Postman synthetic meeting\",\"created_at\":\"2026-10-28T10:04:55+00:00\"}]}"
+            }
+          ]
+        },
+        {
+          "name": "remove time off",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/time-off/:timeOff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "time-off",
+                ":timeOff"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                },
+                {
+                  "key": "timeOff",
+                  "value": "{{time_off_id}}"
+                }
+              ]
+            },
+            "description": "Allowed until the time off has ended; then 422. Its future slots are offered again."
+          },
+          "response": [
+            {
+              "name": "422 Already ended",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/time-off/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "time-off",
+                    "1"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This time off has already ended and cannot be removed.\",\"errors\":{\"time_off\":[\"This time off has already ended and cannot be removed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get own schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 for a doctor, 403 for other roles', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "schedule"
+              ]
+            },
+            "description": "The signed-in doctor's schedule (also `/doctors/me/slots` and `/doctors/me/time-off` with\nfrom/to). Other roles get 403, so a normal administrator run returns 403. Sign in as\n`{{new_doctor_email}}` / `postman-doctor-pass-1` to get 200."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor_id\":2,\"appointment_minutes\":20,\"days\":[{\"day\":\"sunday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"monday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"tuesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"wednesday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"thursday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"friday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]},{\"day\":\"saturday\",\"periods\":[{\"start\":\"09:00\",\"end\":\"13:00\"}]}],\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "403 Not a doctor",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "clear weekly schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "schedule"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "The doctor then has no working hours and no slots. Idempotent. Runs last in this folder."
+          },
+          "response": [
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "sign out",
       "event": [
         {
@@ -3337,6 +4378,21 @@
       "key": "doctor_id",
       "value": "",
       "description": "Set by \"Doctors/create doctor profile\"."
+    },
+    {
+      "key": "slots_from",
+      "value": "",
+      "description": "Tomorrow, set before \"Scheduling/list slots\"."
+    },
+    {
+      "key": "slots_to",
+      "value": "",
+      "description": "Six days after slots_from, set before \"Scheduling/list slots\"."
+    },
+    {
+      "key": "time_off_id",
+      "value": "",
+      "description": "Set by \"Scheduling/record time off\"."
     }
   ]
 }

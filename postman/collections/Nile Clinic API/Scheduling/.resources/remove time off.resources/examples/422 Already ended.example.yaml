@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/2/time-off/1'
+  method: DELETE
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This time off has already ended and cannot be removed.","errors":{"time_off":["This time off has already ended and cannot be removed."]}}
+order: 1000

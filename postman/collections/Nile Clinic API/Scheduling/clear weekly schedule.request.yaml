@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  The doctor then has no working hours and no slots. Idempotent. Runs last in this folder.
+method: DELETE
+url: '{{base_url}}/doctors/:doctor/schedule'
+order: 8000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: 'pm.test(''204 No Content'', () => pm.response.to.have.status(204));'
+examples: './.resources/clear weekly schedule.resources/examples'

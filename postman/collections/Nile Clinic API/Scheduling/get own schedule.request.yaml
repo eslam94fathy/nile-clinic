@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  The signed-in doctor's schedule (also `/doctors/me/slots` and `/doctors/me/time-off` with
+  from/to). Other roles get 403, so a normal administrator run returns 403. Sign in as
+  `{{new_doctor_email}}` / `postman-doctor-pass-1` to get 200.
+method: GET
+url: '{{base_url}}/doctors/me/schedule'
+order: 7000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: 'pm.test(''200 for a doctor, 403 for other roles'', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));'
+examples: './.resources/get own schedule.resources/examples'

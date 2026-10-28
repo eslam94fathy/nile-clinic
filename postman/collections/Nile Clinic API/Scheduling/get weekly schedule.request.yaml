@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  All seven days, sunday … saturday; a day without periods is a day off. A doctor without a
+  schedule gets appointment_minutes null and seven empty days.
+method: GET
+url: '{{base_url}}/doctors/:doctor/schedule'
+order: 2000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the saved schedule', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.days).to.have.length(7);
+      });
+examples: './.resources/get weekly schedule.resources/examples'

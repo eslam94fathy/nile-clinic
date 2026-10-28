@@ -1,0 +1,40 @@
+$kind: http-request
+description: |-
+  Whole days (start_date to end_date, no times) or part of one day (both times, same date).
+  start_date not before the clinic's today; overlapping entries allowed. Every staff member
+  can read `reason`: no medical or personal details. The id is stored in `time_off_id`.
+method: POST
+url: '{{base_url}}/doctors/:doctor/time-off'
+order: 4000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "start_date": "{{slots_from}}",
+      "end_date": "{{slots_from}}",
+      "start_time": "09:00",
+      "end_time": "10:00",
+      "reason": "Postman synthetic meeting"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 for part of one day', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ start_time: '09:00', end_time: '10:00' });
+        pm.collectionVariables.set('time_off_id', String(data.id));
+      });
+examples: './.resources/record time off.resources/examples'

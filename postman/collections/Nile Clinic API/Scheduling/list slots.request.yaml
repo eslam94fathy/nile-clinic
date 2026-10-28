@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Bookable slots in date and time order: each period cut by the appointment length. Past
+  slots, time off, and inactive doctors give none. The pre-request script sets a 7-day range
+  from tomorrow.
+method: GET
+url: '{{base_url}}/doctors/:doctor/slots?from={{slots_from}}&to={{slots_to}}'
+order: 3000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+queryParams:
+  - key: 'from'
+    value: '{{slots_from}}'
+    description: 'First date; not before the clinic''s today'
+  - key: 'to'
+    value: '{{slots_to}}'
+    description: 'Last date (inclusive); at most 31 days and 90 days ahead'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      // Clinic dates from tomorrow (UTC tomorrow is never before the clinic's today in Egypt).
+      const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+      pm.collectionVariables.set('slots_from', day(1));
+      pm.collectionVariables.set('slots_to', day(7));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with slots of 20 minutes', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.length).to.be.above(0);
+        data.forEach((s) => pm.expect(s).to.have.keys('date', 'start', 'end'));
+        pm.expect(data[0]).to.include({ date: pm.collectionVariables.get('slots_from'), start: '09:00', end: '09:20' });
+      });
+examples: './.resources/list slots.resources/examples'
