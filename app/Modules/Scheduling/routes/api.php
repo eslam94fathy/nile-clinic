@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Scheduling\Http\Controllers\ScheduleController;
+use App\Modules\Scheduling\Http\Controllers\SlotController;
 use Illuminate\Support\Facades\Route;
 
 // Loaded by SchedulingServiceProvider with the "api" middleware group and the "api/v1" prefix.
@@ -14,5 +15,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/doctors/{doctor}/schedule', [ScheduleController::class, 'show'])->name('scheduling.schedule.show');
         Route::put('/doctors/{doctor}/schedule', [ScheduleController::class, 'update'])->name('scheduling.schedule.update');
         Route::delete('/doctors/{doctor}/schedule', [ScheduleController::class, 'destroy'])->name('scheduling.schedule.destroy');
+        Route::get('/doctors/{doctor}/slots', [SlotController::class, 'index'])->name('scheduling.slots.index');
     });
 });
