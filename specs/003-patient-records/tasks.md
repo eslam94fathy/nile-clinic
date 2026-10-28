@@ -209,7 +209,7 @@ receive `data.id`, and find the row in the database.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T015 [US1] Write `tests/Feature/Patients/RegisterPatientTest.php`
+- [X] T015 [US1] Write `tests/Feature/Patients/RegisterPatientTest.php`
   - Scope (receptionist unless stated):
     - required fields only → `201`; `data` has every `Patient` key from the contract with
       `national_id`, `address`, `emergency_contact` null; `full_name` with extra spaces is stored
@@ -230,13 +230,13 @@ receive `data.id`, and find the row in the database.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Create `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`; bind them in `app/Modules/Patients/Providers/PatientsServiceProvider.php`
+- [X] T016 [US1] Create `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`; bind them in `app/Modules/Patients/Providers/PatientsServiceProvider.php`
   - Scope: `findById(int $id): ?Patient` and `create(array $attributes): Patient` only (US2 and
     US3 add methods). Eloquent only here. `register()`:
     `$this->app->bind(PatientRepository::class, EloquentPatientRepository::class)`.
   - Depends: T014
 
-- [ ] T017 [US1] Create `app/Modules/Patients/Services/PatientService.php` with `register()` and `find()`
+- [X] T017 [US1] Create `app/Modules/Patients/Services/PatientService.php` with `register()` and `find()`
   - Scope:
     - `find(int $id): Patient` → repository or `throw new PatientNotFoundException`
     - `register(array $attributes): Patient` → map the input to columns with a private
@@ -250,7 +250,7 @@ receive `data.id`, and find the row in the database.
     - class docblock referencing US1–US3 and research R5, R9
   - Depends: T012, T016
 
-- [ ] T018 [P] [US1] Create `app/Modules/Patients/Support/PatientRules.php` and `app/Modules/Patients/Http/Requests/StorePatientRequest.php`
+- [X] T018 [P] [US1] Create `app/Modules/Patients/Support/PatientRules.php` and `app/Modules/Patients/Http/Requests/StorePatientRequest.php`
   - Scope:
     - `PatientRules` (like `Staff/Support/PasswordRules.php`): `fields(): array` returning the rule
       list below, `attributes(): array` returning the translated attribute names, and
@@ -279,7 +279,7 @@ receive `data.id`, and find the row in the database.
       to the `emergency_contact_*` keys
   - Depends: T006, T011
 
-- [ ] T019 [P] [US1] Create `app/Modules/Patients/Http/Resources/PatientResource.php`
+- [X] T019 [P] [US1] Create `app/Modules/Patients/Http/Resources/PatientResource.php`
   - Scope: docblock "The full record; returned only for a single patient (FR-013)". Keys exactly:
     `id`, `full_name`, `sex` (`->value`), `date_of_birth` (`->toDateString()`), `phone`,
     `national_id`, `address`, `emergency_contact` (`null` when `emergency_contact_name` is null,
@@ -287,7 +287,7 @@ receive `data.id`, and find the row in the database.
     `StaffMemberResource`). Never `name_search`.
   - Depends: T007
 
-- [ ] T020 [US1] Add `store()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and the route in `app/Modules/Patients/routes/api.php`
+- [X] T020 [US1] Add `store()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and the route in `app/Modules/Patients/routes/api.php`
   - Scope: constructor-injected `PatientService`; `store(StorePatientRequest $request): PatientResource`
     → `PatientResource::make($this->patients->register($request->validated()))` (Laravel returns
     `201` for a newly created model). Route: `Route::post('/patients', …)->name('patients.store')`
