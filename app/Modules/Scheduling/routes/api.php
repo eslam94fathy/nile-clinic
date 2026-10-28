@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Scheduling\Http\Controllers\OwnScheduleController;
 use App\Modules\Scheduling\Http\Controllers\ScheduleController;
 use App\Modules\Scheduling\Http\Controllers\SlotController;
 use App\Modules\Scheduling\Http\Controllers\TimeOffController;
@@ -12,6 +13,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // administrators, /doctors/me/… for doctors (SchedulePolicy, TimeOffPolicy). The /doctors/me/…
     // routes are declared before the whereNumber('doctor') group; {doctor} and {timeOff} are
     // plain ids loaded through the repositories.
+    Route::get('/doctors/me/schedule', [OwnScheduleController::class, 'schedule'])->name('scheduling.me.schedule');
+    Route::get('/doctors/me/slots', [OwnScheduleController::class, 'slots'])->name('scheduling.me.slots');
+    Route::get('/doctors/me/time-off', [OwnScheduleController::class, 'timeOff'])->name('scheduling.me.time-off');
+
     Route::whereNumber('doctor')->group(function () {
         Route::get('/doctors/{doctor}/schedule', [ScheduleController::class, 'show'])->name('scheduling.schedule.show');
         Route::put('/doctors/{doctor}/schedule', [ScheduleController::class, 'update'])->name('scheduling.schedule.update');

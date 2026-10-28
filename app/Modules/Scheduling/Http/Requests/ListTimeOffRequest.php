@@ -14,9 +14,12 @@ class ListTimeOffRequest extends FormRequest
      */
     private const MAX_RANGE_DAYS = 366;
 
+    /**
+     * Any active staff member for a doctor by id; only doctors for /doctors/me/time-off (FR-018).
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('viewAny', DoctorTimeOff::class);
+        return $this->user()->can($this->routeIs('scheduling.me.*') ? 'viewOwn' : 'viewAny', DoctorTimeOff::class);
     }
 
     /**

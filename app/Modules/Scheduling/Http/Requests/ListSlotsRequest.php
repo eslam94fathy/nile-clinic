@@ -11,9 +11,12 @@ use Illuminate\Validation\Validator;
 
 class ListSlotsRequest extends FormRequest
 {
+    /**
+     * Any active staff member for a doctor by id; only doctors for /doctors/me/slots (FR-018).
+     */
     public function authorize(): bool
     {
-        return $this->user()->can('view', DoctorSchedule::class);
+        return $this->user()->can($this->routeIs('scheduling.me.*') ? 'viewOwn' : 'view', DoctorSchedule::class);
     }
 
     /**
