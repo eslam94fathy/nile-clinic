@@ -24,7 +24,7 @@ final class WeeklyScheduleRules
         foreach ($periods as $index => $period) {
             if ($period['end'] <= $period['start']) {
                 $problems[] = ['index' => $index, 'rule' => 'period_end_before_start', 'day' => $period['day']];
-            } elseif ($period['end'] - $period['start'] < $appointmentMinutes) {
+            } elseif ($appointmentMinutes > $period['end'] - $period['start']) {
                 $problems[] = ['index' => $index, 'rule' => 'period_shorter_than_appointment', 'day' => $period['day']];
             }
         }
