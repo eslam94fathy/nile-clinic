@@ -1,0 +1,9 @@
+$kind: collection
+name: Scheduling
+description: |-
+  Weekly schedules, time off, and bookable slots (feature 005). Every active staff member can
+  read them; only administrators change them; `/doctors/me/…` is for doctors. All dates and
+  times are the clinic's wall clock (`CLINIC_TIMEZONE`, default Africa/Cairo). Runs after
+  Doctors (uses `doctor_id`) and clears the schedule at the end. Contract:
+  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.
+order: 7000

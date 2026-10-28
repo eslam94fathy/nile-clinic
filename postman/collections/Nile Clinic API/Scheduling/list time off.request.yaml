@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  Time off overlapping the range, ordered by start. The slots in it are no longer offered.
+method: GET
+url: '{{base_url}}/doctors/:doctor/time-off?from={{slots_from}}&to={{slots_to}}'
+order: 5000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+queryParams:
+  - key: 'from'
+    value: '{{slots_from}}'
+  - key: 'to'
+    value: '{{slots_to}}'
+    description: 'At most 366 days after from; past dates allowed'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 including the new entry', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.map((t) => t.id)).to.include(Number(pm.collectionVariables.get('time_off_id')));
+      });
+examples: './.resources/list time off.resources/examples'

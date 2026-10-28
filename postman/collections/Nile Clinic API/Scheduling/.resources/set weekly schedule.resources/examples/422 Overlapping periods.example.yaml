@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/2/schedule'
+  method: PUT
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"On Sunday, periods must not overlap or touch.","errors":{"periods.1":["On Sunday, periods must not overlap or touch."]}}
+order: 2000

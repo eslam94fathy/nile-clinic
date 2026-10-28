@@ -5,13 +5,14 @@ description: |-
 
   Contracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,
   `specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,
-  `specs/003-patient-records/contracts/patients.openapi.yaml`, and
-  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.
+  `specs/003-patient-records/contracts/patients.openapi.yaml`,
+  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`, and
+  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.
 
   **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →
-  Doctors → Auth/sign out. Select the **Nile Clinic Local** environment and set `admin_email` /
-  `admin_password` to an administrator created with `php artisan staff:create-admin`. All data must
-  be synthetic.
+  Doctors → Scheduling → Auth/sign out. Select the **Nile Clinic Local** environment and set
+  `admin_email` / `admin_password` to an administrator created with `php artisan
+  staff:create-admin`. All data must be synthetic.
 
   Every request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);
   field names and structure are identical in both locales, only `message` texts change.
@@ -51,3 +52,12 @@ variables:
   - key: doctor_id
     value: ''
     description: 'Set by "Doctors/create doctor profile".'
+  - key: slots_from
+    value: ''
+    description: 'Tomorrow, set before "Scheduling/list slots".'
+  - key: slots_to
+    value: ''
+    description: 'Six days after slots_from, set before "Scheduling/list slots".'
+  - key: time_off_id
+    value: ''
+    description: 'Set by "Scheduling/record time off".'

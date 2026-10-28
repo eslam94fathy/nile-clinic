@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/schedule'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"doctor_id":2,"appointment_minutes":20,"days":[{"day":"sunday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"monday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"tuesday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"wednesday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"thursday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"friday","periods":[{"start":"09:00","end":"13:00"}]},{"day":"saturday","periods":[{"start":"09:00","end":"13:00"}]}],"updated_at":"2026-10-28T10:04:55+00:00"}}
+order: 1000

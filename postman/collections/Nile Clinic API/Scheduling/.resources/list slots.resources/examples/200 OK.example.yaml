@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/2/slots?from=2026-11-01&to=2026-11-01'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"date":"2026-11-01","start":"09:00","end":"09:20"},{"date":"2026-11-01","start":"09:20","end":"09:40"},{"date":"2026-11-01","start":"09:40","end":"10:00"}]}
+order: 1000
