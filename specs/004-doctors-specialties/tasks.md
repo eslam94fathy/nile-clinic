@@ -38,7 +38,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Purpose**: Confirm the starting point. No new dependencies (plan: Technical Context).
 
-- [ ] T001 Confirm the baseline on branch `004-doctors-specialties` (no file changes)
+- [X] T001 Confirm the baseline on branch `004-doctors-specialties` (no file changes)
   - Verify:
     - `docker compose exec app php artisan migrate:status` → the five existing migrations `Ran`
     - `docker compose exec app composer test` → 294 passed (count observed on 2026-10-28)
