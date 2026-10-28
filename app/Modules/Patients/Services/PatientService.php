@@ -45,6 +45,16 @@ class PatientService
     }
 
     /**
+     * Change only the fields sent; the patient number never changes (FR-010).
+     *
+     * @param  array<string, mixed>  $attributes  validated input; emergency_contact is a nested object or null
+     */
+    public function update(Patient $patient, array $attributes): Patient
+    {
+        return $this->guardUniqueNationalId(fn () => $this->patients->update($patient, $this->toColumns($attributes)));
+    }
+
+    /**
      * Map the API's nested emergency_contact object to its three columns (R9); null clears all three.
      *
      * @param  array<string, mixed>  $attributes

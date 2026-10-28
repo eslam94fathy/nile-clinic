@@ -15,6 +15,11 @@ interface PatientRepository
     public function create(array $attributes): Patient;
 
     /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function update(Patient $patient, array $attributes): Patient;
+
+    /**
      * One page of patients ordered by normalized name, then id (research R8). Optional filter
      * keys, combined with AND; absent keys are not applied:
      * - name: the normalized name contains this text (Arabic letter variants ignored, R3)

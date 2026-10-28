@@ -14,5 +14,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::whereNumber('patient')->group(function () {
         Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
+        Route::patch('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     });
 });

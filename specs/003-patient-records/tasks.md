@@ -400,7 +400,7 @@ and see the new values with the same `id`.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T028 [US3] Write `tests/Feature/Patients/UpdatePatientTest.php`
+- [X] T028 [US3] Write `tests/Feature/Patients/UpdatePatientTest.php`
   - Scope (receptionist unless stated):
     - change only `phone` → `200`, other fields unchanged, `id` unchanged, `updated_at` advanced
       (use `$this->travel(1)->minutes()`)
@@ -420,16 +420,16 @@ and see the new values with the same `id`.
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Add `update()` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`
+- [X] T029 [US3] Add `update()` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`
   - Scope: `update(Patient $patient, array $attributes): Patient` → `fill()->save()`, return the model.
   - Depends: T016
 
-- [ ] T030 [US3] Add `update()` to `app/Modules/Patients/Services/PatientService.php`
+- [X] T030 [US3] Add `update()` to `app/Modules/Patients/Services/PatientService.php`
   - Scope: `update(Patient $patient, array $attributes): Patient` → `toColumns()` then repository
     `update()`, inside `guardUniqueNationalId()`.
   - Depends: T017, T029
 
-- [ ] T031 [P] [US3] Create `app/Modules/Patients/Http/Requests/UpdatePatientRequest.php`
+- [X] T031 [P] [US3] Create `app/Modules/Patients/Http/Requests/UpdatePatientRequest.php`
   - Scope:
     - `authorize()` → `$this->user()->can('update', Patient::class)`
     - `prepareForValidation()` and `attributes()` from `PatientRules`, as in `StorePatientRequest`
@@ -442,7 +442,7 @@ and see the new values with the same `id`.
       `fields` → `__('patients::messages.nothing_to_update')`
   - Depends: T018
 
-- [ ] T032 [US3] Add `update()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and the route in `app/Modules/Patients/routes/api.php`
+- [X] T032 [US3] Add `update()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and the route in `app/Modules/Patients/routes/api.php`
   - Scope: `update(UpdatePatientRequest $request, int $patient): PatientResource` →
     `PatientResource::make($this->patients->update($this->patients->find($patient), $request->validated()))`.
     Route: `PATCH /patients/{patient}` (`patients.update`) inside the `whereNumber('patient')` group.
