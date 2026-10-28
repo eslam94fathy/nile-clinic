@@ -225,7 +225,7 @@ and list the catalog with both names and statuses.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T017 [US1] Write `tests/Feature/Doctors/SpecialtyCatalogTest.php`
+- [X] T017 [US1] Write `tests/Feature/Doctors/SpecialtyCatalogTest.php`
   - Scope (administrator unless stated):
     - add `{"name_en":"  Cardiology ","name_ar":"أمراض القلب"}` → `201`; `data` exactly
       `id`, `name_en` (`'Cardiology'`), `name_ar`, `is_active` (`true`)
@@ -247,7 +247,7 @@ and list the catalog with both names and statuses.
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Create `app/Modules/Doctors/Repositories/Contracts/SpecialtyRepository.php` and `app/Modules/Doctors/Repositories/EloquentSpecialtyRepository.php`; bind them in the provider
+- [X] T018 [US1] Create `app/Modules/Doctors/Repositories/Contracts/SpecialtyRepository.php` and `app/Modules/Doctors/Repositories/EloquentSpecialtyRepository.php`; bind them in the provider
   - Scope (Eloquent only here):
     - `all(?bool $isActive): Collection` — ordered by `name_en`, then `id`
     - `findById(int $id): ?Specialty`
@@ -258,7 +258,7 @@ and list the catalog with both names and statuses.
       (cleaned value; collation handles case)
   - Depends: T016
 
-- [ ] T019 [US1] Create `app/Modules/Doctors/Services/SpecialtyService.php`
+- [X] T019 [US1] Create `app/Modules/Doctors/Services/SpecialtyService.php`
   - Scope: `list(?bool $isActive)`, `find(int $id)` (→ `SpecialtyNotFoundException`),
     `create(array $attributes)` (with `is_active` true), `rename(Specialty, array)`,
     `deactivate(Specialty)`, `reactivate(Specialty)` (both idempotent: return unchanged when
@@ -269,7 +269,7 @@ and list the catalog with both names and statuses.
     (R5; same pattern as `StaffManagementService::guardUniqueEmail()`).
   - Depends: T014, T018
 
-- [ ] T020 [P] [US1] Create `ListSpecialtiesRequest`, `StoreSpecialtyRequest`, `UpdateSpecialtyRequest` in `app/Modules/Doctors/Http/Requests/`
+- [X] T020 [P] [US1] Create `ListSpecialtiesRequest`, `StoreSpecialtyRequest`, `UpdateSpecialtyRequest` in `app/Modules/Doctors/Http/Requests/`
   - Scope:
     - `authorize()`: `viewAny` / `create` / `update` on `Specialty::class`
     - `prepareForValidation()` (store and update): clean `name_en` and `name_ar` with
@@ -283,12 +283,12 @@ and list the catalog with both names and statuses.
     - `attributes()` → `doctors::attributes.<key>`
   - Depends: T013
 
-- [ ] T021 [P] [US1] Create `app/Modules/Doctors/Http/Resources/SpecialtyResource.php`
+- [X] T021 [P] [US1] Create `app/Modules/Doctors/Http/Resources/SpecialtyResource.php`
   - Scope: keys exactly `id`, `name_en`, `name_ar`, `is_active` (FR-004a). Docblock: the one
     specialty shape, used in the catalog and nested in doctors.
   - Depends: T007
 
-- [ ] T022 [US1] Create `SpecialtyController` and `SpecialtyStatusController` in `app/Modules/Doctors/Http/Controllers/`; add the five routes in `app/Modules/Doctors/routes/api.php`
+- [X] T022 [US1] Create `SpecialtyController` and `SpecialtyStatusController` in `app/Modules/Doctors/Http/Controllers/`; add the five routes in `app/Modules/Doctors/routes/api.php`
   - Scope:
     - `SpecialtyController`: `index(ListSpecialtiesRequest)` → collection (unpaginated);
       `store(StoreSpecialtyRequest)` → `201`; `update(UpdateSpecialtyRequest, int $specialty)` →

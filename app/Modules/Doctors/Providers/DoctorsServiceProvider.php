@@ -6,6 +6,8 @@ use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Models\Specialty;
 use App\Modules\Doctors\Policies\DoctorPolicy;
 use App\Modules\Doctors\Policies\SpecialtyPolicy;
+use App\Modules\Doctors\Repositories\Contracts\SpecialtyRepository;
+use App\Modules\Doctors\Repositories\EloquentSpecialtyRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -17,7 +19,7 @@ class DoctorsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(SpecialtyRepository::class, EloquentSpecialtyRepository::class);
     }
 
     /**
