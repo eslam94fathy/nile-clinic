@@ -567,12 +567,12 @@ doctor.
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T042, T043, T044
 
-- [ ] T046 Run quickstart Q1–Q8 from `specs/005-scheduling-availability/quickstart.md` on the development stack
+- [X] T046 Run quickstart Q1–Q8 from `specs/005-scheduling-availability/quickstart.md` on the development stack
   - Scope: synthetic data only; Q7 against `clinic_testing` only.
   - Accept: every Q-step's expected outcome is observed, including Q7 under 2 s.
   - Depends: T045
 
-- [ ] T047 Record the results in `specs/005-scheduling-availability/verification.md`
+- [X] T047 Record the results in `specs/005-scheduling-availability/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; failures reported as
     failures (Constitution VIII).
   - Depends: T046
