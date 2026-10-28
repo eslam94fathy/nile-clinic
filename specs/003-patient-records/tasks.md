@@ -313,7 +313,7 @@ and every list item has exactly five keys.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T021 [P] [US2] Write `tests/Feature/Patients/SearchPatientsTest.php`
+- [X] T021 [P] [US2] Write `tests/Feature/Patients/SearchPatientsTest.php`
   - Scope (receptionist; patients from the factory):
     - no filters → all patients, ordered by normalized name then id, default 15 per page
     - `name`: part of a name (middle of the string) matches; `احمد` finds `أحمد`, `إيمان` is found by
@@ -332,7 +332,7 @@ and every list item has exactly five keys.
   - Verify: `docker compose exec app php artisan test --filter=SearchPatientsTest` → fails
   - Depends: T020
 
-- [ ] T022 [P] [US2] Write `tests/Feature/Patients/ShowPatientTest.php`
+- [X] T022 [P] [US2] Write `tests/Feature/Patients/ShowPatientTest.php`
   - Scope: receptionist and administrator get `200` with the full `PatientResource` shape,
     including `national_id`, `address`, and nested `emergency_contact`; unknown id → `404` with
     `patients::messages.not_found`; non-numeric id → `404` (route constraint).
@@ -341,7 +341,7 @@ and every list item has exactly five keys.
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] Add `paginate()` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`
+- [X] T023 [US2] Add `paginate()` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php`
   - Scope: `paginate(array $filters, int $perPage): LengthAwarePaginator` with optional keys:
     - `name` → `where('name_search', 'like', '%'.$escaped.'%')`, where `$escaped` is
       `ArabicName::normalize($name)` with `\`, `%`, `_` escaped by a backslash (R3)
@@ -350,12 +350,12 @@ and every list item has exactly five keys.
     - docblock listing the filter keys and that absent keys are not applied
   - Depends: T016
 
-- [ ] T024 [US2] Add `list()` to `app/Modules/Patients/Services/PatientService.php`
+- [X] T024 [US2] Add `list()` to `app/Modules/Patients/Services/PatientService.php`
   - Scope: `list(array $filters, int $perPage): LengthAwarePaginator` → repository `paginate()`
     (signature used by quickstart Q7).
   - Depends: T017, T023
 
-- [ ] T025 [P] [US2] Create `app/Modules/Patients/Http/Requests/ListPatientsRequest.php`
+- [X] T025 [P] [US2] Create `app/Modules/Patients/Http/Requests/ListPatientsRequest.php`
   - Scope:
     - `authorize()` → `$this->user()->can('viewAny', Patient::class)`
     - `prepareForValidation()`: `PhoneNumber::normalize()` on `phone`
@@ -368,13 +368,13 @@ and every list item has exactly five keys.
     - `attributes()` from `patients::attributes`
   - Depends: T006, T011
 
-- [ ] T026 [P] [US2] Create `app/Modules/Patients/Http/Resources/PatientSummaryResource.php`
+- [X] T026 [P] [US2] Create `app/Modules/Patients/Http/Resources/PatientSummaryResource.php`
   - Scope: docblock "List and search shape (FR-013): never national ID, address, or emergency
     contact". Keys exactly: `id`, `full_name`, `sex` (`->value`), `date_of_birth`
     (`->toDateString()`), `phone`.
   - Depends: T007
 
-- [ ] T027 [US2] Add `index()` and `show()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and their routes in `app/Modules/Patients/routes/api.php`
+- [X] T027 [US2] Add `index()` and `show()` to `app/Modules/Patients/Http/Controllers/PatientController.php` and their routes in `app/Modules/Patients/routes/api.php`
   - Scope:
     - `index(ListPatientsRequest $request): AnonymousResourceCollection` →
       `PatientSummaryResource::collection($this->patients->list($request->filters(), $request->perPage()))`
