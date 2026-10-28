@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/specialties'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":3,"name_en":"Cardiology","name_ar":"أمراض القلب","is_active":true},{"id":4,"name_en":"Pediatrics","name_ar":"طب الأطفال","is_active":true}]}
+order: 1000

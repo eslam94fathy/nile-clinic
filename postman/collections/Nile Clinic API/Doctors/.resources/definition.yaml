@@ -1,0 +1,10 @@
+$kind: collection
+name: Doctors
+description: |-
+  Doctor profiles (feature 004, US2–US3). Every active staff member can list and view doctors;
+  only administrators create and update profiles; `/doctors/me` is for doctors. A profile links
+  to one staff account with the doctor role, which supplies the name; the doctor is active only
+  while that account is active and still a doctor. Responses never include the account email,
+  role, or id. Runs after Specialties (uses `specialty_id`). Contract:
+  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.
+order: 6000

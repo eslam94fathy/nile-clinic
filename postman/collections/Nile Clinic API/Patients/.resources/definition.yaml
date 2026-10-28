@@ -1,0 +1,8 @@
+$kind: collection
+name: Patients
+description: |-
+  Patient registration and records (feature 003): administrators and receptionists only; doctors
+  get 403 on every request. The patient number is the record's `id`. Lists never include the
+  national ID, address, or emergency contact. Contract:
+  `specs/003-patient-records/contracts/patients.openapi.yaml`.
+order: 4000

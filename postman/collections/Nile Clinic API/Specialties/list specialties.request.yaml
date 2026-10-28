@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  The whole catalog (unpaginated), ordered by English name.
+method: GET
+url: '{{base_url}}/specialties'
+order: 1000
+queryParams:
+  - key: 'is_active'
+    value: '1'
+    description: '1 for active only, 0 for deactivated only'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with both names on every specialty', () => {
+        pm.response.to.have.status(200);
+        pm.response.json().data.forEach((s) => pm.expect(s).to.have.keys('id', 'name_en', 'name_ar', 'is_active'));
+      });
+examples: './.resources/list specialties.resources/examples'

@@ -1,0 +1,38 @@
+$kind: http-request
+description: |-
+  Register a patient. Required: full_name, date_of_birth (not in the future, at most 130 years
+  ago), sex (male/female), phone (8–15 digits, optional leading +; spaces and dashes removed).
+  Optional: national_id (14 digits, first digit 2 or 3, unique), address, emergency_contact
+  {name, relationship, phone}. The new id is stored in `patient_id`. Synthetic data only.
+method: POST
+url: '{{base_url}}/patients'
+order: 1000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "سلمى  حسن",
+      "date_of_birth": "1990-04-12",
+      "sex": "female",
+      "phone": "010-0000 0021"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 with the full record', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data.full_name).to.eql('سلمى حسن');
+        pm.expect(data.phone).to.eql('01000000021');
+        pm.expect(data).to.have.keys('id', 'full_name', 'sex', 'date_of_birth', 'phone', 'national_id', 'address', 'emergency_contact', 'created_at', 'updated_at');
+        pm.collectionVariables.set('patient_id', String(data.id));
+      });
+examples: './.resources/register patient.resources/examples'

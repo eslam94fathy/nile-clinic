@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/patients'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The phone number field format is invalid. (and 1 more error)","errors":{"phone":["The phone number field format is invalid."],"national_id":["The national ID field format is invalid."]}}
+order: 2000

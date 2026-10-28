@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Create the profile for an active doctor-role account with no profile yet. title (1–100),
+  optional registration_number (letters and digits, at most 30, unique), and at least one
+  active specialty. The id is stored in `doctor_id`.
+method: POST
+url: '{{base_url}}/doctors'
+order: 2000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "user_id": {{doctor_user_id}},
+      "title": "Consultant",
+      "registration_number": "{{doctor_registration_number}}",
+      "specialty_ids": [
+        {{specialty_id}}
+      ]
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: 'pm.collectionVariables.set(''doctor_registration_number'', ''PM'' + Date.now());'
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 with the account name and no account details', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data.name).to.eql('Postman Doctor');
+        pm.expect(data.is_active).to.eql(true);
+        pm.expect(data.specialties.map((s) => s.id)).to.eql([Number(pm.collectionVariables.get('specialty_id'))]);
+        pm.expect(data).to.not.have.any.keys('email', 'role', 'user_id');
+        pm.collectionVariables.set('doctor_id', String(data.id));
+      });
+examples: './.resources/create doctor profile.resources/examples'
