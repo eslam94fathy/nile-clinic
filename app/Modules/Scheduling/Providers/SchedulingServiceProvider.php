@@ -6,6 +6,8 @@ use App\Modules\Scheduling\Models\DoctorSchedule;
 use App\Modules\Scheduling\Models\DoctorTimeOff;
 use App\Modules\Scheduling\Policies\SchedulePolicy;
 use App\Modules\Scheduling\Policies\TimeOffPolicy;
+use App\Modules\Scheduling\Repositories\Contracts\DoctorScheduleRepository;
+use App\Modules\Scheduling\Repositories\EloquentDoctorScheduleRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -17,7 +19,7 @@ class SchedulingServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(DoctorScheduleRepository::class, EloquentDoctorScheduleRepository::class);
     }
 
     /**
