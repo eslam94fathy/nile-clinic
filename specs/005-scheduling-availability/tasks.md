@@ -40,7 +40,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Purpose**: Confirm the starting point. No new dependencies (plan: Technical Context).
 
-- [ ] T001 Confirm the baseline on branch `005-scheduling-availability` (no file changes)
+- [X] T001 Confirm the baseline on branch `005-scheduling-availability` (no file changes)
   - Verify:
     - `docker compose exec app php artisan migrate:status` → the eight existing migrations `Ran`
     - `docker compose exec app composer test` → 486 passed (count observed after feature 004)
