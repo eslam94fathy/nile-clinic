@@ -318,7 +318,7 @@ replace one specialty and change the title.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T023 [P] [US2] Write `tests/Feature/Doctors/CreateDoctorTest.php`
+- [X] T023 [P] [US2] Write `tests/Feature/Doctors/CreateDoctorTest.php`
   - Scope (administrator unless stated):
     - active doctor-role account + `title` + two active specialties → `201`; `data` has every
       `Doctor` key from the contract; `name` equals the account name; `is_active` true; body
@@ -338,7 +338,7 @@ replace one specialty and change the title.
   - Verify: `docker compose exec app php artisan test --filter=CreateDoctorTest` → fails
   - Depends: T022
 
-- [ ] T024 [P] [US2] Write `tests/Feature/Doctors/UpdateDoctorTest.php`
+- [X] T024 [P] [US2] Write `tests/Feature/Doctors/UpdateDoctorTest.php`
   - Scope (administrator unless stated):
     - change `title` only → `200`; specialties unchanged
     - `registration_number` set; `null` clears it; another doctor's number → `422`; its own number
@@ -353,7 +353,7 @@ replace one specialty and change the title.
 
 ### Implementation for User Story 2
 
-- [ ] T025 [US2] Create `app/Modules/Doctors/Repositories/Contracts/DoctorRepository.php` and `app/Modules/Doctors/Repositories/EloquentDoctorRepository.php`; bind them in the provider
+- [X] T025 [US2] Create `app/Modules/Doctors/Repositories/Contracts/DoctorRepository.php` and `app/Modules/Doctors/Repositories/EloquentDoctorRepository.php`; bind them in the provider
   - Scope (US3 adds `paginate`):
     - `findById(int $id): ?Doctor` and `findByUserId(int $userId): ?Doctor` — both eager-load
       `user` and `specialties`
@@ -362,7 +362,7 @@ replace one specialty and change the title.
     - `registrationNumberTaken(string $number): bool`
   - Depends: T016
 
-- [ ] T026 [US2] Create `app/Modules/Doctors/Services/DoctorService.php` with `find()`, `create()`, `update()`
+- [X] T026 [US2] Create `app/Modules/Doctors/Services/DoctorService.php` with `find()`, `create()`, `update()`
   - Scope (constructor: `DoctorRepository`, `SpecialtyRepository`, Staff's `StaffMemberRepository`):
     - `find(int $id): Doctor` → `DoctorNotFoundException`
     - `create(array $attributes): Doctor` — inside `DB::transaction`: load the account with
@@ -381,7 +381,7 @@ replace one specialty and change the title.
     - class docblock referencing US2–US3 and R2, R6, R7
   - Depends: T014, T018, T025
 
-- [ ] T027 [P] [US2] Create `StoreDoctorRequest` and `UpdateDoctorRequest` in `app/Modules/Doctors/Http/Requests/`
+- [X] T027 [P] [US2] Create `StoreDoctorRequest` and `UpdateDoctorRequest` in `app/Modules/Doctors/Http/Requests/`
   - Scope (rules quoted from data-model.md):
     - `authorize()`: `create` / `update` on `Doctor::class`
     - `prepareForValidation()`: clean `title` with `ArabicName::clean()` when it is a string
@@ -399,13 +399,13 @@ replace one specialty and change the title.
     - `attributes()` → `doctors::attributes.<key>`, `specialty_ids.*` → `specialty_id`
   - Depends: T013
 
-- [ ] T028 [P] [US2] Create `app/Modules/Doctors/Http/Resources/DoctorResource.php`
+- [X] T028 [P] [US2] Create `app/Modules/Doctors/Http/Resources/DoctorResource.php`
   - Scope: keys exactly `id`, `name` (`$this->user->name`), `title`, `is_active`
     (`$this->isActive()`), `specialties` (`SpecialtyResource::collection`), `registration_number`,
     `created_at`, `updated_at` (ISO 8601). Never `user_id`, `email`, or `role` (FR-015, FR-016).
   - Depends: T008, T021
 
-- [ ] T029 [US2] Create `app/Modules/Doctors/Http/Controllers/DoctorController.php` with `store()` and `update()`; add the routes in `app/Modules/Doctors/routes/api.php`
+- [X] T029 [US2] Create `app/Modules/Doctors/Http/Controllers/DoctorController.php` with `store()` and `update()`; add the routes in `app/Modules/Doctors/routes/api.php`
   - Scope: `store(StoreDoctorRequest)` → `DoctorResource` (`201`); `update(UpdateDoctorRequest, int $doctor)`
     → `find` then `update`. Routes `doctors.store` (`POST /doctors`) and `doctors.update`
     (`PATCH /doctors/{doctor}` in a `whereNumber('doctor')` group).
