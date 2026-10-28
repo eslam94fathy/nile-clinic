@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  A single profile: the list fields plus registration_number and timestamps. Unknown id: 404.
+method: GET
+url: '{{base_url}}/doctors/:doctor'
+order: 4000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the registration number', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.registration_number).to.eql(pm.collectionVariables.get('doctor_registration_number'));
+      });
+examples: './.resources/get doctor.resources/examples'

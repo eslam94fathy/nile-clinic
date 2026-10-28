@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/2'
+  method: PATCH
+response:
+  statusCode: 403
+  statusText: Forbidden
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"You are not allowed to perform this action."}
+order: 2000

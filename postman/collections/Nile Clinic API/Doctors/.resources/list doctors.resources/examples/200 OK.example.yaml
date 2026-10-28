@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors?specialty_id=3'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":2,"name":"Postman Doctor","title":"Consultant","is_active":true,"specialties":[{"id":3,"name_en":"Cardiology","name_ar":"أمراض القلب","is_active":true},{"id":4,"name_en":"Pediatrics","name_ar":"طب الأطفال","is_active":true}]}],"links":{"first":"http://localhost:8080/api/v1/doctors?page=1","last":"http://localhost:8080/api/v1/doctors?page=1","prev":null,"next":null},"meta":{"current_page":1,"from":1,"last_page":1,"path":"http://localhost:8080/api/v1/doctors","per_page":15,"to":1,"total":1}}
+order: 1000

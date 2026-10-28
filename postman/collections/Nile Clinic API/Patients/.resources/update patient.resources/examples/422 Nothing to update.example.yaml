@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/patients/1'
+  method: PATCH
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"Send at least one field to change.","errors":{"fields":["Send at least one field to change."]}}
+order: 2000

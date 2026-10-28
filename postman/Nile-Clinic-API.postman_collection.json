@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml` and\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Auth/sign out.\nSelect the **Nile Clinic Local** environment and set `admin_email` / `admin_password` to an\nadministrator created with `php artisan staff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`, and\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Auth/sign out. Select the **Nile Clinic Local** environment and set `admin_email` /\n`admin_password` to an administrator created with `php artisan staff:create-admin`. All data must\nbe synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1292,6 +1292,1951 @@
       ]
     },
     {
+      "name": "Patients",
+      "description": "Patient registration and records (feature 003): administrators and receptionists only; doctors\nget 403 on every request. The patient number is the record's `id`. Lists never include the\nnational ID, address, or emergency contact. Contract:\n`specs/003-patient-records/contracts/patients.openapi.yaml`.",
+      "item": [
+        {
+          "name": "register patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 with the full record', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.full_name).to.eql('سلمى حسن');",
+                  "  pm.expect(data.phone).to.eql('01000000021');",
+                  "  pm.expect(data).to.have.keys('id', 'full_name', 'sex', 'date_of_birth', 'phone', 'national_id', 'address', 'emergency_contact', 'created_at', 'updated_at');",
+                  "  pm.collectionVariables.set('patient_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"سلمى  حسن\",\n  \"date_of_birth\": \"1990-04-12\",\n  \"sex\": \"female\",\n  \"phone\": \"010-0000 0021\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Register a patient. Required: full_name, date_of_birth (not in the future, at most 130 years\nago), sex (male/female), phone (8–15 digits, optional leading +; spaces and dashes removed).\nOptional: national_id (14 digits, first digit 2 or 3, unique), address, emergency_contact\n{name, relationship, phone}. The new id is stored in `patient_id`. Synthetic data only."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"full_name\":\"سلمى حسن\",\"sex\":\"female\",\"date_of_birth\":\"1990-04-12\",\"phone\":\"01000000021\",\"national_id\":null,\"address\":null,\"emergency_contact\":null,\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "422 Invalid fields",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The phone number field format is invalid. (and 1 more error)\",\"errors\":{\"phone\":[\"The phone number field format is invalid.\"],\"national_id\":[\"The national ID field format is invalid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list patients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 paginated, summary fields only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.keys('data', 'links', 'meta');",
+                  "  body.data.forEach((p) => pm.expect(p).to.have.keys('id', 'full_name', 'sex', 'date_of_birth', 'phone'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients?per_page=15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "سلمى",
+                  "description": "Part of the full name",
+                  "disabled": true
+                },
+                {
+                  "key": "phone",
+                  "value": "01000000021",
+                  "description": "Exact, after removing spaces and dashes",
+                  "disabled": true
+                },
+                {
+                  "key": "national_id",
+                  "value": "29004120100021",
+                  "description": "Exact",
+                  "disabled": true
+                },
+                {
+                  "key": "id",
+                  "value": "{{patient_id}}",
+                  "description": "Exact patient number",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "1–100, default 15"
+                }
+              ]
+            },
+            "description": "One page of patients ordered by name, then id. Filters combine with AND. Name search ignores\ncase, extra spaces, and the Arabic variants أ/إ/آ = ا, ة = ه, ى = ي. Items have exactly id,\nfull_name, sex, date_of_birth, phone."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients?name=سلمى",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "سلمى"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":1,\"full_name\":\"سلمى حسن\",\"sex\":\"female\",\"date_of_birth\":\"1990-04-12\",\"phone\":\"01000000021\"}],\"links\":{\"first\":\"http://localhost:8080/api/v1/patients?page=1\",\"last\":\"http://localhost:8080/api/v1/patients?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"path\":\"http://localhost:8080/api/v1/patients\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            },
+            {
+              "name": "403 Doctor",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the full record', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('patient_id')));",
+                  "  pm.expect(pm.response.json().data).to.have.property('national_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients/:patient",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                ":patient"
+              ],
+              "variable": [
+                {
+                  "key": "patient",
+                  "value": "{{patient_id}}",
+                  "description": "The patient number"
+                }
+              ]
+            },
+            "description": "The full record, including national ID, address, and emergency contact. Unknown id: 404."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"full_name\":\"سلمى حسن\",\"sex\":\"female\",\"date_of_birth\":\"1990-04-12\",\"phone\":\"01000000021\",\"national_id\":null,\"address\":null,\"emergency_contact\":null,\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No patient was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "update patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the new details', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.address).to.eql('12 Synthetic St, Cairo');",
+                  "  pm.expect(data.emergency_contact.phone).to.eql('01000000022');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"12 Synthetic St, Cairo\",\n  \"emergency_contact\": {\n    \"name\": \"منى حسن\",\n    \"relationship\": \"sister\",\n    \"phone\": \"01000000022\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/:patient",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                ":patient"
+              ],
+              "variable": [
+                {
+                  "key": "patient",
+                  "value": "{{patient_id}}",
+                  "description": "The patient number"
+                }
+              ]
+            },
+            "description": "Partial update: send only the fields to change; `null` clears an optional field. The patient\nnumber never changes. An empty body gets 422 on `fields`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"full_name\":\"سلمى حسن\",\"sex\":\"female\",\"date_of_birth\":\"1990-04-12\",\"phone\":\"01000000021\",\"national_id\":null,\"address\":\"12 Synthetic St, Cairo\",\"emergency_contact\":{\"name\":\"منى حسن\",\"relationship\":\"sister\",\"phone\":\"01000000022\"},\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "422 Nothing to update",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients",
+                    "1"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Send at least one field to change.\",\"errors\":{\"fields\":[\"Send at least one field to change.\"]}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Specialties",
+      "description": "Specialty catalog (feature 004, US1). Every active staff member can list it; only\nadministrators add, rename, deactivate, and reactivate. Specialties always return both\n`name_en` and `name_ar`, whatever the request language, and are never deleted. Contract:\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.",
+      "item": [
+        {
+          "name": "list specialties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with both names on every specialty', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.response.json().data.forEach((s) => pm.expect(s).to.have.keys('id', 'name_en', 'name_ar', 'is_active'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/specialties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "specialties"
+              ],
+              "query": [
+                {
+                  "key": "is_active",
+                  "value": "1",
+                  "description": "1 for active only, 0 for deactivated only",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The whole catalog (unpaginated), ordered by English name."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}]}"
+            }
+          ]
+        },
+        {
+          "name": "add specialty",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('specialty_suffix', String(Date.now()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 active with both names', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.name_en).to.eql('Postman Specialty ' + pm.collectionVariables.get('specialty_suffix'));",
+                  "  pm.expect(data.is_active).to.eql(true);",
+                  "  pm.collectionVariables.set('specialty_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name_en\": \"Postman Specialty {{specialty_suffix}}\",\n  \"name_ar\": \"تخصص بوستمان {{specialty_suffix}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/specialties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "specialties"
+              ]
+            },
+            "description": "Add an active specialty. Both names required, at most 100 characters, each unique (case and\nextra spaces ignored, deactivated specialties included). The pre-request script makes the\nsynthetic names unique; the id is stored in `specialty_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true}}"
+            },
+            {
+              "name": "422 Name taken",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The English name has already been taken.\",\"errors\":{\"name_en\":[\"The English name has already been taken.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "rename specialty",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the new English name', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.name_en).to.include('Renamed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name_en\": \"Postman Specialty {{specialty_suffix}} Renamed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/specialties/:specialty",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "specialties",
+                ":specialty"
+              ],
+              "variable": [
+                {
+                  "key": "specialty",
+                  "value": "{{specialty_id}}"
+                }
+              ]
+            },
+            "description": "Change one or both names. An empty body gets 422 on `fields`; unknown id: 404."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties",
+                    "3"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"name_en\":\"Cardiac Medicine\",\"name_ar\":\"أمراض القلب\",\"is_active\":true}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No specialty was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "deactivate specialty",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and deactivated', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.is_active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/specialties/:specialty/deactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "specialties",
+                ":specialty",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "specialty",
+                  "value": "{{specialty_id}}"
+                }
+              ]
+            },
+            "description": "Idempotent. Doctors already assigned keep it; it can no longer be newly assigned."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties/4/deactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties",
+                    "4",
+                    "deactivate"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":false}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties/4/deactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties",
+                    "4",
+                    "deactivate"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "reactivate specialty",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and active', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.is_active).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/specialties/:specialty/reactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "specialties",
+                ":specialty",
+                "reactivate"
+              ],
+              "variable": [
+                {
+                  "key": "specialty",
+                  "value": "{{specialty_id}}"
+                }
+              ]
+            },
+            "description": "Idempotent. Runs after \"deactivate specialty\", so the Doctors folder can assign it."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/specialties/4/reactivate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "specialties",
+                    "4",
+                    "reactivate"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "description": "Doctor profiles (feature 004, US2–US3). Every active staff member can list and view doctors;\nonly administrators create and update profiles; `/doctors/me` is for doctors. A profile links\nto one staff account with the doctor role, which supplies the name; the doctor is active only\nwhile that account is active and still a doctor. Responses never include the account email,\nrole, or id. Runs after Specialties (uses `specialty_id`). Contract:\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.",
+      "item": [
+        {
+          "name": "create doctor account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('new_doctor_email', 'postman-doctor-' + Date.now() + '@clinic.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 with the doctor role', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data.role).to.eql('doctor');",
+                  "  pm.collectionVariables.set('doctor_user_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Doctor\",\n  \"email\": \"{{new_doctor_email}}\",\n  \"role\": \"doctor\",\n  \"password\": \"postman-doctor-pass-1\",\n  \"password_confirmation\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff"
+              ]
+            },
+            "description": "Staff account with the doctor role for the profile below (same endpoint as\n\"Staff/create staff member\"). The id is stored in `doctor_user_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/staff",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "staff"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":10,\"name\":\"Postman Doctor\",\"email\":\"postman-doctor@clinic.test\",\"role\":\"doctor\",\"is_active\":true,\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            }
+          ]
+        },
+        {
+          "name": "create doctor profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('doctor_registration_number', 'PM' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 with the account name and no account details', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.name).to.eql('Postman Doctor');",
+                  "  pm.expect(data.is_active).to.eql(true);",
+                  "  pm.expect(data.specialties.map((s) => s.id)).to.eql([Number(pm.collectionVariables.get('specialty_id'))]);",
+                  "  pm.expect(data).to.not.have.any.keys('email', 'role', 'user_id');",
+                  "  pm.collectionVariables.set('doctor_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{doctor_user_id}},\n  \"title\": \"Consultant\",\n  \"registration_number\": \"{{doctor_registration_number}}\",\n  \"specialty_ids\": [\n    {{specialty_id}}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors"
+              ]
+            },
+            "description": "Create the profile for an active doctor-role account with no profile yet. title (1–100),\noptional registration_number (letters and digits, at most 30, unique), and at least one\nactive specialty. The id is stored in `doctor_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":2,\"name\":\"Postman Doctor\",\"title\":\"Consultant\",\"is_active\":true,\"specialties\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}],\"registration_number\":\"PM1793181890\",\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "422 Not an active doctor",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The selected staff account must be active and have the doctor role.\",\"errors\":{\"user_id\":[\"The selected staff account must be active and have the doctor role.\"]}}"
+            },
+            {
+              "name": "422 Deactivated specialty",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"A deactivated specialty cannot be newly assigned to a doctor.\",\"errors\":{\"specialty_ids\":[\"A deactivated specialty cannot be newly assigned to a doctor.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list doctors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 lists the new doctor with summary fields only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.map((d) => d.id)).to.include(Number(pm.collectionVariables.get('doctor_id')));",
+                  "  data.forEach((d) => pm.expect(d).to.have.keys('id', 'name', 'title', 'is_active', 'specialties'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors?specialty_id={{specialty_id}}&per_page=15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors"
+              ],
+              "query": [
+                {
+                  "key": "specialty_id",
+                  "value": "{{specialty_id}}",
+                  "description": "Doctors assigned this specialty"
+                },
+                {
+                  "key": "name",
+                  "value": "postman",
+                  "description": "Part of the doctor's name",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "1",
+                  "description": "1 active only (account active with the doctor role), 0 inactive only",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "1–100, default 15"
+                }
+              ]
+            },
+            "description": "One page of doctors ordered by name, then id. Filters combine with AND. Name search ignores\ncase, extra spaces, and the Arabic variants أ/إ/آ = ا, ة = ه, ى = ي. Items have exactly id,\nname, title, is_active, specialties."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors?specialty_id=3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors"
+                  ],
+                  "query": [
+                    {
+                      "key": "specialty_id",
+                      "value": "3"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":2,\"name\":\"Postman Doctor\",\"title\":\"Consultant\",\"is_active\":true,\"specialties\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}]}],\"links\":{\"first\":\"http://localhost:8080/api/v1/doctors?page=1\",\"last\":\"http://localhost:8080/api/v1/doctors?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"path\":\"http://localhost:8080/api/v1/doctors\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            }
+          ]
+        },
+        {
+          "name": "get doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the registration number', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.registration_number).to.eql(pm.collectionVariables.get('doctor_registration_number'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "A single profile: the list fields plus registration_number and timestamps. Unknown id: 404."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":2,\"name\":\"Postman Doctor\",\"title\":\"Consultant\",\"is_active\":true,\"specialties\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}],\"registration_number\":\"PM1793181890\",\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No doctor was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "update doctor profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the new title', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.title).to.eql('Senior Consultant');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Consultant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id"
+                }
+              ]
+            },
+            "description": "Partial update of title, registration_number (`null` clears it), and specialty_ids (replaces\nthe set; an assigned specialty may stay after it is deactivated). The linked account never\nchanges. Administrators only, including for a doctor's own profile."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":2,\"name\":\"Postman Doctor\",\"title\":\"Senior Consultant\",\"is_active\":true,\"specialties\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}],\"registration_number\":\"PM1793181890\",\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "2"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get own doctor profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 for a doctor, 403 for other roles', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me"
+              ]
+            },
+            "description": "The signed-in doctor's own profile; 404 if none has been created yet. Other roles get 403,\nso with the administrator token of a normal run this returns 403. Sign in as a doctor\n(e.g. `{{new_doctor_email}}` / `postman-doctor-pass-1`) to get 200."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":2,\"name\":\"Postman Doctor\",\"title\":\"Consultant\",\"is_active\":true,\"specialties\":[{\"id\":3,\"name_en\":\"Cardiology\",\"name_ar\":\"أمراض القلب\",\"is_active\":true},{\"id\":4,\"name_en\":\"Pediatrics\",\"name_ar\":\"طب الأطفال\",\"is_active\":true}],\"registration_number\":\"PM1793181890\",\"created_at\":\"2026-10-28T10:04:55+00:00\",\"updated_at\":\"2026-10-28T10:04:55+00:00\"}}"
+            },
+            {
+              "name": "403 Not a doctor",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "sign out",
       "event": [
         {
@@ -1357,6 +3302,41 @@
       "key": "new_staff_email",
       "value": "",
       "description": "Unique synthetic email generated before \"Staff/create staff member\"."
+    },
+    {
+      "key": "patient_id",
+      "value": "",
+      "description": "Set by \"Patients/register patient\"."
+    },
+    {
+      "key": "specialty_suffix",
+      "value": "",
+      "description": "Unique suffix generated before \"Specialties/add specialty\"."
+    },
+    {
+      "key": "specialty_id",
+      "value": "",
+      "description": "Set by \"Specialties/add specialty\"."
+    },
+    {
+      "key": "new_doctor_email",
+      "value": "",
+      "description": "Unique synthetic email generated before \"Doctors/create doctor account\"."
+    },
+    {
+      "key": "doctor_user_id",
+      "value": "",
+      "description": "Set by \"Doctors/create doctor account\"."
+    },
+    {
+      "key": "doctor_registration_number",
+      "value": "",
+      "description": "Unique number generated before \"Doctors/create doctor profile\"."
+    },
+    {
+      "key": "doctor_id",
+      "value": "",
+      "description": "Set by \"Doctors/create doctor profile\"."
     }
   ]
 }

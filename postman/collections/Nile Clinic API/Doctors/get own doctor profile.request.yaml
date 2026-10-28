@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  The signed-in doctor's own profile; 404 if none has been created yet. Other roles get 403,
+  so with the administrator token of a normal run this returns 403. Sign in as a doctor
+  (e.g. `{{new_doctor_email}}` / `postman-doctor-pass-1`) to get 200.
+method: GET
+url: '{{base_url}}/doctors/me'
+order: 6000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 for a doctor, 403 for other roles', () => {
+        pm.expect(pm.response.code).to.be.oneOf([200, 403]);
+      });
+examples: './.resources/get own doctor profile.resources/examples'

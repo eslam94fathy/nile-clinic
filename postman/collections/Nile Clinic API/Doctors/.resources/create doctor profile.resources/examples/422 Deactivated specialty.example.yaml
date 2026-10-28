@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"A deactivated specialty cannot be newly assigned to a doctor.","errors":{"specialty_ids":["A deactivated specialty cannot be newly assigned to a doctor."]}}
+order: 3000
