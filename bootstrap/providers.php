@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Doctors\Providers\DoctorsServiceProvider;
 use App\Modules\Patients\Providers\PatientsServiceProvider;
 use App\Modules\Staff\Providers\StaffServiceProvider;
 use App\Modules\System\Providers\SystemServiceProvider;
@@ -10,4 +11,5 @@ return [
     SystemServiceProvider::class,
     StaffServiceProvider::class,
     PatientsServiceProvider::class,
+    DoctorsServiceProvider::class,
 ];

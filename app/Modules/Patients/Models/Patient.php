@@ -3,7 +3,7 @@
 namespace App\Modules\Patients\Models;
 
 use App\Modules\Patients\Enums\Sex;
-use App\Modules\Patients\Support\ArabicName;
+use App\Support\ArabicName;
 use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

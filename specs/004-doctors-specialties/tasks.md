@@ -55,7 +55,7 @@ translations, exceptions, and policies that every story needs.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Move `ArabicName` to `app/Support/ArabicName.php` (approved D2, research R4)
+- [X] T002 Move `ArabicName` to `app/Support/ArabicName.php` (approved D2, research R4)
   - Scope:
     - Move `app/Modules/Patients/Support/ArabicName.php` to `app/Support/ArabicName.php`; namespace
       `App\Support`. Change `private const VARIANTS` to `public const VARIANTS` (the doctor
@@ -68,14 +68,14 @@ translations, exceptions, and policies that every story needs.
     - `grep -rn "Patients\\\\Support\\\\ArabicName" app tests database` → no matches.
   - Verify: `docker compose exec app composer test` → 294 passed (same count as T001)
 
-- [ ] T003 [P] Add one line to `docs/architecture.md` about `app/Support/`
+- [X] T003 [P] Add one line to `docs/architecture.md` about `app/Support/`
   - Scope: in the module layout tree, add `app/Support/` with the comment
     `# helpers shared by two or more modules (e.g. ArabicName)`; under "Core rules", extend the
     existing "Shared helpers are added only when two real repositories need the same thing"
     sentence with "; they live in `app/Support/`".
   - Depends: T002
 
-- [ ] T004 Create the `specialties` migration in `database/migrations/<timestamp>_create_specialties_table.php`
+- [X] T004 Create the `specialties` migration in `database/migrations/<timestamp>_create_specialties_table.php`
   - Scope: `docker compose exec app php artisan make:migration create_specialties_table`, with a
     one-line comment pointing to `specs/004-doctors-specialties/data-model.md`:
     - `id` bigint unsigned auto-increment primary key
@@ -87,7 +87,7 @@ translations, exceptions, and policies that every story needs.
   - Accept: matches data-model.md; `down()` drops the table.
   - Verify: covered by T011
 
-- [ ] T005 Create the `doctors` migration in `database/migrations/<timestamp>_create_doctors_table.php`
+- [X] T005 Create the `doctors` migration in `database/migrations/<timestamp>_create_doctors_table.php`
   - Scope: generated after T004 so it runs later:
     - `id` bigint unsigned auto-increment primary key ("the doctor id", R2)
     - `user_id` `foreignId('user_id')->unique()->constrained('users')->restrictOnDelete()`
@@ -98,7 +98,7 @@ translations, exceptions, and policies that every story needs.
   - Accept: matches data-model.md; `down()` drops the table.
   - Depends: T004
 
-- [ ] T006 Create the `doctor_specialty` migration in `database/migrations/<timestamp>_create_doctor_specialty_table.php`
+- [X] T006 Create the `doctor_specialty` migration in `database/migrations/<timestamp>_create_doctor_specialty_table.php`
   - Scope: generated after T005:
     - `doctor_id` `foreignId()->constrained('doctors')->restrictOnDelete()`
     - `specialty_id` `foreignId()->constrained('specialties')->restrictOnDelete()`
@@ -106,7 +106,7 @@ translations, exceptions, and policies that every story needs.
   - Accept: matches data-model.md; `down()` drops the table.
   - Depends: T005
 
-- [ ] T007 [P] Create the model `app/Modules/Doctors/Models/Specialty.php`
+- [X] T007 [P] Create the model `app/Modules/Doctors/Models/Specialty.php`
   - Scope:
     - `class Specialty extends Model` using `HasFactory`; `newFactory()` returns `SpecialtyFactory::new()`
     - `$fillable = ['name_en', 'name_ar', 'is_active']`; cast `is_active` → `boolean`
@@ -117,7 +117,7 @@ translations, exceptions, and policies that every story needs.
   - Accept: `new Specialty(['name_en' => '  Internal   Medicine '])->name_en` is `'Internal Medicine'`.
   - Depends: T002, T004
 
-- [ ] T008 [P] Create the model `app/Modules/Doctors/Models/Doctor.php`
+- [X] T008 [P] Create the model `app/Modules/Doctors/Models/Doctor.php`
   - Scope:
     - `class Doctor extends Model` using `HasFactory`; `newFactory()` returns `DoctorFactory::new()`
     - `$fillable = ['user_id', 'title', 'registration_number']`
@@ -128,12 +128,12 @@ translations, exceptions, and policies that every story needs.
       R2); docblock: derived, never stored, so feature 002 changes take effect at once.
   - Depends: T002, T005, T006
 
-- [ ] T009 [P] Create the factory `database/factories/SpecialtyFactory.php` (synthetic only, R12)
+- [X] T009 [P] Create the factory `database/factories/SpecialtyFactory.php` (synthetic only, R12)
   - Scope: model `Specialty`; `name_en` `'Specialty '.$n`, `name_ar` `'تخصص '.$n` with
     `$n = fake()->unique()->numberBetween(1, 1000000)`; `is_active` `true`; state `inactive()`.
   - Depends: T007
 
-- [ ] T010 [P] Create the factory `database/factories/DoctorFactory.php` (synthetic only, R12)
+- [X] T010 [P] Create the factory `database/factories/DoctorFactory.php` (synthetic only, R12)
   - Scope: model `Doctor`; `user_id` → `User::factory()->doctor()`; `title` from
     `['Consultant', 'Specialist', 'Resident']`; `registration_number` `null`; state
     `withRegistrationNumber()` → `fake()->unique()->bothify('??#####')` uppercased; state
@@ -142,7 +142,7 @@ translations, exceptions, and policies that every story needs.
   - Accept: generated values pass the data-model.md rules.
   - Depends: T008, T009
 
-- [ ] T011 Run the migrations and confirm the suite still passes
+- [X] T011 Run the migrations and confirm the suite still passes
   - Verify:
     - `docker compose exec app php artisan migrate` → the three migrations `DONE`
     - `docker compose exec app php artisan tinker --execute="echo App\Modules\Doctors\Models\Doctor::factory()->withSpecialties(2)->create()->load('user', 'specialties')->toJson();"`
@@ -150,7 +150,7 @@ translations, exceptions, and policies that every story needs.
     - `docker compose exec app composer test` → 294 passed
   - Depends: T004–T010
 
-- [ ] T012 Create the module skeleton: `app/Modules/Doctors/Providers/DoctorsServiceProvider.php`, `app/Modules/Doctors/routes/api.php`, `bootstrap/providers.php`
+- [X] T012 Create the module skeleton: `app/Modules/Doctors/Providers/DoctorsServiceProvider.php`, `app/Modules/Doctors/routes/api.php`, `bootstrap/providers.php`
   - Scope:
     - Provider `boot()`: load `routes/api.php` with `api` middleware and `api/v1` prefix (as
       `PatientsServiceProvider`); `loadTranslationsFrom(__DIR__.'/../lang', 'doctors')`.
@@ -161,7 +161,7 @@ translations, exceptions, and policies that every story needs.
   - Verify: `docker compose exec app php artisan route:list --path=api/v1/doctors` → no routes yet, no error
   - Depends: T011
 
-- [ ] T013 [P] Add module translations in `app/Modules/Doctors/lang/en/` and `app/Modules/Doctors/lang/ar/` (R11)
+- [X] T013 [P] Add module translations in `app/Modules/Doctors/lang/en/` and `app/Modules/Doctors/lang/ar/` (R11)
   - Scope: two files per locale, same keys in both:
     - `messages.php`:
       - `specialty_not_found` — en `No specialty was found.`; ar `لم يتم العثور على التخصص.`
@@ -184,12 +184,12 @@ translations, exceptions, and policies that every story needs.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T012
 
-- [ ] T014 [P] Create `app/Modules/Doctors/Exceptions/SpecialtyNotFoundException.php` and `app/Modules/Doctors/Exceptions/DoctorNotFoundException.php`
+- [X] T014 [P] Create `app/Modules/Doctors/Exceptions/SpecialtyNotFoundException.php` and `app/Modules/Doctors/Exceptions/DoctorNotFoundException.php`
   - Scope: copy the shape of `PatientNotFoundException`: `render()` → `404` with
     `doctors::messages.specialty_not_found` / `doctors::messages.doctor_not_found`; empty `report()`.
   - Depends: T013
 
-- [ ] T015 [P] Write the failing policy test `tests/Feature/Doctors/DoctorsPolicyTest.php` (R9, FR-003, FR-010, FR-017)
+- [X] T015 [P] Write the failing policy test `tests/Feature/Doctors/DoctorsPolicyTest.php` (R9, FR-003, FR-010, FR-017)
   - Scope: `Gate::forUser($actor)->allows($ability, <Model>::class)` for roles `administrator`,
     `receptionist`, `doctor`:
     - `Specialty`: `viewAny` true for all three; `create`, `update`, `deactivate`, `reactivate`
@@ -200,7 +200,7 @@ translations, exceptions, and policies that every story needs.
   - Verify: `docker compose exec app php artisan test --filter=DoctorsPolicyTest` → fails
   - Depends: T011
 
-- [ ] T016 Create `app/Modules/Doctors/Policies/SpecialtyPolicy.php` and `app/Modules/Doctors/Policies/DoctorPolicy.php`; register both in `app/Modules/Doctors/Providers/DoctorsServiceProvider.php`
+- [X] T016 Create `app/Modules/Doctors/Policies/SpecialtyPolicy.php` and `app/Modules/Doctors/Policies/DoctorPolicy.php`; register both in `app/Modules/Doctors/Providers/DoctorsServiceProvider.php`
   - Scope: class-level abilities `(User $actor): bool` as listed in T015, via private helpers
     (`isActiveStaff`: `$actor->is_active`; `isActiveAdministrator`: active + `isAdministrator()`;
     `isActiveDoctor`: active + `Role::Doctor`). Class docblocks as `PatientPolicy`: checked against

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Modules\Patients\Support;
+namespace App\Support;
 
 /**
- * The one definition of how patient names are cleaned and normalized for search (research R3).
+ * The one definition of how names are cleaned and normalized for search, shared by Patients
+ * (feature 003, research R3) and Doctors (feature 004, research R4).
  *
  * The database collation ignores Latin case but treats أ/ا, ة/ه, and ى/ي as different letters,
  * so search runs on a normalized copy of the name instead.
@@ -13,7 +14,7 @@ final class ArabicName
     /**
      * Letter variants treated as the same letter in search (FR-012).
      */
-    private const VARIANTS = [
+    public const VARIANTS = [
         'أ' => 'ا',
         'إ' => 'ا',
         'آ' => 'ا',
