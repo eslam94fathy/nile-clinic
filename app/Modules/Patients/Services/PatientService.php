@@ -6,6 +6,7 @@ use App\Modules\Patients\Exceptions\PatientNotFoundException;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +18,15 @@ class PatientService
     public function __construct(
         private readonly PatientRepository $patients,
     ) {}
+
+    /**
+     * @param  array{name?: string, phone?: string, national_id?: string, id?: int}  $filters
+     * @return LengthAwarePaginator<int, Patient>
+     */
+    public function list(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->patients->paginate($filters, $perPage);
+    }
 
     /**
      * @throws PatientNotFoundException
