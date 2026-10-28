@@ -99,6 +99,23 @@ patients.
 Every endpoint, field, and response is described in
 [specs/003-patient-records/contracts/patients.openapi.yaml](specs/003-patient-records/contracts/patients.openapi.yaml).
 
+## Doctors and specialties
+
+Administrators manage the specialty catalog under `/api/v1/specialties` and doctor profiles under
+`/api/v1/doctors`. Every active staff member can list specialties and browse doctors; a doctor
+fetches their own profile at `/api/v1/doctors/me`.
+
+- A doctor profile belongs to one staff account with the doctor role. The doctor's name comes from
+  that account, and the doctor counts as active only while the account is active and still has
+  the doctor role.
+- Specialties always carry both `name_en` and `name_ar`, whatever the request language. They are
+  deactivated, never deleted; doctors already assigned keep a deactivated specialty.
+- Filter doctors by `specialty_id`, `is_active`, or `name` (part of the name; the same Arabic
+  letter handling as patient search).
+
+Every endpoint, field, and response is described in
+[specs/004-doctors-specialties/contracts/doctors.openapi.yaml](specs/004-doctors-specialties/contracts/doctors.openapi.yaml).
+
 ## Daily use
 
 ```sh

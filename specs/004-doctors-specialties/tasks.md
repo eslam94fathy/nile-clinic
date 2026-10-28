@@ -496,7 +496,7 @@ search by part of a name; only the expected doctors appear.
 
 **Purpose**: Authorization matrix, both locales, documentation, and verification.
 
-- [ ] T036 [P] Write `tests/Feature/Doctors/DoctorsAuthorizationTest.php` (SC-004)
+- [X] T036 [P] Write `tests/Feature/Doctors/DoctorsAuthorizationTest.php` (SC-004)
   - Scope: data provider over all ten endpoints with valid bodies:
     - receptionist and doctor × the seven change endpoints (specialty add, rename, deactivate,
       reactivate; doctor create, update — including a doctor updating **their own** profile) →
@@ -510,7 +510,7 @@ search by part of a name; only the expected doctors appear.
   - Verify: `docker compose exec app php artisan test --filter=DoctorsAuthorizationTest` → pass
   - Depends: T035
 
-- [ ] T037 [P] Write `tests/Feature/Doctors/DoctorsMessagesTest.php` (FR-019, SC-006)
+- [X] T037 [P] Write `tests/Feature/Doctors/DoctorsMessagesTest.php` (FR-019, SC-006)
   - Scope: for `en` and `ar`: `404` specialty and doctor messages; `422` `name_en` duplicate whose
     message contains `doctors::attributes.name_en`; `not_an_active_doctor`; `specialty_inactive`;
     `nothing_to_update`; `403` → `auth.forbidden`; JSON keys identical across locales; specialty
@@ -518,26 +518,26 @@ search by part of a name; only the expected doctors appear.
   - Verify: `docker compose exec app php artisan test --filter=DoctorsMessagesTest` → pass
   - Depends: T035
 
-- [ ] T038 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T038 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: roadmap: 004 `Done` with the spec link, 005 `Next`. README: a short "Doctors and
     specialties" section after "Patients": administrators manage specialties and doctor profiles
     under `/api/v1/specialties` and `/api/v1/doctors`; all staff can browse; doctors fetch
     `/api/v1/doctors/me`; link `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`.
   - Depends: T035
 
-- [ ] T039 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
+- [X] T039 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T003, T036, T037, T038
 
-- [ ] T040 Run quickstart Q1–Q8 from `specs/004-doctors-specialties/quickstart.md` on the development stack
+- [X] T040 Run quickstart Q1–Q8 from `specs/004-doctors-specialties/quickstart.md` on the development stack
   - Scope: synthetic data only; Q7 runs against `clinic_testing` only, never the development
     database.
   - Accept: every Q-step's expected outcome is observed, including each Q7 list under 2 s.
   - Depends: T039
 
-- [ ] T041 Record the results in `specs/004-doctors-specialties/verification.md`
+- [X] T041 Record the results in `specs/004-doctors-specialties/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; report failures as
     failures (Constitution VIII).
   - Depends: T040

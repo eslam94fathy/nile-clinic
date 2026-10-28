@@ -15,8 +15,8 @@ this file when a feature is completed or the order changes.
 | 001 | Project foundation         | Done    | —             | [specs/001-project-foundation](../specs/001-project-foundation/spec.md) |
 | 002 | Staff authentication & roles | Done  | 001           | [specs/002-staff-auth-roles](../specs/002-staff-auth-roles/spec.md)     |
 | 003 | Patients                   | Done    | 002           | [specs/003-patient-records](../specs/003-patient-records/spec.md)       |
-| 004 | Doctors & specialties      | Next    | 002           | —                                                          |
-| 005 | Scheduling & availability  | Planned | 004           | —                                                          |
+| 004 | Doctors & specialties      | Done    | 002           | [specs/004-doctors-specialties](../specs/004-doctors-specialties/spec.md) |
+| 005 | Scheduling & availability  | Next    | 004           | —                                                          |
 | 006 | Appointments               | Planned | 003, 005      | —                                                          |
 | 007 | Patient queues             | Planned | 006           | —                                                          |
 | 008 | Medical encounters         | Planned | 003, 004, 006 | —                                                          |
