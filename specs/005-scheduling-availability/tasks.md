@@ -271,7 +271,7 @@ appointments, read it back grouped by day, then replace and clear it.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T022 [US1] Write `tests/Feature/Scheduling/WeeklyScheduleTest.php`
+- [X] T022 [US1] Write `tests/Feature/Scheduling/WeeklyScheduleTest.php`
   - Scope (administrator unless stated; doctor via `Doctor::factory()->create()`):
     - `PUT` 20 minutes, Sunday 17:00–21:00 and 09:00–10:00, Tuesday 10:00–14:00 → `200`; `data` has
       exactly `doctor_id`, `appointment_minutes`, `days`, `updated_at`; `days` is seven items in order
@@ -294,7 +294,7 @@ appointments, read it back grouped by day, then replace and clear it.
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Create `app/Modules/Scheduling/Repositories/Contracts/DoctorScheduleRepository.php` and `EloquentDoctorScheduleRepository.php`; bind them in the provider
+- [X] T023 [US1] Create `app/Modules/Scheduling/Repositories/Contracts/DoctorScheduleRepository.php` and `EloquentDoctorScheduleRepository.php`; bind them in the provider
   - Scope:
     - `findForDoctor(int $doctorId): ?DoctorSchedule` — with `periods`
     - `lockOrCreateForDoctor(int $doctorId, int $appointmentMinutes): DoctorSchedule` —
@@ -307,7 +307,7 @@ appointments, read it back grouped by day, then replace and clear it.
     - `deleteForDoctor(int $doctorId): void`
   - Depends: T021
 
-- [ ] T024 [US1] Create `app/Modules/Scheduling/Services/ScheduleService.php`
+- [X] T024 [US1] Create `app/Modules/Scheduling/Services/ScheduleService.php`
   - Scope (constructor: `DoctorScheduleRepository`, Doctors' `DoctorRepository`):
     - private `ensureDoctor(int $doctorId): Doctor` → `findById` or `DoctorNotFoundException`
     - `show(int $doctorId): DoctorSchedule` — the stored schedule, or an unsaved
@@ -319,7 +319,7 @@ appointments, read it back grouped by day, then replace and clear it.
     - `clear(int $doctorId): void` — ensure doctor, then `deleteForDoctor`
   - Depends: T023
 
-- [ ] T025 [P] [US1] Create `app/Modules/Scheduling/Http/Requests/SetScheduleRequest.php`
+- [X] T025 [P] [US1] Create `app/Modules/Scheduling/Http/Requests/SetScheduleRequest.php`
   - Scope (rules quoted from data-model.md):
     - `authorize()` → `can('update', DoctorSchedule::class)`
     - `appointment_minutes` → `required`, `integer`, `min:5`, `max:240`, `multiple_of:5`
@@ -336,13 +336,13 @@ appointments, read it back grouped by day, then replace and clear it.
     - `periodsInMinutes(): list<array{weekday: int, start_minute: int, end_minute: int}>`
   - Depends: T005, T008, T018
 
-- [ ] T026 [P] [US1] Create `app/Modules/Scheduling/Http/Resources/ScheduleResource.php`
+- [X] T026 [P] [US1] Create `app/Modules/Scheduling/Http/Resources/ScheduleResource.php`
   - Scope: keys exactly `doctor_id`, `appointment_minutes` (null when unsaved), `days` (seven items
     `{day, periods: [{start, end}]}` built from `Weekday::cases()` and the `periods` relation, times
     via `ClockTime::fromMinutes`), `updated_at` (ISO 8601 or null).
   - Depends: T005, T014
 
-- [ ] T027 [US1] Create `app/Modules/Scheduling/Http/Controllers/ScheduleController.php`; add the routes
+- [X] T027 [US1] Create `app/Modules/Scheduling/Http/Controllers/ScheduleController.php`; add the routes
   - Scope: `show(int $doctor)` → `Gate::authorize('view', DoctorSchedule::class)`;
     `update(SetScheduleRequest, int $doctor)` → `replace(...)`; `destroy(int $doctor)` →
     `Gate::authorize('update', DoctorSchedule::class)`, `clear`, `response()->noContent()`. Routes
