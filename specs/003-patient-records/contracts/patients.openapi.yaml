@@ -1,0 +1,286 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Patient Registration and Records
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 003. All responses are JSON, and field names and structure
+    are identical in every locale; only `message` texts change with Accept-Language (en, ar;
+    fallback en). Stored patient details are returned exactly as entered, never translated.
+    Every endpoint requires `Authorization: Bearer <token>` (feature 002) and is allowed only for
+    active administrators and receptionists; doctors are refused with 403 (FR-014).
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /patients:
+    get:
+      operationId: listPatients
+      summary: List and search patients (FR-011–FR-013)
+      description: >
+        Filters are optional and combine with AND; with none, all patients are listed. Items use
+        the summary shape only: national ID, address, and emergency contact never appear here.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - in: query
+          name: name
+          description: >
+            Part of the full name. Matching ignores case, extra spaces, and the Arabic variants
+            أ/إ/آ = ا, ة = ه, ى = ي (research R3).
+          schema: { type: string, minLength: 1, maxLength: 255 }
+        - in: query
+          name: phone
+          description: Exact match after removing spaces, dashes, and parentheses.
+          schema: { type: string, example: '010 1234 5678' }
+        - in: query
+          name: national_id
+          description: Exact match.
+          schema: { $ref: '#/components/schemas/NationalId' }
+        - in: query
+          name: id
+          description: Exact patient number.
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+      responses:
+        '200':
+          description: >
+            One page of patients, ordered by normalized name then id. Laravel's standard paginated
+            resource shape (`data`, `links`, `meta`). No matches is an empty `data` array.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PatientSummary' }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      operationId: registerPatient
+      summary: Register a patient (FR-001–FR-006, FR-009)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PatientInput' }
+            example:
+              full_name: سارة محمود علي
+              date_of_birth: '1990-04-12'
+              sex: female
+              phone: '010 0000 0001'
+              national_id: '29004120100001'
+              address: 12 Synthetic St, Cairo
+              emergency_contact: { name: محمود علي, relationship: father, phone: '01000000002' }
+      responses:
+        '201':
+          description: Registered. `data.id` is the new patient number.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Patient' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422':
+          description: >
+            Validation error, including a national ID already recorded for another patient
+            (also when two registrations race; research R5).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /patients/{patient}:
+    parameters:
+      - $ref: '#/components/parameters/PatientId'
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      operationId: showPatient
+      summary: View a patient's full record (FR-013)
+      responses:
+        '200':
+          description: The full record, including sensitive fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Patient' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updatePatient
+      summary: Update a patient's details (FR-010)
+      description: >
+        Partial update: only the fields sent are validated and changed; at least one is required.
+        Send `null` for `national_id`, `address`, or `emergency_contact` to clear it. The patient
+        number (`id`) never changes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                full_name: { type: string, minLength: 1, maxLength: 255 }
+                date_of_birth: { type: string, format: date }
+                sex: { $ref: '#/components/schemas/Sex' }
+                phone: { type: string }
+                national_id: { oneOf: [{ $ref: '#/components/schemas/NationalId' }, { type: 'null' }] }
+                address: { type: [string, 'null'], maxLength: 500 }
+                emergency_contact:
+                  oneOf: [{ $ref: '#/components/schemas/EmergencyContact' }, { type: 'null' }]
+            example: { phone: '01000000003', address: null }
+      responses:
+        '200':
+          description: The updated full record.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Patient' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: The `token` value returned by sign-in (feature 002).
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      description: en or ar (regional variants map to the base language); anything else falls back to en.
+      schema: { type: string }
+    PatientId:
+      in: path
+      name: patient
+      required: true
+      description: The patient number.
+      schema: { type: integer, minimum: 1 }
+
+  schemas:
+    Sex:
+      type: string
+      enum: [male, female]
+    NationalId:
+      type: string
+      pattern: '^[23][0-9]{13}$'
+      description: Egyptian national ID, 14 digits (research R5). Optional; unique when given.
+    Phone:
+      type: string
+      pattern: '^\+?[0-9]{8,15}$'
+      description: Returned normalized. Input may contain spaces, dashes, and parentheses.
+    EmergencyContact:
+      type: object
+      required: [name, relationship, phone]
+      properties:
+        name: { type: string, maxLength: 255 }
+        relationship: { type: string, maxLength: 50 }
+        phone: { $ref: '#/components/schemas/Phone' }
+    PatientInput:
+      type: object
+      required: [full_name, date_of_birth, sex, phone]
+      properties:
+        full_name: { type: string, minLength: 1, maxLength: 255 }
+        date_of_birth: { type: string, format: date, description: Not in the future; at most 130 years ago }
+        sex: { $ref: '#/components/schemas/Sex' }
+        phone: { type: string }
+        national_id: { oneOf: [{ $ref: '#/components/schemas/NationalId' }, { type: 'null' }] }
+        address: { type: [string, 'null'], maxLength: 500 }
+        emergency_contact:
+          oneOf: [{ $ref: '#/components/schemas/EmergencyContact' }, { type: 'null' }]
+    PatientSummary:
+      type: object
+      description: List and search shape (FR-013). Exactly these five fields.
+      additionalProperties: false
+      required: [id, full_name, sex, date_of_birth, phone]
+      properties:
+        id: { type: integer, description: Patient number }
+        full_name: { type: string }
+        sex: { $ref: '#/components/schemas/Sex' }
+        date_of_birth: { type: string, format: date }
+        phone: { $ref: '#/components/schemas/Phone' }
+    Patient:
+      type: object
+      description: Full record, returned only for a single patient.
+      required: [id, full_name, sex, date_of_birth, phone, national_id, address, emergency_contact, created_at, updated_at]
+      properties:
+        id: { type: integer, description: Patient number }
+        full_name: { type: string }
+        sex: { $ref: '#/components/schemas/Sex' }
+        date_of_birth: { type: string, format: date }
+        phone: { $ref: '#/components/schemas/Phone' }
+        national_id: { oneOf: [{ $ref: '#/components/schemas/NationalId' }, { type: 'null' }] }
+        address: { type: [string, 'null'] }
+        emergency_contact:
+          oneOf: [{ $ref: '#/components/schemas/EmergencyContact' }, { type: 'null' }]
+        created_at: { type: string, format: date-time, description: Registered at }
+        updated_at: { type: string, format: date-time, description: Last changed at }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, description: Translated per Accept-Language }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: Missing, malformed, expired, or revoked token, or a deactivated account
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: You are not signed in. }
+    Forbidden:
+      description: Signed in as a doctor, or otherwise not allowed (FR-014, FR-015)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: You are not allowed to perform this action. }
+    NotFound:
+      description: No patient with this number
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: No patient was found. }
+    ValidationFailed:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
