@@ -69,6 +69,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Clinic Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Wall-clock time zone of the clinic for schedules and slots (feature 005,
+    | research R2); the application itself stays on UTC.
+    |
+    */
+
+    'clinic_timezone' => env('CLINIC_TIMEZONE', 'Africa/Cairo'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

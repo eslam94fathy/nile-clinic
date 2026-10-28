@@ -1,0 +1,405 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Scheduling and Availability
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 005. All responses are JSON, and field names and structure
+    are identical in every locale; only `message` texts change with Accept-Language (en, ar;
+    fallback en). All dates and times are the clinic's local wall clock (Africa/Cairo) with no
+    offset; day names are fixed English identifiers. Every endpoint requires
+    `Authorization: Bearer <token>` (feature 002). Reading is open to every active staff member;
+    changes are for active administrators only; `/doctors/me/…` is for doctors only.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /doctors/{doctor}/schedule:
+    parameters:
+      - $ref: '#/components/parameters/DoctorId'
+    get:
+      operationId: showSchedule
+      summary: A doctor's weekly schedule (FR-007) — any active staff member
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/ScheduleOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+    put:
+      operationId: setSchedule
+      summary: Replace a doctor's weekly schedule (FR-001–FR-006) — administrators
+      description: >
+        Replaces the whole schedule in one step; on a validation error nothing changes. Breaks are
+        the gaps between periods on the same day. Errors on a period are keyed `periods.<index>`.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScheduleInput' }
+            example:
+              appointment_minutes: 20
+              periods:
+                - { day: sunday, start: '09:00', end: '13:00' }
+                - { day: sunday, start: '17:00', end: '21:00' }
+                - { day: tuesday, start: '10:00', end: '14:00' }
+      responses:
+        '200': { $ref: '#/components/responses/ScheduleOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      operationId: clearSchedule
+      summary: Clear a doctor's weekly schedule (FR-006) — administrators
+      description: The doctor then has no working hours and no slots. Idempotent.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '204': { description: Cleared }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+
+  /doctors/{doctor}/slots:
+    get:
+      operationId: listSlots
+      summary: A doctor's bookable slots in a date range (FR-008–FR-012) — any active staff member
+      description: >
+        Every slot in date and time order. Empty for an inactive doctor or one without a schedule.
+        Slots in the past, during time off, or whose start does not exist that day (daylight-saving
+        gap) are left out.
+      parameters:
+        - $ref: '#/components/parameters/DoctorId'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/SlotsFrom'
+        - $ref: '#/components/parameters/SlotsTo'
+      responses:
+        '200': { $ref: '#/components/responses/SlotsOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/{doctor}/time-off:
+    parameters:
+      - $ref: '#/components/parameters/DoctorId'
+    get:
+      operationId: listTimeOff
+      summary: A doctor's time off overlapping a date range (FR-016) — any active staff member
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/ListFrom'
+        - $ref: '#/components/parameters/ListTo'
+      responses:
+        '200': { $ref: '#/components/responses/TimeOffListOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      operationId: recordTimeOff
+      summary: Record a doctor's time off (FR-013–FR-015) — administrators
+      description: >
+        Whole days (start_date to end_date, no times) or part of one day (start_date = end_date
+        with start_time and end_time). Overlapping entries are allowed. Do not put medical or
+        personal details in `reason`; every staff member can read it.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TimeOffInput' }
+            examples:
+              wholeDays: { value: { start_date: '2026-11-08', end_date: '2026-11-10', reason: Conference } }
+              partialDay: { value: { start_date: '2026-11-09', end_date: '2026-11-09', start_time: '10:00', end_time: '12:00' } }
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/TimeOff' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/{doctor}/time-off/{timeOff}:
+    delete:
+      operationId: removeTimeOff
+      summary: Remove time off that has not ended (FR-017) — administrators
+      parameters:
+        - $ref: '#/components/parameters/DoctorId'
+        - in: path
+          name: timeOff
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '204': { description: Removed; the future slots it hid are offered again }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Unknown doctor, or no such time off for this doctor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '422':
+          description: The time off has already ended
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/schedule:
+    get:
+      operationId: showOwnSchedule
+      summary: The signed-in doctor's weekly schedule (FR-018)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/ScheduleOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+
+  /doctors/me/slots:
+    get:
+      operationId: listOwnSlots
+      summary: The signed-in doctor's slots (FR-018)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/SlotsFrom'
+        - $ref: '#/components/parameters/SlotsTo'
+      responses:
+        '200': { $ref: '#/components/responses/SlotsOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/me/time-off:
+    get:
+      operationId: listOwnTimeOff
+      summary: The signed-in doctor's time off (FR-018)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/ListFrom'
+        - $ref: '#/components/parameters/ListTo'
+      responses:
+        '200': { $ref: '#/components/responses/TimeOffListOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: The `token` value returned by sign-in (feature 002).
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      description: en or ar (regional variants map to the base language); anything else falls back to en.
+      schema: { type: string }
+    DoctorId:
+      in: path
+      name: doctor
+      required: true
+      description: The doctor id (feature 004), not the staff account id.
+      schema: { type: integer, minimum: 1 }
+    SlotsFrom:
+      in: query
+      name: from
+      required: true
+      description: First date; not before the clinic's today.
+      schema: { type: string, format: date }
+    SlotsTo:
+      in: query
+      name: to
+      required: true
+      description: Last date (inclusive); at most 31 days from `from` and 90 days from today.
+      schema: { type: string, format: date }
+    ListFrom:
+      in: query
+      name: from
+      required: true
+      schema: { type: string, format: date }
+    ListTo:
+      in: query
+      name: to
+      required: true
+      description: Not before `from`; at most 366 days after it.
+      schema: { type: string, format: date }
+
+  schemas:
+    Day:
+      type: string
+      enum: [sunday, monday, tuesday, wednesday, thursday, friday, saturday]
+    StartTime:
+      type: string
+      pattern: '^([01][0-9]|2[0-3]):[0-5][05]$'
+      description: Clinic wall-clock time on a 5-minute boundary.
+    EndTime:
+      type: string
+      pattern: '^(([01][0-9]|2[0-3]):[0-5][05]|24:00)$'
+      description: Like StartTime, or 24:00 for the end of the day.
+    Period:
+      type: object
+      additionalProperties: false
+      required: [start, end]
+      properties:
+        start: { $ref: '#/components/schemas/StartTime' }
+        end: { $ref: '#/components/schemas/EndTime' }
+    ScheduleInput:
+      type: object
+      required: [appointment_minutes, periods]
+      properties:
+        appointment_minutes: { type: integer, minimum: 5, maximum: 240, multipleOf: 5 }
+        periods:
+          type: array
+          maxItems: 28
+          description: >
+            May be empty. Per day: at most 4 periods, not overlapping or touching; each period ends
+            after it starts and is at least one appointment long.
+          items:
+            type: object
+            required: [day, start, end]
+            properties:
+              day: { $ref: '#/components/schemas/Day' }
+              start: { $ref: '#/components/schemas/StartTime' }
+              end: { $ref: '#/components/schemas/EndTime' }
+    Schedule:
+      type: object
+      additionalProperties: false
+      required: [doctor_id, appointment_minutes, days, updated_at]
+      properties:
+        doctor_id: { type: integer }
+        appointment_minutes: { type: [integer, 'null'], description: Null when the doctor has no schedule }
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          description: Always sunday … saturday in this order; a day with no periods is a day off.
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, periods]
+            properties:
+              day: { $ref: '#/components/schemas/Day' }
+              periods:
+                type: array
+                items: { $ref: '#/components/schemas/Period' }
+        updated_at: { type: [string, 'null'], format: date-time }
+    Slot:
+      type: object
+      additionalProperties: false
+      required: [date, start, end]
+      properties:
+        date: { type: string, format: date }
+        start: { $ref: '#/components/schemas/StartTime' }
+        end: { $ref: '#/components/schemas/EndTime' }
+    TimeOffInput:
+      type: object
+      required: [start_date, end_date]
+      properties:
+        start_date: { type: string, format: date, description: Not before the clinic's today }
+        end_date: { type: string, format: date, description: Not before start_date }
+        start_time: { $ref: '#/components/schemas/StartTime' }
+        end_time: { $ref: '#/components/schemas/EndTime' }
+        reason: { type: [string, 'null'], maxLength: 255 }
+    TimeOff:
+      type: object
+      additionalProperties: false
+      required: [id, doctor_id, start_date, end_date, start_time, end_time, reason, created_at]
+      properties:
+        id: { type: integer }
+        doctor_id: { type: integer }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        start_time: { type: [string, 'null'], description: Null for whole days }
+        end_time: { type: [string, 'null'], description: Null for whole days }
+        reason: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, description: Translated per Accept-Language }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+  responses:
+    ScheduleOk:
+      description: The weekly schedule
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/Schedule' }
+    SlotsOk:
+      description: Slots in date and time order (possibly empty)
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { $ref: '#/components/schemas/Slot' }
+    TimeOffListOk:
+      description: Time off overlapping the range, ordered by start
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { $ref: '#/components/schemas/TimeOff' }
+    Unauthenticated:
+      description: Missing, malformed, expired, or revoked token, or a deactivated account
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Not an administrator (changes), or not a doctor (`/doctors/me/…`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: You are not allowed to perform this action. }
+    DoctorNotFound:
+      description: No doctor with this id, or the signed-in doctor has no profile
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+          example: { message: No doctor was found. }
+    ValidationFailed:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
