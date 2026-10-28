@@ -4,6 +4,8 @@ namespace App\Modules\Patients\Providers;
 
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Policies\PatientPolicy;
+use App\Modules\Patients\Repositories\Contracts\PatientRepository;
+use App\Modules\Patients\Repositories\EloquentPatientRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +17,7 @@ class PatientsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PatientRepository::class, EloquentPatientRepository::class);
     }
 
     /**
