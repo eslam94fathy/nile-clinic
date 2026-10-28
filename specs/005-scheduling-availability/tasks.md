@@ -507,7 +507,7 @@ those slots.
 **Independent Test**: A doctor's own schedule and slots equal what an administrator sees for that
 doctor.
 
-- [ ] T040 [US4] Write `tests/Feature/Scheduling/OwnScheduleTest.php`
+- [X] T040 [US4] Write `tests/Feature/Scheduling/OwnScheduleTest.php`
   - Scope (clock fixed at Sunday 2026-11-01 08:00): a doctor with a profile and `weekdays()`
     schedule: `/doctors/me/schedule`, `/doctors/me/slots?from=2026-11-01&to=2026-11-01`,
     `/doctors/me/time-off?from=2026-11-01&to=2026-11-30` each return exactly what the
@@ -517,7 +517,7 @@ doctor.
   - Verify: `docker compose exec app php artisan test --filter=OwnScheduleTest` → fails
   - Depends: T039
 
-- [ ] T041 [US4] Create `app/Modules/Scheduling/Http/Controllers/OwnScheduleController.php`; add the routes
+- [X] T041 [US4] Create `app/Modules/Scheduling/Http/Controllers/OwnScheduleController.php`; add the routes
   - Scope: inject Doctors' `DoctorService` and the three scheduling services. `schedule(Request)` →
     `Gate::authorize('viewOwn', DoctorSchedule::class)`, `$id = DoctorService::findOwn($user)->id`,
     `ScheduleResource`; `slots(ListSlotsRequest)` and `timeOff(ListTimeOffRequest)` — the requests'
