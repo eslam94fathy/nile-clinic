@@ -430,7 +430,7 @@ those slots.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T034 [US3] Write `tests/Feature/Scheduling/TimeOffTest.php`
+- [X] T034 [US3] Write `tests/Feature/Scheduling/TimeOffTest.php`
   - Scope (administrator; clock fixed at Sunday 2026-11-01 08:00; doctor with `weekdays()` schedule):
     - `POST` whole days `2026-11-02`…`2026-11-03` with reason → `201`; `data` exactly `id`,
       `doctor_id`, `start_date`, `end_date`, `start_time` (null), `end_time` (null), `reason`,
@@ -452,10 +452,10 @@ those slots.
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Add `findForDoctor(int $doctorId, int $id): ?DoctorTimeOff`, `create(array $attributes): DoctorTimeOff`, and `delete(DoctorTimeOff $timeOff): void` to `TimeOffRepository` and `EloquentTimeOffRepository`
+- [X] T035 [US3] Add `findForDoctor(int $doctorId, int $id): ?DoctorTimeOff`, `create(array $attributes): DoctorTimeOff`, and `delete(DoctorTimeOff $timeOff): void` to `TimeOffRepository` and `EloquentTimeOffRepository`
   - Depends: T029
 
-- [ ] T036 [US3] Create `app/Modules/Scheduling/Services/TimeOffService.php`
+- [X] T036 [US3] Create `app/Modules/Scheduling/Services/TimeOffService.php`
   - Scope (constructor: `DoctorRepository`, `TimeOffRepository`):
     - `list(int $doctorId, string $from, string $to): Collection` — ensure doctor, `overlapping`
     - `record(int $doctorId, array $attributes): DoctorTimeOff` — ensure doctor; convert
@@ -466,7 +466,7 @@ those slots.
       on `time_off` with `scheduling::messages.time_off_ended` (R7); otherwise delete
   - Depends: T035
 
-- [ ] T037 [P] [US3] Create `StoreTimeOffRequest` and `ListTimeOffRequest` in `app/Modules/Scheduling/Http/Requests/`
+- [X] T037 [P] [US3] Create `StoreTimeOffRequest` and `ListTimeOffRequest` in `app/Modules/Scheduling/Http/Requests/`
   - Scope (rules quoted from data-model.md):
     - Store: `authorize()` → `can('create', DoctorTimeOff::class)`; `start_date` → `required`,
       `date_format:Y-m-d`, `after_or_equal:` `ClinicClock::today()`; `end_date` → `required`,
@@ -482,12 +482,12 @@ those slots.
     - `attributes()` from `scheduling::attributes`
   - Depends: T006, T018
 
-- [ ] T038 [P] [US3] Create `app/Modules/Scheduling/Http/Resources/TimeOffResource.php`
+- [X] T038 [P] [US3] Create `app/Modules/Scheduling/Http/Resources/TimeOffResource.php`
   - Scope: keys exactly `id`, `doctor_id`, `start_date`, `end_date` (`toDateString()`),
     `start_time`, `end_time` (`ClockTime::fromMinutes` or null), `reason`, `created_at` (ISO 8601).
   - Depends: T014
 
-- [ ] T039 [US3] Create `app/Modules/Scheduling/Http/Controllers/TimeOffController.php`; add the routes
+- [X] T039 [US3] Create `app/Modules/Scheduling/Http/Controllers/TimeOffController.php`; add the routes
   - Scope: `index(ListTimeOffRequest, int $doctor)`, `store(StoreTimeOffRequest, int $doctor)`
     (`201` for the new model), `destroy(int $doctor, int $timeOff)` →
     `Gate::authorize('delete', DoctorTimeOff::class)`, `remove`, `noContent()`. Routes
