@@ -19,4 +19,19 @@ class EloquentTimeOffRepository implements TimeOffRepository
             ->orderBy('id')
             ->get();
     }
+
+    public function findForDoctor(int $doctorId, int $id): ?DoctorTimeOff
+    {
+        return DoctorTimeOff::query()->where('doctor_id', $doctorId)->find($id);
+    }
+
+    public function create(array $attributes): DoctorTimeOff
+    {
+        return DoctorTimeOff::query()->create($attributes);
+    }
+
+    public function delete(DoctorTimeOff $timeOff): void
+    {
+        $timeOff->delete();
+    }
 }

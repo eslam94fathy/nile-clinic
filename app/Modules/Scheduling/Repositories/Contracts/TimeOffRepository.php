@@ -14,4 +14,16 @@ interface TimeOffRepository
      * @return Collection<int, DoctorTimeOff>
      */
     public function overlapping(int $doctorId, string $from, string $to): Collection;
+
+    /**
+     * The entry, only if it belongs to this doctor.
+     */
+    public function findForDoctor(int $doctorId, int $id): ?DoctorTimeOff;
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function create(array $attributes): DoctorTimeOff;
+
+    public function delete(DoctorTimeOff $timeOff): void;
 }
