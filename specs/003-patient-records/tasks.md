@@ -507,13 +507,13 @@ documentation, and verification.
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T034, T035, T036, T037
 
-- [ ] T039 Run quickstart Q1–Q8 from `specs/003-patient-records/quickstart.md` on the development stack
+- [X] T039 Run quickstart Q1–Q8 from `specs/003-patient-records/quickstart.md` on the development stack
   - Scope: synthetic data only; Q7 runs against `clinic_testing` only, never the development
     database.
   - Accept: every Q-step's expected outcome is observed, including both Q7 searches under 2 s.
   - Depends: T038
 
-- [ ] T040 Record the results in `specs/003-patient-records/verification.md`
+- [X] T040 Record the results in `specs/003-patient-records/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; report failures as
     failures (Constitution VIII).
   - Depends: T039
