@@ -531,13 +531,13 @@ search by part of a name; only the expected doctors appear.
     - `docker compose exec app composer test` → all pass, exit 0
   - Depends: T003, T036, T037, T038
 
-- [ ] T040 Run quickstart Q1–Q8 from `specs/004-doctors-specialties/quickstart.md` on the development stack
+- [X] T040 Run quickstart Q1–Q8 from `specs/004-doctors-specialties/quickstart.md` on the development stack
   - Scope: synthetic data only; Q7 runs against `clinic_testing` only, never the development
     database.
   - Accept: every Q-step's expected outcome is observed, including each Q7 list under 2 s.
   - Depends: T039
 
-- [ ] T041 Record the results in `specs/004-doctors-specialties/verification.md`
+- [X] T041 Record the results in `specs/004-doctors-specialties/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; report failures as
     failures (Constitution VIII).
   - Depends: T040
