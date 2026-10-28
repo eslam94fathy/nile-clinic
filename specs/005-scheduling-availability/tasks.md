@@ -365,7 +365,7 @@ appointments, read it back grouped by day, then replace and clear it.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T028 [US2] Write `tests/Feature/Scheduling/SlotsTest.php`
+- [X] T028 [US2] Write `tests/Feature/Scheduling/SlotsTest.php`
   - Scope (receptionist; clock fixed at Sunday 2026-11-01 08:00):
     - schedule Sunday 09:00–10:00 and 17:00–21:00, 20 min; `from=to=2026-11-01` → 15 slots,
       first `{date:'2026-11-01',start:'09:00',end:'09:20'}`, each item exactly `date`, `start`, `end`
@@ -383,13 +383,13 @@ appointments, read it back grouped by day, then replace and clear it.
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Create `app/Modules/Scheduling/Repositories/Contracts/TimeOffRepository.php` and `EloquentTimeOffRepository.php` with `overlapping()`; bind them in the provider
+- [X] T029 [US2] Create `app/Modules/Scheduling/Repositories/Contracts/TimeOffRepository.php` and `EloquentTimeOffRepository.php` with `overlapping()`; bind them in the provider
   - Scope: `overlapping(int $doctorId, string $from, string $to): Collection` —
     `start_date <= $to and end_date >= $from`, ordered by `start_date`, `start_minute`, `id` (US3
     adds the rest).
   - Depends: T021
 
-- [ ] T030 [US2] Create `app/Modules/Scheduling/Services/SlotService.php`
+- [X] T030 [US2] Create `app/Modules/Scheduling/Services/SlotService.php`
   - Scope (constructor: `DoctorRepository`, `DoctorScheduleRepository`, `TimeOffRepository`):
     `forDoctor(int $doctorId, string $from, string $to): array` — doctor or
     `DoctorNotFoundException`; `[]` when `! $doctor->isActive()` or no schedule; otherwise group the
@@ -397,7 +397,7 @@ appointments, read it back grouped by day, then replace and clear it.
     array shape, and return `SlotCalculator::slots(..., ClinicClock::now())`.
   - Depends: T010, T023, T029
 
-- [ ] T031 [P] [US2] Create `app/Modules/Scheduling/Http/Requests/ListSlotsRequest.php`
+- [X] T031 [P] [US2] Create `app/Modules/Scheduling/Http/Requests/ListSlotsRequest.php`
   - Scope: `authorize()` → `can('view', DoctorSchedule::class)`; `from` → `required`,
     `date_format:Y-m-d`, `after_or_equal:` `ClinicClock::today()`; `to` → `required`,
     `date_format:Y-m-d`, `after_or_equal:from`; `after()` (only without earlier errors): inclusive
@@ -406,10 +406,10 @@ appointments, read it back grouped by day, then replace and clear it.
     `attributes()` from `scheduling::attributes`.
   - Depends: T006, T010, T018
 
-- [ ] T032 [P] [US2] Create `app/Modules/Scheduling/Http/Resources/SlotResource.php`
+- [X] T032 [P] [US2] Create `app/Modules/Scheduling/Http/Resources/SlotResource.php`
   - Scope: keys exactly `date`, `start`, `end` from the calculator's array.
 
-- [ ] T033 [US2] Create `app/Modules/Scheduling/Http/Controllers/SlotController.php`; add the route
+- [X] T033 [US2] Create `app/Modules/Scheduling/Http/Controllers/SlotController.php`; add the route
   - Scope: `index(ListSlotsRequest, int $doctor)` → `SlotResource::collection($this->slots->forDoctor(
     $doctor, $request->validated('from'), $request->validated('to')))`. Route
     `scheduling.slots.index` `GET /doctors/{doctor}/slots` in the `whereNumber` group.
