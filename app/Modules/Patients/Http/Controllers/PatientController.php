@@ -5,6 +5,7 @@ namespace App\Modules\Patients\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Patients\Http\Requests\ListPatientsRequest;
 use App\Modules\Patients\Http\Requests\StorePatientRequest;
+use App\Modules\Patients\Http\Requests\UpdatePatientRequest;
 use App\Modules\Patients\Http\Resources\PatientResource;
 use App\Modules\Patients\Http\Resources\PatientSummaryResource;
 use App\Modules\Patients\Models\Patient;
@@ -38,5 +39,13 @@ class PatientController extends Controller
         Gate::authorize('view', Patient::class);
 
         return PatientResource::make($this->patients->find($patient));
+    }
+
+    public function update(UpdatePatientRequest $request, int $patient): PatientResource
+    {
+        return PatientResource::make($this->patients->update(
+            $this->patients->find($patient),
+            $request->validated(),
+        ));
     }
 }
