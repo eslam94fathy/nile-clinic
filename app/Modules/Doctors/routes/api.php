@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Doctors\Http\Controllers\DoctorController;
 use App\Modules\Doctors\Http\Controllers\SpecialtyController;
 use App\Modules\Doctors\Http\Controllers\SpecialtyStatusController;
 use Illuminate\Support\Facades\Route;
@@ -17,5 +18,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/specialties/{specialty}', [SpecialtyController::class, 'update'])->name('specialties.update');
         Route::post('/specialties/{specialty}/deactivate', [SpecialtyStatusController::class, 'deactivate'])->name('specialties.deactivate');
         Route::post('/specialties/{specialty}/reactivate', [SpecialtyStatusController::class, 'reactivate'])->name('specialties.reactivate');
+    });
+
+    Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
+
+    Route::whereNumber('doctor')->group(function () {
+        Route::patch('/doctors/{doctor}', [DoctorController::class, 'update'])->name('doctors.update');
     });
 });
