@@ -116,6 +116,23 @@ fetches their own profile at `/api/v1/doctors/me`.
 Every endpoint, field, and response is described in
 [specs/004-doctors-specialties/contracts/doctors.openapi.yaml](specs/004-doctors-specialties/contracts/doctors.openapi.yaml).
 
+## Scheduling
+
+Administrators set each doctor's weekly working hours at `/api/v1/doctors/{doctor}/schedule` and
+record time off at `/api/v1/doctors/{doctor}/time-off`. Every active staff member can read them and
+list a doctor's bookable slots at `/api/v1/doctors/{doctor}/slots?from=…&to=…`; doctors use
+`/api/v1/doctors/me/schedule`, `/me/slots`, and `/me/time-off`.
+
+- A weekly schedule is an appointment length (5–240 minutes) plus up to 4 periods per day; the gap
+  between two periods is a break. Saving replaces the whole schedule.
+- Slots are cut from the periods by the appointment length; slots in the past, during time off, or
+  for an inactive doctor are not offered. One request covers up to 31 days, at most 90 days ahead.
+- All dates and times are the clinic's wall clock, set by `CLINIC_TIMEZONE` (default
+  `Africa/Cairo`); the application itself runs on UTC.
+
+Every endpoint, field, and response is described in
+[specs/005-scheduling-availability/contracts/scheduling.openapi.yaml](specs/005-scheduling-availability/contracts/scheduling.openapi.yaml).
+
 ## Daily use
 
 ```sh
