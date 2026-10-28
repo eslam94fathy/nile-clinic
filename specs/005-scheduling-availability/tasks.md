@@ -57,7 +57,7 @@ schema, models, factories, module skeleton, translations, and policies.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Add the clinic time zone setting in `config/app.php` and `.env.example` (approved D2)
+- [X] T002 Add the clinic time zone setting in `config/app.php` and `.env.example` (approved D2)
   - Scope: in `config/app.php`, right after `'timezone' => 'UTC',`, add a docblock comment
     ("Wall-clock time zone of the clinic for schedules and slots (feature 005, research R2); the
     application itself stays on UTC.") and
@@ -65,20 +65,20 @@ schema, models, factories, module skeleton, translations, and policies.
     `APP_*` block, add a comment line and `CLINIC_TIMEZONE=Africa/Cairo`.
   - Verify: `docker compose exec app php artisan tinker --execute="echo config('app.clinic_timezone');"` → `Africa/Cairo`
 
-- [ ] T003 [P] Create `app/Modules/Scheduling/Support/Weekday.php`
+- [X] T003 [P] Create `app/Modules/Scheduling/Support/Weekday.php`
   - Scope: `enum Weekday: int` with `Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4,
     Friday = 5, Saturday = 6` (PHP/Carbon `dayOfWeek` numbering); `name(): string` → lower-case
     English (`'sunday'`); `static fromName(string $name): self`; `static names(): list<string>` in
     order `sunday`…`saturday`.
 
-- [ ] T004 [P] Write the failing unit test `tests/Unit/Scheduling/ClockTimeTest.php` (R3)
+- [X] T004 [P] Write the failing unit test `tests/Unit/Scheduling/ClockTimeTest.php` (R3)
   - Scope: `PHPUnit\Framework\TestCase`. `ClockTime::toMinutes('00:00')` → 0, `'09:05'` → 545,
     `'23:55'` → 1435, `'24:00'` → 1440; `fromMinutes(545)` → `'09:05'`, `fromMinutes(1440)` →
     `'24:00'`; `START_PATTERN` matches `'09:00'`, `'23:55'`, not `'09:03'`, `'24:00'`, `'9:00'`;
     `END_PATTERN` matches `'24:00'` and `'09:00'`, not `'24:05'`.
   - Verify: `docker compose exec app php artisan test --filter=ClockTimeTest` → fails (class missing)
 
-- [ ] T005 Create `app/Modules/Scheduling/Support/ClockTime.php`
+- [X] T005 Create `app/Modules/Scheduling/Support/ClockTime.php`
   - Scope: `final class ClockTime` with
     `public const START_PATTERN = '/^([01][0-9]|2[0-3]):[0-5][05]$/';`,
     `public const END_PATTERN = '/^(([01][0-9]|2[0-3]):[0-5][05]|24:00)$/';`,
@@ -87,13 +87,13 @@ schema, models, factories, module skeleton, translations, and policies.
   - Accept: T004 passes.
   - Depends: T004
 
-- [ ] T006 [P] Create `app/Modules/Scheduling/Support/ClinicClock.php`
+- [X] T006 [P] Create `app/Modules/Scheduling/Support/ClinicClock.php`
   - Scope: `final class ClinicClock` with static `timezone(): string` (`config('app.clinic_timezone')`),
     `now(): CarbonImmutable` (`CarbonImmutable::now($tz)`), `today(): string` (`now()->toDateString()`).
     Docblock: the only reader of `app.clinic_timezone` (R2). Respects `travelTo` in tests.
   - Depends: T002
 
-- [ ] T007 [P] Write the failing unit test `tests/Unit/Scheduling/WeeklyScheduleRulesTest.php` (R5, SC-004)
+- [X] T007 [P] Write the failing unit test `tests/Unit/Scheduling/WeeklyScheduleRulesTest.php` (R5, SC-004)
   - Scope: input periods are `list<array{day: string, start: int, end: int}>` (minutes) plus the
     appointment length. `WeeklyScheduleRules::problems()` returns `list<array{index: int, rule:
     string, day: string}>`. Cases (20-minute appointments unless stated):
@@ -107,7 +107,7 @@ schema, models, factories, module skeleton, translations, and policies.
     - input order does not matter (periods given out of order still validate)
   - Verify: `docker compose exec app php artisan test --filter=WeeklyScheduleRulesTest` → fails
 
-- [ ] T008 Create `app/Modules/Scheduling/Support/WeeklyScheduleRules.php`
+- [X] T008 Create `app/Modules/Scheduling/Support/WeeklyScheduleRules.php`
   - Scope: `final class WeeklyScheduleRules` with `public const MAX_PERIODS_PER_DAY = 4;` and
     `static problems(array $periods, int $appointmentMinutes): array` as described in T007. Pure:
     no database, no translation (the Form Request translates the `rule` keys). Check per period
@@ -116,7 +116,7 @@ schema, models, factories, module skeleton, translations, and policies.
   - Accept: T007 passes.
   - Depends: T007
 
-- [ ] T009 [P] Write the failing unit test `tests/Unit/Scheduling/SlotCalculatorTest.php` (R6, SC-003)
+- [X] T009 [P] Write the failing unit test `tests/Unit/Scheduling/SlotCalculatorTest.php` (R6, SC-003)
   - Scope: `SlotCalculator::slots(array $periodsByWeekday, int $appointmentMinutes, array $timeOff,
     string $from, string $to, CarbonImmutable $now): list<array{date: string, start: string, end:
     string}>`, where `$periodsByWeekday` is `array<int, list<array{0: int, 1: int}>>` (weekday →
@@ -141,7 +141,7 @@ schema, models, factories, module skeleton, translations, and policies.
       → four slots `22:00`…`23:30`, each once
   - Verify: `docker compose exec app php artisan test --filter=SlotCalculatorTest` → fails
 
-- [ ] T010 Create `app/Modules/Scheduling/Support/SlotCalculator.php`
+- [X] T010 Create `app/Modules/Scheduling/Support/SlotCalculator.php`
   - Scope: `final class SlotCalculator` with `public const MAX_RANGE_DAYS = 31;`,
     `public const HORIZON_DAYS = 90;`, and `static slots(...)` as in T009. Pure. For each date from
     `$from` to `$to` (inclusive, `CarbonImmutable` in `$now`'s zone): weekday periods sorted by
@@ -153,13 +153,13 @@ schema, models, factories, module skeleton, translations, and policies.
   - Accept: T009 passes.
   - Depends: T005, T009
 
-- [ ] T011 Create the `doctor_schedules` migration in `database/migrations/<timestamp>_create_doctor_schedules_table.php`
+- [X] T011 Create the `doctor_schedules` migration in `database/migrations/<timestamp>_create_doctor_schedules_table.php`
   - Scope: `make:migration create_doctor_schedules_table`; one-line comment pointing to
     `specs/005-scheduling-availability/data-model.md`:
     - `id()`; `foreignId('doctor_id')->unique()->constrained('doctors')->restrictOnDelete()`
     - `unsignedSmallInteger('appointment_minutes')`; `timestamps()`
 
-- [ ] T012 Create the `schedule_periods` migration in `database/migrations/<timestamp>_create_schedule_periods_table.php`
+- [X] T012 Create the `schedule_periods` migration in `database/migrations/<timestamp>_create_schedule_periods_table.php`
   - Scope: generated after T011: `id()`;
     `foreignId('doctor_schedule_id')->constrained('doctor_schedules')->cascadeOnDelete()`;
     `unsignedTinyInteger('weekday')`; `unsignedSmallInteger('start_minute')`;
@@ -167,7 +167,7 @@ schema, models, factories, module skeleton, translations, and policies.
     `schedule_periods_schedule_weekday_index`; no timestamps.
   - Depends: T011
 
-- [ ] T013 Create the `doctor_time_off` migration in `database/migrations/<timestamp>_create_doctor_time_off_table.php`
+- [X] T013 Create the `doctor_time_off` migration in `database/migrations/<timestamp>_create_doctor_time_off_table.php`
   - Scope: generated after T012: `id()`;
     `foreignId('doctor_id')->constrained('doctors')->restrictOnDelete()`; `date('start_date')`;
     `date('end_date')`; `unsignedSmallInteger('start_minute')->nullable()`;
@@ -176,7 +176,7 @@ schema, models, factories, module skeleton, translations, and policies.
     `doctor_time_off_doctor_dates_index`.
   - Depends: T012
 
-- [ ] T014 Create the models in `app/Modules/Scheduling/Models/`: `DoctorSchedule.php`, `SchedulePeriod.php`, `DoctorTimeOff.php`
+- [X] T014 Create the models in `app/Modules/Scheduling/Models/`: `DoctorSchedule.php`, `SchedulePeriod.php`, `DoctorTimeOff.php`
   - Scope (persistence mapping only, as `Doctors\Models\Doctor`):
     - `DoctorSchedule`: fillable `doctor_id`, `appointment_minutes`; cast `appointment_minutes` →
       `integer`; `periods(): HasMany` → `SchedulePeriod`, ordered by `weekday`, then `start_minute`;
@@ -189,7 +189,7 @@ schema, models, factories, module skeleton, translations, and policies.
       `DoctorTimeOffFactory`.
   - Depends: T011–T013
 
-- [ ] T015 [P] Create `database/factories/DoctorScheduleFactory.php` and `database/factories/DoctorTimeOffFactory.php` (synthetic only, R10)
+- [X] T015 [P] Create `database/factories/DoctorScheduleFactory.php` and `database/factories/DoctorTimeOffFactory.php` (synthetic only, R10)
   - Scope:
     - `DoctorScheduleFactory`: `doctor_id` → `Doctor::factory()`; `appointment_minutes` 20;
       `withPeriod(string $day, string $start, string $end)` → `afterCreating` adds a period
@@ -200,13 +200,13 @@ schema, models, factories, module skeleton, translations, and policies.
       null; `partial(string $start, string $end)`; `withReason()` (`'Synthetic leave'`).
   - Depends: T005, T006, T014
 
-- [ ] T016 Run the migrations and confirm the suite still passes
+- [X] T016 Run the migrations and confirm the suite still passes
   - Verify:
     - `docker compose exec app php artisan migrate` → the three migrations `DONE`
     - `docker compose exec app composer test` → 486 + the new unit tests pass
   - Depends: T010, T015
 
-- [ ] T017 Create the module skeleton: `app/Modules/Scheduling/Providers/SchedulingServiceProvider.php`, `app/Modules/Scheduling/routes/api.php`, `bootstrap/providers.php`
+- [X] T017 Create the module skeleton: `app/Modules/Scheduling/Providers/SchedulingServiceProvider.php`, `app/Modules/Scheduling/routes/api.php`, `bootstrap/providers.php`
   - Scope: as `DoctorsServiceProvider` (routes under `api/v1` with the `api` middleware,
     `loadTranslationsFrom(..., 'scheduling')`); `register()` empty for now. Routes file: comment
     header and an empty `auth:sanctum` group noting that `/doctors/me/…` routes are declared before
@@ -215,7 +215,7 @@ schema, models, factories, module skeleton, translations, and policies.
   - Verify: `docker compose exec app php artisan route:list --path=api/v1/doctors` → only the five feature 004 routes
   - Depends: T016
 
-- [ ] T018 [P] Add module translations in `app/Modules/Scheduling/lang/en/` and `app/Modules/Scheduling/lang/ar/` (R9)
+- [X] T018 [P] Add module translations in `app/Modules/Scheduling/lang/en/` and `app/Modules/Scheduling/lang/ar/` (R9)
   - Scope: three files per locale, same keys in both:
     - `messages.php`:
       - `period_end_before_start` — `On :day, a period must end after it starts.` / `في يوم :day يجب أن تنتهي الفترة بعد بدايتها.`
@@ -238,12 +238,12 @@ schema, models, factories, module skeleton, translations, and policies.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T017
 
-- [ ] T019 [P] Create `app/Modules/Scheduling/Exceptions/TimeOffNotFoundException.php`
+- [X] T019 [P] Create `app/Modules/Scheduling/Exceptions/TimeOffNotFoundException.php`
   - Scope: as `DoctorNotFoundException`: `render()` → `404` with
     `scheduling::messages.time_off_not_found`; empty `report()`.
   - Depends: T018
 
-- [ ] T020 [P] Write the failing policy test `tests/Feature/Scheduling/SchedulingPolicyTest.php` (R8)
+- [X] T020 [P] Write the failing policy test `tests/Feature/Scheduling/SchedulingPolicyTest.php` (R8)
   - Scope: as `DoctorsPolicyTest`, `Gate::forUser($actor)->allows($ability, <Model>::class)`:
     - `DoctorSchedule`: `view` all three roles; `update` administrator only; `viewOwn` doctor only
     - `DoctorTimeOff`: `viewAny` all three; `create`, `delete` administrator only; `viewOwn` doctor only
@@ -251,7 +251,7 @@ schema, models, factories, module skeleton, translations, and policies.
   - Verify: `docker compose exec app php artisan test --filter=SchedulingPolicyTest` → fails
   - Depends: T016
 
-- [ ] T021 Create `app/Modules/Scheduling/Policies/SchedulePolicy.php` and `TimeOffPolicy.php`; register both in the provider
+- [X] T021 Create `app/Modules/Scheduling/Policies/SchedulePolicy.php` and `TimeOffPolicy.php`; register both in the provider
   - Scope: class-level abilities as in T020 with private helpers (`isActiveAdministrator`,
     `isActiveDoctor`), docblocks as `DoctorPolicy`. `Gate::policy(DoctorSchedule::class,
     SchedulePolicy::class)`; `Gate::policy(DoctorTimeOff::class, TimeOffPolicy::class)`.
