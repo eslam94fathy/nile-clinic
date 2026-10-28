@@ -113,6 +113,7 @@ app/Modules/Patients/
 ├── Services/PatientService.php
 ├── Support/ArabicName.php                         # normalize() — the one definition (R3)
 ├── Support/PhoneNumber.php                        # normalize() and the validation pattern (R4)
+├── Support/PatientRules.php                       # field rules and attribute names shared by the store and update requests
 ├── routes/api.php
 └── lang/{en,ar}/{messages,attributes}.php
 database/migrations/<date>_create_patients_table.php
@@ -133,6 +134,8 @@ does for feature 002).
   filter with `PhoneNumber::normalize()` in `prepareForValidation()`; the model mutator cleans
   `full_name` and sets `name_search`. The repository normalizes the `name` filter with
   `ArabicName::normalize()` and escapes `LIKE` wildcards.
+- **Empty update**: a `PATCH` with none of the patient fields returns `422` with the error key
+  `fields` and `patients::messages.nothing_to_update` (contract: `minProperties: 1`).
 - **Emergency contact** (R9): accepted and returned as one nested object; the service maps it to
   and from the three columns; `null` clears all three.
 - **National-ID race** (R5): `PatientService` wraps create and update in a guard that turns
@@ -152,7 +155,8 @@ does for feature 002).
 | `tests/Feature/Patients/UpdatePatientTest` | partial update; clearing `national_id`, `address`, `emergency_contact`; national ID of another patient refused; own national ID kept; `id` unchanged; empty body refused |
 | `tests/Feature/Patients/PatientAuthorizationTest` | data provider: doctor × 4 actions → `403`, nothing changed; administrator and receptionist allowed; no token → `401`; deactivated receptionist → `401` (SC-005) |
 | `tests/Feature/Patients/PatientMessagesTest` | `404`, `422` (field names), `403` in `en` and `ar` with identical structure |
-| `tests/Feature/Patients/QueryErrorLoggingTest` | a forced `QueryException` is logged without bound values (D3) |
+| `tests/Feature/Patients/PatientPolicyTest` | 3 roles × 4 abilities; inactive administrator and receptionist refused |
+| `tests/Feature/Infrastructure/QueryErrorLoggingTest` | a reported `QueryException` is logged without bound values (D3) |
 
 `TranslationParityTest` (feature 001) already checks the new module language files.
 
