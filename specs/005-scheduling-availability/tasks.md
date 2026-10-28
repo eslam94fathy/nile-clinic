@@ -534,7 +534,7 @@ doctor.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T042 [P] Write `tests/Feature/Scheduling/SchedulingAuthorizationTest.php` (SC-005)
+- [X] T042 [P] Write `tests/Feature/Scheduling/SchedulingAuthorizationTest.php` (SC-005)
   - Scope: data providers over all ten endpoints with valid input (clock fixed at Sunday 2026-11-01
     08:00): receptionist and doctor × the four change endpoints (`PUT`/`DELETE` schedule, `POST`/
     `DELETE` time off) → `403` with `auth.forbidden` and the schedule, periods, and time off rows
@@ -545,7 +545,7 @@ doctor.
   - Verify: `docker compose exec app php artisan test --filter=SchedulingAuthorizationTest` → pass
   - Depends: T041
 
-- [ ] T043 [P] Write `tests/Feature/Scheduling/SchedulingMessagesTest.php` (FR-021, SC-006)
+- [X] T043 [P] Write `tests/Feature/Scheduling/SchedulingMessagesTest.php` (FR-021, SC-006)
   - Scope: for `en` and `ar`: `periods_overlap` with the translated day name (`Sunday` / `الأحد`);
     `range_too_long`; `beyond_horizon`; `time_off_times_single_day`; `time_off_ended`;
     `time_off_not_found` (`404`); `403` → `auth.forbidden`; JSON keys identical across locales; day
@@ -553,7 +553,7 @@ doctor.
   - Verify: `docker compose exec app php artisan test --filter=SchedulingMessagesTest` → pass
   - Depends: T041
 
-- [ ] T044 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T044 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: roadmap: 005 `Done` with the spec link, 006 `Next`. README: a short "Scheduling" section
     after "Doctors and specialties": administrators set weekly hours and time off under
     `/api/v1/doctors/{doctor}/schedule` and `/time-off`; staff list slots at `/slots?from&to` (up to
@@ -561,7 +561,7 @@ doctor.
     (`CLINIC_TIMEZONE`, default `Africa/Cairo`); link the contract.
   - Depends: T041
 
-- [ ] T045 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
+- [X] T045 Run Pint (`vendor/bin/pint`) and the full suite (`tests/`)
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0
