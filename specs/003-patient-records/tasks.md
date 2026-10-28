@@ -54,7 +54,7 @@ policy that every story needs.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Create the `patients` migration in `database/migrations/<timestamp>_create_patients_table.php`
+- [X] T002 Create the `patients` migration in `database/migrations/<timestamp>_create_patients_table.php`
   - Scope: `docker compose exec app php artisan make:migration create_patients_table`, then exactly
     the columns in data-model.md, with a one-line comment pointing to
     `specs/003-patient-records/data-model.md` (as the `users` migration does):
@@ -75,10 +75,10 @@ policy that every story needs.
   - Accept: matches data-model.md; `down()` drops the table.
   - Verify: covered by T009
 
-- [ ] T003 [P] Create the sex enum in `app/Modules/Patients/Enums/Sex.php`
+- [X] T003 [P] Create the sex enum in `app/Modules/Patients/Enums/Sex.php`
   - Scope: string-backed enum `Sex`: `Male = 'male'`, `Female = 'female'`. No other cases (FR-001).
 
-- [ ] T004 [P] Write the failing unit test `tests/Unit/Patients/ArabicNameTest.php` (R3, SC-003)
+- [X] T004 [P] Write the failing unit test `tests/Unit/Patients/ArabicNameTest.php` (R3, SC-003)
   - Scope: extends `PHPUnit\Framework\TestCase` (pure function, no app). Data-provider cases for
     `ArabicName::normalize()`:
     - `'  أحمد   محمود '` → `'احمد محمود'`; `'إيمان'` → `'ايمان'`; `'آمال'` → `'امال'`
@@ -87,7 +87,7 @@ policy that every story needs.
     - and `ArabicName::clean('  أحمد   محمود ')` → `'أحمد محمود'` (spaces only; letters kept)
   - Verify: `docker compose exec app php artisan test --filter=ArabicNameTest` → fails (class missing)
 
-- [ ] T005 Create `app/Modules/Patients/Support/ArabicName.php`
+- [X] T005 Create `app/Modules/Patients/Support/ArabicName.php`
   - Scope: `final class ArabicName` with two static methods, the only definitions (R3):
     - `clean(string $name): string` — trim; collapse runs of whitespace (`/\s+/u`) to one space.
     - `normalize(string $name): string` — `clean()`, then `mb_strtolower()`, then replace
@@ -96,14 +96,14 @@ policy that every story needs.
   - Verify: `docker compose exec app php artisan test --filter=ArabicNameTest` → pass
   - Depends: T004
 
-- [ ] T006 [P] Create `app/Modules/Patients/Support/PhoneNumber.php` (R4)
+- [X] T006 [P] Create `app/Modules/Patients/Support/PhoneNumber.php` (R4)
   - Scope: `final class PhoneNumber`:
     - `public const PATTERN = '/^\+?[0-9]{8,15}$/';`
     - `normalize(mixed $value): mixed` — if `$value` is a string, remove spaces, dashes, and
       parentheses (`/[\s\-()]/u`); otherwise return it unchanged (so validation reports the type).
   - Accept: `normalize('010-0000 0001')` → `'01000000001'`; `normalize('(+20) 100')` → `'+20100'`.
 
-- [ ] T007 Create the model `app/Modules/Patients/Models/Patient.php`
+- [X] T007 Create the model `app/Modules/Patients/Models/Patient.php`
   - Scope:
     - `class Patient extends Model` using `HasFactory`; `newFactory()` returns `PatientFactory::new()`
     - `$fillable = ['full_name', 'date_of_birth', 'sex', 'phone', 'national_id', 'address',
@@ -119,7 +119,7 @@ policy that every story needs.
     `name_search` `'فاطمه علي'`.
   - Depends: T002, T003, T005
 
-- [ ] T008 [P] Create the factory `database/factories/PatientFactory.php` (synthetic only, R12)
+- [X] T008 [P] Create the factory `database/factories/PatientFactory.php` (synthetic only, R12)
   - Scope:
     - Model `App\Modules\Patients\Models\Patient`
     - `full_name`: half the time `fake('ar_EG')->firstName().' '.fake('ar_EG')->lastName()`, otherwise
@@ -132,14 +132,14 @@ policy that every story needs.
   - Accept: no real people's data; every generated value passes the data-model.md rules.
   - Depends: T007
 
-- [ ] T009 Run the migration and confirm the suite still passes
+- [X] T009 Run the migration and confirm the suite still passes
   - Verify:
     - `docker compose exec app php artisan migrate` → `create_patients_table` `DONE`
     - `docker compose exec app php artisan tinker --execute="echo App\Modules\Patients\Models\Patient::factory()->withNationalId()->withEmergencyContact()->make()->toJson();"` → JSON without `name_search`
     - `docker compose exec app composer test` → 173 + the ArabicNameTest cases pass
   - Depends: T002, T007, T008
 
-- [ ] T010 Create the module skeleton: `app/Modules/Patients/Providers/PatientsServiceProvider.php`, `app/Modules/Patients/routes/api.php`, `bootstrap/providers.php`
+- [X] T010 Create the module skeleton: `app/Modules/Patients/Providers/PatientsServiceProvider.php`, `app/Modules/Patients/routes/api.php`, `bootstrap/providers.php`
   - Scope:
     - Provider `boot()`: load `routes/api.php` with `api` middleware and `api/v1` prefix (as
       `StaffServiceProvider` does); `loadTranslationsFrom(__DIR__.'/../lang', 'patients')`.
@@ -150,7 +150,7 @@ policy that every story needs.
   - Verify: `docker compose exec app php artisan route:list --path=api/v1/patients` → no routes yet, no error
   - Depends: T009
 
-- [ ] T011 [P] Add module translations in `app/Modules/Patients/lang/en/` and `app/Modules/Patients/lang/ar/` (R11)
+- [X] T011 [P] Add module translations in `app/Modules/Patients/lang/en/` and `app/Modules/Patients/lang/ar/` (R11)
   - Scope: two files per locale, same keys in both:
     - `messages.php`:
       - `not_found` — en `No patient was found.`; ar `لم يتم العثور على المريض.`
@@ -171,13 +171,13 @@ policy that every story needs.
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T010
 
-- [ ] T012 [P] Create `app/Modules/Patients/Exceptions/PatientNotFoundException.php`
+- [X] T012 [P] Create `app/Modules/Patients/Exceptions/PatientNotFoundException.php`
   - Scope: copy the shape of `StaffMemberNotFoundException`: `render()` →
     `response()->json(['message' => __('patients::messages.not_found')], 404)`; empty `report()`
     (client error, never logged).
   - Depends: T011
 
-- [ ] T013 [P] Write the failing policy test `tests/Feature/Patients/PatientPolicyTest.php` (FR-014, FR-015, R10)
+- [X] T013 [P] Write the failing policy test `tests/Feature/Patients/PatientPolicyTest.php` (FR-014, FR-015, R10)
   - Scope: data provider over roles (`administrator`, `receptionist`, `doctor`) × abilities
     (`viewAny`, `view`, `create`, `update`), checking
     `Gate::forUser($actor)->allows($ability, Patient::class)`: true for administrator and
@@ -186,7 +186,7 @@ policy that every story needs.
   - Verify: `docker compose exec app php artisan test --filter=PatientPolicyTest` → fails
   - Depends: T009
 
-- [ ] T014 Create `app/Modules/Patients/Policies/PatientPolicy.php` and register it in `app/Modules/Patients/Providers/PatientsServiceProvider.php`
+- [X] T014 Create `app/Modules/Patients/Policies/PatientPolicy.php` and register it in `app/Modules/Patients/Providers/PatientsServiceProvider.php`
   - Scope: four class-level abilities, each `(User $actor): bool` → `$actor->is_active &&
     in_array($actor->role, [Role::Administrator, Role::Receptionist], true)`, through one private
     helper. Class docblock: doctors are refused every ability before any lookup (clarification Q1),
