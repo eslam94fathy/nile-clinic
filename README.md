@@ -133,6 +133,24 @@ list a doctor's bookable slots at `/api/v1/doctors/{doctor}/slots?from=…&to=�
 Every endpoint, field, and response is described in
 [specs/005-scheduling-availability/contracts/scheduling.openapi.yaml](specs/005-scheduling-availability/contracts/scheduling.openapi.yaml).
 
+## Appointments
+
+Administrators and receptionists book a patient at `POST /api/v1/appointments` into a slot listed
+by `/api/v1/doctors/{doctor}/slots`, and find appointments at `GET /api/v1/appointments?from=…&to=…`
+(filters: `doctor_id`, `patient_id`, `status`, `outside_availability`). Reschedule, cancel, and
+no-show are `POST /api/v1/appointments/{id}/reschedule`, `/cancel`, and `/no-show`. Doctors read
+their own appointments at `/api/v1/doctors/me/appointments`.
+
+- A booking must start on a slot the doctor currently offers; booked slots disappear from `/slots`
+  and come back when the appointment is cancelled, moved, or marked as no-show.
+- A time that is already taken returns `409` with a fixed `reason`: `slot_booked` (the doctor) or
+  `patient_busy` (the patient). Simultaneous bookings of the same slot never both succeed.
+- Schedule, time off, and account changes are never blocked by appointments; affected upcoming
+  appointments are shown with `outside_availability: true` so reception can reschedule them.
+
+Every endpoint, field, and response is described in
+[specs/006-appointments/contracts/appointments.openapi.yaml](specs/006-appointments/contracts/appointments.openapi.yaml).
+
 ## Daily use
 
 ```sh
@@ -183,6 +201,9 @@ non-zero on any failure.
 - **Never run `php artisan config:cache` in development.** Cached config ignores the test
   settings in `phpunit.xml`; if you have done it, `composer test` clears it again.
 - Use synthetic data only, never real patient data.
+- The `concurrency` group starts real parallel PHP processes to prove that simultaneous bookings
+  cannot double-book; run it on its own with
+  `docker compose exec app php artisan test --group=concurrency`.
 
 ## Environment
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Scheduling;
 
+use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Scheduling\Models\DoctorSchedule;
 use App\Modules\Scheduling\Models\DoctorTimeOff;
@@ -150,6 +151,39 @@ class SlotsTest extends TestCase
         $this->slots('2026-11-01', '2026-11-01')->assertOk()->assertJsonCount(15, 'data');
     }
 
+    public function test_a_booked_slot_is_not_offered(): void
+    {
+        Appointment::factory()->at('2026-11-01', '09:20')->create(['doctor_id' => $this->doctor->id]);
+
+        $this->assertSame(['09:00', '09:40'], $this->morningStarts($this->slots('2026-11-01', '2026-11-01')));
+
+        Sanctum::actingAs($this->doctor->user);
+        $this->assertSame(['09:00', '09:40'], $this->morningStarts($this->getJson('/api/v1/doctors/me/slots?from=2026-11-01&to=2026-11-01')));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function freedStatuses(): array
+    {
+        return ['cancelled' => ['cancelled'], 'no-show' => ['noShow']];
+    }
+
+    #[DataProvider('freedStatuses')]
+    public function test_a_cancelled_or_no_show_appointment_hides_nothing(string $state): void
+    {
+        Appointment::factory()->at('2026-11-01', '09:20')->{$state}()->create(['doctor_id' => $this->doctor->id]);
+
+        $this->assertSame(['09:00', '09:20', '09:40'], $this->morningStarts($this->slots('2026-11-01', '2026-11-01')));
+    }
+
+    public function test_another_doctors_appointment_hides_nothing(): void
+    {
+        Appointment::factory()->at('2026-11-01', '09:20')->create();
+
+        $this->assertSame(['09:00', '09:20', '09:40'], $this->morningStarts($this->slots('2026-11-01', '2026-11-01')));
+    }
+
     public function test_an_unknown_doctor_is_not_found(): void
     {
         $this->getJson('/api/v1/doctors/999999/slots?from=2026-11-01&to=2026-11-01')->assertNotFound();
@@ -158,5 +192,15 @@ class SlotsTest extends TestCase
     private function slots(string $from, string $to): TestResponse
     {
         return $this->getJson("/api/v1/doctors/{$this->doctor->id}/slots?from={$from}&to={$to}");
+    }
+
+    /**
+     * The 09:00–10:00 period's slot starts in a response (the evening period is ignored).
+     *
+     * @return list<string>
+     */
+    private function morningStarts(TestResponse $response): array
+    {
+        return array_values(array_filter(array_column($response->assertOk()->json('data'), 'start'), fn (string $start) => $start < '10:00'));
     }
 }

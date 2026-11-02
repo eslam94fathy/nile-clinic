@@ -101,14 +101,51 @@ class SlotCalculatorTest extends TestCase
         );
     }
 
+    public function test_a_booked_time_removes_its_slot(): void
+    {
+        $slots = $this->slots([0 => [[540, 600]]], 20, [], '2026-11-01', '2026-11-01', booked: [$this->booked('2026-11-01', 560, 580)]);
+
+        $this->assertSame(['09:00', '09:40'], $this->starts($slots));
+    }
+
+    public function test_a_booked_time_on_another_date_changes_nothing(): void
+    {
+        $slots = $this->slots([0 => [[540, 600]]], 20, [], '2026-11-01', '2026-11-01', booked: [$this->booked('2026-11-03', 560, 580)]);
+
+        $this->assertSame(['09:00', '09:20', '09:40'], $this->starts($slots));
+    }
+
+    public function test_a_booking_under_an_old_length_removes_every_overlapping_slot(): void
+    {
+        $slots = $this->slots([0 => [[540, 660]]], 30, [], '2026-11-01', '2026-11-01', booked: [$this->booked('2026-11-01', 560, 580)]);
+
+        $this->assertSame(['10:00', '10:30'], $this->starts($slots));
+    }
+
+    public function test_a_booking_that_only_touches_a_slot_keeps_it(): void
+    {
+        $slots = $this->slots([0 => [[540, 600]]], 20, [], '2026-11-01', '2026-11-01', booked: [$this->booked('2026-11-01', 600, 620)]);
+
+        $this->assertSame(['09:00', '09:20', '09:40'], $this->starts($slots));
+    }
+
     /**
      * @param  array<int, list<array{0: int, 1: int}>>  $periods
      * @param  list<array{start_date: string, end_date: string, start_minute: ?int, end_minute: ?int}>  $timeOff
+     * @param  list<array{date: string, start_minute: int, end_minute: int}>  $booked
      * @return list<array{date: string, start: string, end: string}>
      */
-    private function slots(array $periods, int $length, array $timeOff, string $from, string $to, ?CarbonImmutable $now = null): array
+    private function slots(array $periods, int $length, array $timeOff, string $from, string $to, ?CarbonImmutable $now = null, array $booked = []): array
     {
-        return SlotCalculator::slots($periods, $length, $timeOff, $from, $to, $now ?? CarbonImmutable::parse('2026-10-31 12:00', self::TZ));
+        return SlotCalculator::slots($periods, $length, $timeOff, $from, $to, $now ?? CarbonImmutable::parse('2026-10-31 12:00', self::TZ), $booked);
+    }
+
+    /**
+     * @return array{date: string, start_minute: int, end_minute: int}
+     */
+    private function booked(string $date, int $start, int $end): array
+    {
+        return ['date' => $date, 'start_minute' => $start, 'end_minute' => $end];
     }
 
     /**

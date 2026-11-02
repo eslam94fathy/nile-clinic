@@ -6,6 +6,7 @@ use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Scheduling\Models\DoctorTimeOff;
 use App\Modules\Scheduling\Models\SchedulePeriod;
+use App\Modules\Scheduling\Repositories\Contracts\BookedTimeRepository;
 use App\Modules\Scheduling\Repositories\Contracts\DoctorScheduleRepository;
 use App\Modules\Scheduling\Repositories\Contracts\TimeOffRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -20,10 +21,12 @@ class SlotService
         private readonly DoctorRepository $doctors,
         private readonly DoctorScheduleRepository $schedules,
         private readonly TimeOffRepository $timeOff,
+        private readonly BookedTimeRepository $booked,
     ) {}
 
     /**
-     * Empty for an inactive doctor (feature 004, FR-012) or one without a schedule (FR-009).
+     * The slots offered to staff: working slots minus every slot that overlaps a scheduled
+     * appointment (feature 006, FR-006, research R2).
      *
      * @param  string  $from  Y-m-d
      * @param  string  $to  Y-m-d, inclusive
@@ -32,6 +35,32 @@ class SlotService
      * @throws DoctorNotFoundException
      */
     public function forDoctor(int $doctorId, string $from, string $to): array
+    {
+        return $this->compute($doctorId, $from, $to, $this->booked->forDoctor($doctorId, $from, $to));
+    }
+
+    /**
+     * For booking checks (feature 006); does not hide booked slots. Empty for an inactive doctor
+     * (feature 004, FR-012) or one without a schedule (FR-009).
+     *
+     * @param  string  $from  Y-m-d
+     * @param  string  $to  Y-m-d, inclusive
+     * @return list<array{date: string, start: string, end: string}>
+     *
+     * @throws DoctorNotFoundException
+     */
+    public function workingSlots(int $doctorId, string $from, string $to): array
+    {
+        return $this->compute($doctorId, $from, $to, []);
+    }
+
+    /**
+     * @param  list<array{date: string, start_minute: int, end_minute: int}>  $booked
+     * @return list<array{date: string, start: string, end: string}>
+     *
+     * @throws DoctorNotFoundException
+     */
+    private function compute(int $doctorId, string $from, string $to, array $booked): array
     {
         $doctor = $this->doctors->findById($doctorId) ?? throw new DoctorNotFoundException;
         $schedule = $this->schedules->findForDoctor($doctorId);
@@ -53,6 +82,6 @@ class SlotService
             'end_minute' => $entry->end_minute,
         ])->all();
 
-        return SlotCalculator::slots($periodsByWeekday, $schedule->appointment_minutes, $timeOff, $from, $to, ClinicClock::now());
+        return SlotCalculator::slots($periodsByWeekday, $schedule->appointment_minutes, $timeOff, $from, $to, ClinicClock::now(), $booked);
     }
 }

@@ -1,0 +1,447 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Appointments
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 006. All responses are JSON, and field names and structure
+    are identical in every locale; only `message` texts change with Accept-Language (en, ar;
+    fallback en). Statuses and conflict reasons are fixed English identifiers. All dates and times
+    are the clinic's local wall clock (Africa/Cairo) with no offset; record timestamps
+    (`booked_at`, `rescheduled_at`, `status_changed_at`) are ISO 8601 UTC instants, as in earlier
+    features. Every endpoint requires `Authorization: Bearer <token>` (feature 002).
+    `/appointments…` is for active administrators and receptionists; `/doctors/me/appointments…`
+    is for active doctors. Feature 005's `GET /doctors/{doctor}/slots` and `GET /doctors/me/slots`
+    no longer offer slots that overlap a scheduled appointment; their shape is unchanged.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /appointments:
+    get:
+      operationId: listAppointments
+      summary: List appointments in a date range (FR-008, FR-009) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - { in: query, name: doctor_id, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: patient_id, required: false, schema: { type: integer, minimum: 1 } }
+        - $ref: '#/components/parameters/StatusFilter'
+        - in: query
+          name: outside_availability
+          required: false
+          description: true for only scheduled, not-started appointments outside the doctor's current availability; false for the rest.
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page, ordered by date, start, then id. No matches is an empty `data` array.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/AppointmentSummary' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      operationId: bookAppointment
+      summary: Book a patient into a free slot (FR-001–FR-007) — administrators, receptionists
+      description: >
+        `start` must be the start of a slot the doctor currently offers on `date` (feature 005); the
+        end is taken from that slot. Exactly one of simultaneous bookings for the same slot
+        succeeds.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookingInput' }
+            example: { patient_id: 12, doctor_id: 3, date: '2026-11-08', start: '09:20', note: First visit }
+      responses:
+        '201': { $ref: '#/components/responses/AppointmentOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: >
+            Validation failed, including unknown `patient_id` or `doctor_id`, and `start` not being
+            a bookable slot (`slot_unavailable` message: outside hours, time off, past, beyond the
+            90-day horizon, off the slot grid, inactive doctor).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /appointments/{appointment}:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    get:
+      operationId: showAppointment
+      summary: One appointment with full details (FR-010) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/AppointmentNotFound' }
+
+  /appointments/{appointment}/reschedule:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    post:
+      operationId: rescheduleAppointment
+      summary: Move a scheduled, not-started appointment to another slot of the same doctor (FR-011)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RescheduleInput' }
+            example: { date: '2026-11-10', start: '10:00' }
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/AppointmentNotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: Validation failed; `slot_unavailable` on `start`, or `not_changeable` on `appointment` (cancelled, no-show, or started).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /appointments/{appointment}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    post:
+      operationId: cancelAppointment
+      summary: Cancel a scheduled, not-started appointment; the slot is freed (FR-012)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: [string, 'null'], maxLength: 255 }
+            example: { reason: Patient travelling }
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/AppointmentNotFound' }
+        '422':
+          description: Validation failed; `not_changeable` on `appointment`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /appointments/{appointment}/no-show:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    post:
+      operationId: markAppointmentNoShow
+      summary: Mark a scheduled appointment whose start has passed as no-show (FR-013)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/AppointmentNotFound' }
+        '422':
+          description: Validation failed; `not_started` or `not_changeable` on `appointment`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/appointments:
+    get:
+      operationId: listOwnAppointments
+      summary: The signed-in doctor's own appointments (FR-015) — doctors
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page of the doctor's own appointments, ordered by date, start, then id.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/OwnAppointmentSummary' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/me/appointments/{appointment}:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    get:
+      operationId: showOwnAppointment
+      summary: One of the signed-in doctor's own appointments (FR-015) — doctors
+      description: Another doctor's appointment is reported as not found (research R8).
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The appointment.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/OwnAppointment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No own doctor profile, or no such appointment for this doctor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: The `token` value returned by sign-in (feature 002).
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      description: en or ar (regional variants map to the base language); anything else falls back to en.
+      schema: { type: string }
+    AppointmentId:
+      in: path
+      name: appointment
+      required: true
+      schema: { type: integer, minimum: 1 }
+    From:
+      in: query
+      name: from
+      required: true
+      description: First date; may be in the past.
+      schema: { type: string, format: date }
+    To:
+      in: query
+      name: to
+      required: true
+      description: Last date (inclusive); not before `from`, at most 92 days including both ends.
+      schema: { type: string, format: date }
+    StatusFilter:
+      in: query
+      name: status
+      required: false
+      schema: { $ref: '#/components/schemas/Status' }
+    Page:
+      in: query
+      name: page
+      required: false
+      schema: { type: integer, minimum: 1 }
+    PerPage:
+      in: query
+      name: per_page
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+
+  schemas:
+    Status:
+      type: string
+      enum: [scheduled, cancelled, no_show]
+    StartTime:
+      type: string
+      pattern: '^([01][0-9]|2[0-3]):[0-5][05]$'
+      description: Clinic wall-clock time on a 5-minute boundary.
+    EndTime:
+      type: string
+      pattern: '^(([01][0-9]|2[0-3]):[0-5][05]|24:00)$'
+    BookingInput:
+      type: object
+      required: [patient_id, doctor_id, date, start]
+      properties:
+        patient_id: { type: integer, minimum: 1, description: The patient number (feature 003) }
+        doctor_id: { type: integer, minimum: 1, description: The doctor id (feature 004) }
+        date: { type: string, format: date }
+        start: { $ref: '#/components/schemas/StartTime' }
+        note:
+          type: [string, 'null']
+          maxLength: 500
+          description: Administrative note (for example "first visit"). Do not enter medical details; clinical notes belong to medical encounters.
+    RescheduleInput:
+      type: object
+      required: [date, start]
+      properties:
+        date: { type: string, format: date }
+        start: { $ref: '#/components/schemas/StartTime' }
+    StaffRef:
+      type: [object, 'null']
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    DoctorRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, title]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: string }
+    StaffPatientRef:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, phone]
+      description: Never national ID, address, or emergency contact.
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        phone: { type: string }
+    DoctorPatientRef:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, sex, date_of_birth]
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        sex: { type: string, enum: [male, female] }
+        date_of_birth: { type: string, format: date }
+    AppointmentSummary:
+      type: object
+      additionalProperties: false
+      required: [id, date, start, end, status, outside_availability, doctor, patient]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        start: { $ref: '#/components/schemas/StartTime' }
+        end: { $ref: '#/components/schemas/EndTime' }
+        status: { $ref: '#/components/schemas/Status' }
+        outside_availability: { type: boolean }
+        doctor: { $ref: '#/components/schemas/DoctorRef' }
+        patient: { $ref: '#/components/schemas/StaffPatientRef' }
+    Appointment:
+      allOf:
+        - $ref: '#/components/schemas/AppointmentSummary'
+        - type: object
+          required: [note, booked_by, booked_at, rescheduled_by, rescheduled_at, status_changed_by, status_changed_at, cancellation_reason]
+          properties:
+            note: { type: [string, 'null'] }
+            booked_by: { $ref: '#/components/schemas/StaffRef' }
+            booked_at: { type: string, format: date-time }
+            rescheduled_by: { $ref: '#/components/schemas/StaffRef' }
+            rescheduled_at: { type: [string, 'null'], format: date-time }
+            status_changed_by: { $ref: '#/components/schemas/StaffRef' }
+            status_changed_at: { type: [string, 'null'], format: date-time }
+            cancellation_reason: { type: [string, 'null'] }
+    OwnAppointmentSummary:
+      type: object
+      additionalProperties: false
+      required: [id, date, start, end, status, outside_availability, patient]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        start: { $ref: '#/components/schemas/StartTime' }
+        end: { $ref: '#/components/schemas/EndTime' }
+        status: { $ref: '#/components/schemas/Status' }
+        outside_availability: { type: boolean }
+        patient: { $ref: '#/components/schemas/DoctorPatientRef' }
+    OwnAppointment:
+      allOf:
+        - $ref: '#/components/schemas/OwnAppointmentSummary'
+        - type: object
+          required: [note, booked_at]
+          properties:
+            note: { type: [string, 'null'] }
+            booked_at: { type: string, format: date-time }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    ConflictError:
+      type: object
+      additionalProperties: false
+      required: [message, reason]
+      properties:
+        message: { type: string }
+        reason:
+          type: string
+          enum: [slot_booked, patient_busy]
+          description: slot_booked — the doctor already has a scheduled appointment overlapping this time; patient_busy — the patient does.
+
+  responses:
+    AppointmentOk:
+      description: The appointment.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/Appointment' }
+    Conflict:
+      description: The time is taken (research R6).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ConflictError' }
+          example: { message: This slot is already booked., reason: slot_booked }
+    Unauthenticated:
+      description: Missing, invalid, or expired token, or a deactivated account (feature 002).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Signed in, but this role may not do this.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    AppointmentNotFound:
+      description: No appointment with this id.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    DoctorNotFound:
+      description: The signed-in doctor has no doctor profile yet (feature 004).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }

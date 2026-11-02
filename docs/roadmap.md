@@ -17,8 +17,8 @@ this file when a feature is completed or the order changes.
 | 003 | Patients                   | Done    | 002           | [specs/003-patient-records](../specs/003-patient-records/spec.md)       |
 | 004 | Doctors & specialties      | Done    | 002           | [specs/004-doctors-specialties](../specs/004-doctors-specialties/spec.md) |
 | 005 | Scheduling & availability  | Done    | 004           | [specs/005-scheduling-availability](../specs/005-scheduling-availability/spec.md) |
-| 006 | Appointments               | Next    | 003, 005      | —                                                          |
-| 007 | Patient queues             | Planned | 006           | —                                                          |
+| 006 | Appointments               | Done    | 003, 005      | [specs/006-appointments](../specs/006-appointments/spec.md) |
+| 007 | Patient queues             | Next    | 006           | —                                                          |
 | 008 | Medical encounters         | Planned | 003, 004, 006 | —                                                          |
 | 009 | Payments                   | Planned | 006, 008      | —                                                          |
 | 010 | Reports                    | Planned | 003–009       | —                                                          |

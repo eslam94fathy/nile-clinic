@@ -14,6 +14,11 @@ class EloquentPatientRepository implements PatientRepository
         return Patient::query()->find($id);
     }
 
+    public function lockById(int $id): ?Patient
+    {
+        return Patient::query()->whereKey($id)->lockForUpdate()->first();
+    }
+
     public function create(array $attributes): Patient
     {
         return Patient::query()->create($attributes);

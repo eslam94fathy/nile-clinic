@@ -12,6 +12,13 @@ interface DoctorScheduleRepository
     public function findForDoctor(int $doctorId): ?DoctorSchedule;
 
     /**
+     * The doctor's schedule row locked `FOR UPDATE` until the caller's transaction ends, or null
+     * when the doctor has no schedule. Serializes bookings for one doctor with each other and with
+     * schedule changes (feature 006, research R3).
+     */
+    public function lockForDoctor(int $doctorId): ?DoctorSchedule;
+
+    /**
      * Make sure the doctor has a schedule row and lock it until the caller's transaction ends, so
      * two administrators saving at once are serialized (research R4).
      */
