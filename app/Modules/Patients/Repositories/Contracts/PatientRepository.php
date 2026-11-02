@@ -10,6 +10,12 @@ interface PatientRepository
     public function findById(int $id): ?Patient;
 
     /**
+     * The patient row locked `FOR UPDATE` until the caller's transaction ends, or null. Serializes
+     * bookings for one patient (feature 006, research R3).
+     */
+    public function lockById(int $id): ?Patient;
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
     public function create(array $attributes): Patient;

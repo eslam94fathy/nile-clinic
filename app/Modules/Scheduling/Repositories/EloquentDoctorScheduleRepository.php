@@ -12,6 +12,11 @@ class EloquentDoctorScheduleRepository implements DoctorScheduleRepository
         return DoctorSchedule::query()->with('periods')->where('doctor_id', $doctorId)->first();
     }
 
+    public function lockForDoctor(int $doctorId): ?DoctorSchedule
+    {
+        return DoctorSchedule::query()->where('doctor_id', $doctorId)->lockForUpdate()->first();
+    }
+
     public function lockOrCreateForDoctor(int $doctorId, int $appointmentMinutes): DoctorSchedule
     {
         $now = now();

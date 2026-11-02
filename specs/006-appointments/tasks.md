@@ -68,7 +68,7 @@ skeleton, translations, exceptions, and the policy.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Create the `appointments` migration in `database/migrations/<timestamp>_create_appointments_table.php`
+- [X] T002 Create the `appointments` migration in `database/migrations/<timestamp>_create_appointments_table.php`
   - Scope: `docker compose exec app php artisan make:migration create_appointments_table`; one-line
     comment pointing to `specs/006-appointments/data-model.md` and R3. Columns, exactly:
     - `id()`
@@ -88,13 +88,13 @@ skeleton, translations, exceptions, and the policy.
   - Verify: `docker compose exec app php artisan migrate` → `create_appointments_table` `DONE`;
     `migrate:status` shows it `Ran`.
 
-- [ ] T003 [P] Create `app/Modules/Appointments/Enums/AppointmentStatus.php`
+- [X] T003 [P] Create `app/Modules/Appointments/Enums/AppointmentStatus.php`
   - Scope: `enum AppointmentStatus: string` with `Scheduled = 'scheduled'`,
     `Cancelled = 'cancelled'`, `NoShow = 'no_show'`; `static values(): list<string>`. Docblock:
     transitions per research R5 (scheduled → scheduled by reschedule; → cancelled; → no_show;
     the last two are final).
 
-- [ ] T004 Create `app/Modules/Appointments/Models/Appointment.php`
+- [X] T004 Create `app/Modules/Appointments/Models/Appointment.php`
   - Scope (persistence mapping only, as `Doctors\Models\Doctor`): fillable `patient_id`,
     `doctor_id`, `date`, `start_minute`, `end_minute`, `status`, `note`, `booked_by`,
     `rescheduled_by`, `rescheduled_at`, `status_changed_by`, `status_changed_at`,
@@ -106,7 +106,7 @@ skeleton, translations, exceptions, and the policy.
     `rescheduled_by`, `status_changed_by`). `HasFactory` with `AppointmentFactory`.
   - Depends: T002, T003
 
-- [ ] T005 [P] Create `database/factories/AppointmentFactory.php` (synthetic only)
+- [X] T005 [P] Create `database/factories/AppointmentFactory.php` (synthetic only)
   - Scope: `patient_id` → `Patient::factory()`; `doctor_id` → `Doctor::factory()`; `date` →
     `ClinicClock::now()->addDay()->toDateString()`; `start_minute` 540; `end_minute` 560; `status`
     `scheduled`; `note` null; `booked_by` → `User::factory()->receptionist()`. States:
@@ -115,7 +115,7 @@ skeleton, translations, exceptions, and the policy.
     `status_changed_by` a receptionist, `cancellation_reason` `'Synthetic reason'`); `noShow()`.
   - Depends: T004
 
-- [ ] T006 [P] Add `lockForDoctor` to `app/Modules/Scheduling/Repositories/Contracts/DoctorScheduleRepository.php` and `app/Modules/Scheduling/Repositories/EloquentDoctorScheduleRepository.php` (R3)
+- [X] T006 [P] Add `lockForDoctor` to `app/Modules/Scheduling/Repositories/Contracts/DoctorScheduleRepository.php` and `app/Modules/Scheduling/Repositories/EloquentDoctorScheduleRepository.php` (R3)
   - Scope: `public function lockForDoctor(int $doctorId): ?DoctorSchedule;` docblock: "The
     doctor's schedule row locked `FOR UPDATE` until the caller's transaction ends, or null when the
     doctor has no schedule. Serializes bookings for one doctor with each other and with schedule
@@ -123,20 +123,20 @@ skeleton, translations, exceptions, and the policy.
     `DoctorSchedule::query()->where('doctor_id', $doctorId)->lockForUpdate()->first()`. Does not
     create a row and loads no relations.
 
-- [ ] T007 [P] Add `lockById` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php` (R3)
+- [X] T007 [P] Add `lockById` to `app/Modules/Patients/Repositories/Contracts/PatientRepository.php` and `app/Modules/Patients/Repositories/EloquentPatientRepository.php` (R3)
   - Scope: `public function lockById(int $id): ?Patient;` docblock: "The patient row locked
     `FOR UPDATE` until the caller's transaction ends, or null. Serializes bookings for one patient
     (feature 006, research R3)." Implementation:
     `Patient::query()->whereKey($id)->lockForUpdate()->first()`.
 
-- [ ] T008 [P] Create the contract `app/Modules/Scheduling/Repositories/Contracts/BookedTimeRepository.php` (approved D1, R2)
+- [X] T008 [P] Create the contract `app/Modules/Scheduling/Repositories/Contracts/BookedTimeRepository.php` (approved D1, R2)
   - Scope: `interface BookedTimeRepository` with
     `public function forDoctor(int $doctorId, string $from, string $to): array;` returning
     `list<array{date: string, start_minute: int, end_minute: int}>` — the doctor's times already
     taken by scheduled appointments on those dates (inclusive). Docblock: declared by Scheduling,
     implemented and bound by the Appointments module, so the dependency goes one way.
 
-- [ ] T009 Extend `tests/Unit/Scheduling/SlotCalculatorTest.php` with booked times (FR-006, R2) — failing first
+- [X] T009 Extend `tests/Unit/Scheduling/SlotCalculatorTest.php` with booked times (FR-006, R2) — failing first
   - Scope: add a `$booked` argument (last, `list<array{date, start_minute, end_minute}>`) to new
     cases; existing cases stay unchanged and pass without it. Cases (now `2026-10-31 12:00`):
     - Sunday `[540, 600]`, 20 min, booked `2026-11-01` 560–580 → `09:00`, `09:40` only
@@ -146,7 +146,7 @@ skeleton, translations, exceptions, and the policy.
     - touching booking 600–620 next to slot `09:40–10:00` → slot kept
   - Verify: `docker compose exec app php artisan test --filter=SlotCalculatorTest` → new cases fail
 
-- [ ] T010 Update `app/Modules/Scheduling/Support/SlotCalculator.php`
+- [X] T010 Update `app/Modules/Scheduling/Support/SlotCalculator.php`
   - Scope: add the last parameter `array $booked = []` to `slots()` with the docblock type from
     T009. Group booked intervals by date once; skip a slot when
     `$start < $bookedEnd && $end > $bookedStart` for any interval on that date (reuse the private
@@ -154,7 +154,7 @@ skeleton, translations, exceptions, and the policy.
   - Accept: T009 passes; the whole `SlotCalculatorTest` passes.
   - Depends: T009
 
-- [ ] T011 Update `app/Modules/Scheduling/Services/SlotService.php` (R2, R4)
+- [X] T011 Update `app/Modules/Scheduling/Services/SlotService.php` (R2, R4)
   - Scope: inject `BookedTimeRepository $booked`. Add `public function workingSlots(int $doctorId,
     string $from, string $to): array` — today's body of `forDoctor()` (schedule, time off, past,
     inactive doctor, DST), with no booked times. `forDoctor()` becomes: the same inputs plus
@@ -163,7 +163,7 @@ skeleton, translations, exceptions, and the policy.
     checks (feature 006); does not hide booked slots".
   - Depends: T008, T010
 
-- [ ] T012 Create `app/Modules/Appointments/Repositories/Contracts/AppointmentRepository.php` and `app/Modules/Appointments/Repositories/EloquentAppointmentRepository.php` with the methods booking needs
+- [X] T012 Create `app/Modules/Appointments/Repositories/Contracts/AppointmentRepository.php` and `app/Modules/Appointments/Repositories/EloquentAppointmentRepository.php` with the methods booking needs
   - Scope (more methods are added in later stories):
     - `create(array $attributes): Appointment`
     - `update(Appointment $appointment, array $attributes): Appointment`
@@ -177,13 +177,13 @@ skeleton, translations, exceptions, and the policy.
       (until T030, select `false AS outside_availability`; T030 replaces it)
   - Depends: T004
 
-- [ ] T013 [P] Create `app/Modules/Appointments/Repositories/EloquentBookedTimeRepository.php` (D1)
+- [X] T013 [P] Create `app/Modules/Appointments/Repositories/EloquentBookedTimeRepository.php` (D1)
   - Scope: implements `BookedTimeRepository::forDoctor()`: scheduled appointments of the doctor
     with `date` between `$from` and `$to` → `list` of `['date' => Y-m-d, 'start_minute' => int,
     'end_minute' => int]`, ordered by date, start. Docblock: the Appointments side of D1.
   - Depends: T004, T008
 
-- [ ] T014 Create the module skeleton: `app/Modules/Appointments/Providers/AppointmentsServiceProvider.php`, `app/Modules/Appointments/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T014 Create the module skeleton: `app/Modules/Appointments/Providers/AppointmentsServiceProvider.php`, `app/Modules/Appointments/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: provider mirrors `SchedulingServiceProvider`: `register()` binds
     `AppointmentRepository` → `EloquentAppointmentRepository` and
     `Scheduling\Repositories\Contracts\BookedTimeRepository` → `EloquentBookedTimeRepository`;
@@ -195,7 +195,7 @@ skeleton, translations, exceptions, and the policy.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
   - Depends: T012, T013
 
-- [ ] T015 [P] Create the translations `app/Modules/Appointments/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T015 [P] Create the translations `app/Modules/Appointments/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('appointments::messages.<key>')`), en / ar:
     - `slot_unavailable`: "This time is not an available slot for this doctor." / "هذا الوقت ليس من المواعيد المتاحة لهذا الطبيب."
     - `slot_booked`: "This slot is already booked." / "هذا الموعد محجوز بالفعل."
@@ -213,7 +213,7 @@ skeleton, translations, exceptions, and the policy.
       "خارج أوقات العمل"; `appointment` "appointment" / "الموعد".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T016 [P] Create `app/Modules/Appointments/Exceptions/AppointmentNotFoundException.php` and `AppointmentConflictException.php` (R6)
+- [X] T016 [P] Create `app/Modules/Appointments/Exceptions/AppointmentNotFoundException.php` and `AppointmentConflictException.php` (R6)
   - Scope: `AppointmentNotFoundException` exactly like `PatientNotFoundException` (404,
     `appointments::messages.not_found`, empty `report()`). `AppointmentConflictException`:
     constructor `public function __construct(public readonly string $reason)` where `$reason` is
@@ -221,7 +221,7 @@ skeleton, translations, exceptions, and the policy.
     __("appointments::messages.{$this->reason}"), 'reason' => $this->reason], 409)`; empty
     `report()`.
 
-- [ ] T017 Write `tests/Feature/Appointments/AppointmentPolicyTest.php`, then create `app/Modules/Appointments/Policies/AppointmentPolicy.php` (R8)
+- [X] T017 Write `tests/Feature/Appointments/AppointmentPolicyTest.php`, then create `app/Modules/Appointments/Policies/AppointmentPolicy.php` (R8)
   - Scope: class-level abilities on `Appointment::class`: `viewAny`, `view`, `create`, `update` →
     active administrator or receptionist; `viewOwn` → active doctor. Test: every role (active and
     inactive) × every ability, as `tests/Feature/Scheduling/SchedulingPolicyTest.php`. Then add
@@ -230,7 +230,7 @@ skeleton, translations, exceptions, and the policy.
     before the policy exists, passes after.
   - Depends: T014
 
-- [ ] T018 Write `tests/Feature/Appointments/AppointmentPersistenceTest.php` (R3)
+- [X] T018 Write `tests/Feature/Appointments/AppointmentPersistenceTest.php` (R3)
   - Scope: `RefreshDatabase`. Using the factory: two `scheduled` rows with the same doctor, date,
     `start_minute` → `UniqueConstraintViolationException`; a `cancelled` and a `scheduled` row at
     the same slot → allowed; two `cancelled` rows at the same slot → allowed; `scheduled_flag` is
@@ -239,7 +239,7 @@ skeleton, translations, exceptions, and the policy.
   - Verify: `docker compose exec app php artisan test --filter=AppointmentPersistenceTest` → pass
   - Depends: T005
 
-- [ ] T019 Run the Scheduling and Patients suites unchanged
+- [X] T019 Run the Scheduling and Patients suites unchanged
   - Verify: `docker compose exec app php artisan test tests/Feature/Scheduling tests/Unit/Scheduling tests/Feature/Patients` → all pass (no booked times exist, so slot results are unchanged).
   - Depends: T011, T014
 

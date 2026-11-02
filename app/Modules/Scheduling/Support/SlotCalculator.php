@@ -28,13 +28,19 @@ final class SlotCalculator
      * @param  string  $from  first date, Y-m-d
      * @param  string  $to  last date, Y-m-d (inclusive)
      * @param  CarbonImmutable  $now  the clinic's current time, in the clinic's zone
+     * @param  list<array{date: string, start_minute: int, end_minute: int}>  $booked  times already taken (feature 006, FR-006); a slot overlapping one is dropped
      * @return list<array{date: string, start: string, end: string}>
      */
-    public static function slots(array $periodsByWeekday, int $appointmentMinutes, array $timeOff, string $from, string $to, CarbonImmutable $now): array
+    public static function slots(array $periodsByWeekday, int $appointmentMinutes, array $timeOff, string $from, string $to, CarbonImmutable $now, array $booked = []): array
     {
         $timezone = $now->getTimezone();
         $nowWallClock = $now->format('Y-m-d H:i');
         $slots = [];
+
+        $bookedByDate = [];
+        foreach ($booked as $entry) {
+            $bookedByDate[$entry['date']][] = [$entry['start_minute'], $entry['end_minute']];
+        }
 
         for ($date = CarbonImmutable::parse($from, $timezone); $date->toDateString() <= $to; $date = $date->addDay()) {
             $day = $date->toDateString();
@@ -52,6 +58,7 @@ final class SlotCalculator
                     $startTime = ClockTime::fromMinutes($start);
 
                     if (self::overlapsAny($start, $end, $offWindows)
+                        || self::overlapsAny($start, $end, $bookedByDate[$day] ?? [])
                         || "{$day} {$startTime}" <= $nowWallClock
                         || ! self::existsOn($day, $startTime, $timezone)) {
                         continue;
