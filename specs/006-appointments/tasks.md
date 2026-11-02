@@ -592,7 +592,7 @@ a future appointment → `422 not_started`.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T045 [P] Write `tests/Feature/Appointments/AppointmentsAuthorizationTest.php` (SC-006)
+- [X] T045 [P] Write `tests/Feature/Appointments/AppointmentsAuthorizationTest.php` (SC-006)
   - Scope: data providers over all eight endpoints with valid input (clock fixed): doctor × the
     six `/appointments…` endpoints → `403` (`auth.forbidden`) and no row changed; administrator and
     receptionist × the six → success code; administrator and receptionist × the two `/me`
@@ -600,13 +600,13 @@ a future appointment → `422 not_started`.
     deactivated → `401` (`InteractsWithStaffTokens::usingToken()`); doctor with an invalid booking
     body → `403`, not `422`.
 
-- [ ] T046 [P] Write `tests/Feature/Appointments/AppointmentsMessagesTest.php` (FR-021, SC-007)
+- [X] T046 [P] Write `tests/Feature/Appointments/AppointmentsMessagesTest.php` (FR-021, SC-007)
   - Scope: for `en` and `ar`: `slot_unavailable`, `slot_booked`, `patient_busy`, `not_changeable`,
     `not_started`, `not_found` (404), `patient_not_found`, `range_too_long`, a translated attribute
     name in a `required` message, `403` → `auth.forbidden`; JSON keys identical across locales;
     `status` values and conflict `reason` identical across locales.
 
-- [ ] T047 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T047 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: roadmap: 006 `Done` with the spec link, 007 `Next`. README: a short "Appointments"
     section after "Scheduling": reception books at `POST /api/v1/appointments` into a slot from
     `/doctors/{doctor}/slots`; reschedule, cancel, and no-show under `/appointments/{id}/…`;
