@@ -5,7 +5,9 @@ namespace App\Modules\Appointments\Repositories;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Staff\Enums\Role;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
 class EloquentAppointmentRepository implements AppointmentRepository
@@ -39,10 +41,93 @@ class EloquentAppointmentRepository implements AppointmentRepository
 
     public function find(int $id, CarbonImmutable $now): ?Appointment
     {
-        return Appointment::query()
-            ->selectRaw('appointments.*, false AS outside_availability')
+        return $this->withOutsideAvailability(Appointment::query(), $now)
             ->with(['patient', 'doctor.user', 'bookedBy', 'rescheduledBy', 'statusChangedBy'])
             ->find($id);
+    }
+
+    public function paginate(array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator
+    {
+        [$expression, $bindings] = $this->outsideAvailability($now);
+
+        return $this->withOutsideAvailability(Appointment::query(), $now)
+            ->whereBetween('appointments.date', [$filters['from'], $filters['to']])
+            ->when(isset($filters['doctor_id']), fn ($query) => $query->where('appointments.doctor_id', $filters['doctor_id']))
+            ->when(isset($filters['patient_id']), fn ($query) => $query->where('appointments.patient_id', $filters['patient_id']))
+            ->when(isset($filters['status']), fn ($query) => $query->where('appointments.status', $filters['status']))
+            ->when(isset($filters['outside_availability']), fn ($query) => $query->whereRaw(
+                "({$expression}) = ?",
+                [...$bindings, $filters['outside_availability'] ? 1 : 0],
+            ))
+            ->with(['patient', 'doctor.user'])
+            ->orderBy('appointments.date')
+            ->orderBy('appointments.start_minute')
+            ->orderBy('appointments.id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * @param  Builder<Appointment>  $query
+     * @return Builder<Appointment>
+     */
+    private function withOutsideAvailability(Builder $query, CarbonImmutable $now): Builder
+    {
+        [$expression, $bindings] = $this->outsideAvailability($now);
+
+        return $query->selectRaw("appointments.*, ({$expression}) AS outside_availability", $bindings);
+    }
+
+    /**
+     * Whether a scheduled appointment that has not started (as of the clinic's $now) is outside
+     * the doctor's current availability (research R7, FR-018): no working period of its weekday
+     * covers it, time off overlaps it, or the doctor is not active. Only coverage by a period
+     * counts, not the slot grid, so an appointment length change alone never sets it.
+     * MySQL DAYOFWEEK() is 1 for Sunday; Scheduling's weekday is 0 for Sunday.
+     *
+     * Positional bindings, in this order: scheduled status, today, today, minute of the day, the
+     * doctor role (MySQL PDO does not repeat named bindings).
+     *
+     * @return array{0: string, 1: list<int|string>}
+     */
+    private function outsideAvailability(CarbonImmutable $now): array
+    {
+        $expression = <<<'SQL'
+            appointments.status = ?
+            AND (appointments.date > ? OR (appointments.date = ? AND appointments.start_minute > ?))
+            AND (
+                NOT EXISTS (
+                    SELECT 1 FROM doctor_schedules s
+                    JOIN schedule_periods p ON p.doctor_schedule_id = s.id
+                    WHERE s.doctor_id = appointments.doctor_id
+                        AND p.weekday = DAYOFWEEK(appointments.date) - 1
+                        AND p.start_minute <= appointments.start_minute
+                        AND p.end_minute >= appointments.end_minute
+                )
+                OR EXISTS (
+                    SELECT 1 FROM doctor_time_off t
+                    WHERE t.doctor_id = appointments.doctor_id
+                        AND t.start_date <= appointments.date
+                        AND t.end_date >= appointments.date
+                        AND (t.start_minute IS NULL OR (t.start_minute < appointments.end_minute AND t.end_minute > appointments.start_minute))
+                )
+                OR NOT EXISTS (
+                    SELECT 1 FROM doctors d
+                    JOIN users u ON u.id = d.user_id
+                    WHERE d.id = appointments.doctor_id AND u.is_active = 1 AND u.role = ?
+                )
+            )
+            SQL;
+
+        $today = $now->toDateString();
+
+        return [$expression, [
+            AppointmentStatus::Scheduled->value,
+            $today,
+            $today,
+            $now->hour * 60 + $now->minute,
+            Role::Doctor->value,
+        ]];
     }
 
     /**

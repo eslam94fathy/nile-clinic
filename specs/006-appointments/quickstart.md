@@ -65,12 +65,12 @@ and `booked_at`. A range longer than 92 days → `422`; an unknown id → `404`.
 Record a whole-day time off for `SUN` (005 Q5), then:
 
 ```sh
-curl -s "$B/appointments?from=$SUN&to=$SUN&outside_availability=true" -H "Authorization: Bearer $RECEPTION"
+curl -s "$B/appointments?from=$SUN&to=$SUN&outside_availability=1" -H "Authorization: Bearer $RECEPTION"
 ```
 
 Expected: the time off was saved (`201`); the Sunday 09:20 appointment is listed with its times
 unchanged and `outside_availability: true`. Remove the time off: it is no longer listed with
-`outside_availability=true`. Change the doctor's appointment length to 30 minutes: the
+`outside_availability=1`. Change the doctor's appointment length to 30 minutes: the
 appointment stays `false`, and Sunday slots skip any slot overlapping `09:20–09:40`.
 
 ## Q6 — Reschedule, cancel, no-show (US3, US4)

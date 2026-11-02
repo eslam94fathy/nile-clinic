@@ -4,6 +4,7 @@ namespace App\Modules\Appointments\Repositories\Contracts;
 
 use App\Modules\Appointments\Models\Appointment;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface AppointmentRepository
 {
@@ -40,4 +41,15 @@ interface AppointmentRepository
      * status loaded, and the computed outside_availability column as of $now (research R7).
      */
     public function find(int $id, CarbonImmutable $now): ?Appointment;
+
+    /**
+     * One page of appointments with date from..to (inclusive), ordered by date, start, then id,
+     * with patient and doctor (and its account) loaded and outside_availability computed as of
+     * $now (research R7, R10). Optional filter keys, combined with AND; absent keys are not
+     * applied.
+     *
+     * @param  array{from: string, to: string, doctor_id?: int, patient_id?: int, status?: string, outside_availability?: bool}  $filters
+     * @return LengthAwarePaginator<int, Appointment>
+     */
+    public function paginate(array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator;
 }

@@ -377,7 +377,7 @@ one patient's appointments, and open one — each returns exactly the expected r
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T028 [P] [US2] Write `tests/Feature/Appointments/ListAppointmentsTest.php` (US2-1…6, FR-008–FR-010)
+- [X] T028 [P] [US2] Write `tests/Feature/Appointments/ListAppointmentsTest.php` (US2-1…6, FR-008–FR-010)
   - Scope: clock fixed. Factory appointments across two doctors, two patients, two days, one
     cancelled.
     - `GET /appointments?from=2026-11-01&to=2026-11-03` → all, ordered by date, start, id; each
@@ -393,7 +393,7 @@ one patient's appointments, and open one — each returns exactly the expected r
     - doctor actor on both → `403`
   - Verify: `--filter=ListAppointmentsTest` → fails
 
-- [ ] T029 [P] [US2] Write `tests/Feature/Appointments/OutsideAvailabilityTest.php` (FR-018, SC-008, US2-7…9)
+- [X] T029 [P] [US2] Write `tests/Feature/Appointments/OutsideAvailabilityTest.php` (FR-018, SC-008, US2-7…9)
   - Scope: clock fixed; standard test doctor; booked Sunday 09:20–09:40 (via `POST`) and a
     Tuesday 10:00–10:20. Each case asserts the flag in `GET /appointments/{id}` and in the list:
     - baseline → `false` for both
@@ -411,7 +411,7 @@ one patient's appointments, and open one — each returns exactly the expected r
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] Add `paginate` and the `outside_availability` expression to `AppointmentRepository` / `EloquentAppointmentRepository` (R7, R10)
+- [X] T030 [US2] Add `paginate` and the `outside_availability` expression to `AppointmentRepository` / `EloquentAppointmentRepository` (R7, R10)
   - Scope: `paginate(array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator`
     with `array{from: string, to: string, doctor_id?: int, patient_id?: int, status?: string,
     outside_availability?: bool}`; ordered `date`, `start_minute`, `id`; relations `patient`,
@@ -426,7 +426,7 @@ one patient's appointments, and open one — each returns exactly the expected r
     Use positional bindings in a fixed order (MySQL PDO does not repeat named bindings). Replace
     the placeholder in `find()` from T012. Docblock cites R7 and FR-018.
 
-- [ ] T031 [US2] Create `app/Modules/Appointments/Http/Requests/ListAppointmentsRequest.php` and `app/Modules/Appointments/Services/AppointmentService.php` with `list()` and `find()`
+- [X] T031 [US2] Create `app/Modules/Appointments/Http/Requests/ListAppointmentsRequest.php` and `app/Modules/Appointments/Services/AppointmentService.php` with `list()` and `find()`
   - Scope: request: `authorize()` → `can('viewAny', Appointment::class)`; rules `from`, `to`
     required `date_format:Y-m-d`, `to` `after_or_equal:from`; `doctor_id`, `patient_id` nullable
     integer min 1; `status` nullable `in:` `AppointmentStatus::values()`; `outside_availability`
@@ -437,7 +437,7 @@ one patient's appointments, and open one — each returns exactly the expected r
     `paginate($filters, ClinicClock::now(), $perPage)`; `find(int $id)` → repository `find` ??
     `AppointmentNotFoundException`.
 
-- [ ] T032 [US2] Add `index()` and `show()` to `AppointmentController` and the routes
+- [X] T032 [US2] Add `index()` and `show()` to `AppointmentController` and the routes
   - Scope: `index(ListAppointmentsRequest)` → `AppointmentSummaryResource::collection(...)`;
     `show(int $appointment)` → `Gate::authorize('view', Appointment::class)` then
     `AppointmentResource::make($this->appointments->find($appointment))`. Routes:
