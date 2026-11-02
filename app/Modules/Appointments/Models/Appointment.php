@@ -5,7 +5,9 @@ namespace App\Modules\Appointments\Models;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Patients\Models\Patient;
+use App\Modules\Scheduling\Support\ClockTime;
 use App\Modules\Staff\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +96,15 @@ class Appointment extends Model
     public function statusChangedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'status_changed_by');
+    }
+
+    /**
+     * Started once its date and start time are at or before the clinic's wall-clock now (research
+     * R5).
+     */
+    public function hasStarted(CarbonImmutable $now): bool
+    {
+        return $this->date->toDateString().' '.ClockTime::fromMinutes($this->start_minute) <= $now->format('Y-m-d H:i');
     }
 
     protected static function newFactory(): AppointmentFactory

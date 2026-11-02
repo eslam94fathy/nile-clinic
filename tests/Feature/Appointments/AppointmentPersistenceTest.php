@@ -5,6 +5,7 @@ namespace Tests\Feature\Appointments;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Doctors\Models\Doctor;
+use Database\Factories\AppointmentFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -92,7 +93,7 @@ class AppointmentPersistenceTest extends TestCase
         DB::table('users')->where('id', $appointment->booked_by)->delete();
     }
 
-    private function slot(): \Database\Factories\AppointmentFactory
+    private function slot(): AppointmentFactory
     {
         return Appointment::factory()->at('2026-11-08', '09:20')->state(['doctor_id' => $this->doctor->id]);
     }

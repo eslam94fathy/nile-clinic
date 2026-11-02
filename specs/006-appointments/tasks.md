@@ -258,7 +258,7 @@ times.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T020 [P] [US1] Write `tests/Feature/Appointments/BookAppointmentTest.php` (US1-1…8, FR-001–FR-007, SC-003)
+- [X] T020 [P] [US1] Write `tests/Feature/Appointments/BookAppointmentTest.php` (US1-1…8, FR-001–FR-007, SC-003)
   - Scope: clock fixed (Sunday 08:00); standard test doctor; receptionist actor unless stated.
     - book `{patient_id, doctor_id, date: 2026-11-01, start: 09:20, note: "Synthetic first visit"}`
       → `201`; `data` matches `Appointment` schema in the contract: `status: scheduled`,
@@ -285,7 +285,7 @@ times.
     - doctor actor → `403` and no row
   - Verify: `docker compose exec app php artisan test --filter=BookAppointmentTest` → fails (route missing)
 
-- [ ] T021 [P] [US1] Extend `tests/Feature/Scheduling/SlotsTest.php` with booked slots (FR-006, SC-004)
+- [X] T021 [P] [US1] Extend `tests/Feature/Scheduling/SlotsTest.php` with booked slots (FR-006, SC-004)
   - Scope: with a scheduled factory appointment at Sunday 09:20–09:40 for the test doctor,
     `GET /doctors/{id}/slots?from=2026-11-01&to=2026-11-01` → `09:00`, `09:40` only; the same
     through `/doctors/me/slots` for that doctor; a `cancelled()` or `noShow()` appointment at
@@ -295,7 +295,7 @@ times.
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Create `app/Modules/Appointments/Http/Requests/BookAppointmentRequest.php`
+- [X] T022 [US1] Create `app/Modules/Appointments/Http/Requests/BookAppointmentRequest.php`
   - Scope: `authorize()` → `can('create', Appointment::class)`. Rules: `patient_id` required
     integer min 1; `doctor_id` required integer min 1; `date` required `date_format:Y-m-d`;
     `start` required string `regex:` `ClockTime::START_PATTERN`; `note` nullable string max 500.
@@ -304,7 +304,7 @@ times.
     `ClinicClock::today()` or after today + `SlotCalculator::HORIZON_DAYS` → error on `start`
     `appointments::messages.slot_unavailable`.
 
-- [ ] T023 [US1] Create `app/Modules/Appointments/Services/BookingService.php` with `book()` (R3, R4)
+- [X] T023 [US1] Create `app/Modules/Appointments/Services/BookingService.php` with `book()` (R3, R4)
   - Scope: inject `AppointmentRepository`, `DoctorScheduleRepository`, `PatientRepository`,
     `DoctorRepository`, `SlotService`.
     `public function book(User $actor, array $input): Appointment` with
@@ -325,7 +325,7 @@ times.
     `$this->appointments->find($id, ClinicClock::now())`.
   - Depends: T012, T016, T022
 
-- [ ] T024 [P] [US1] Create `app/Modules/Appointments/Http/Resources/AppointmentSummaryResource.php` and `AppointmentResource.php`
+- [X] T024 [P] [US1] Create `app/Modules/Appointments/Http/Resources/AppointmentSummaryResource.php` and `AppointmentResource.php`
   - Scope: summary: `id`, `date` (Y-m-d), `start`/`end` (`ClockTime::fromMinutes`), `status`
     (`->value`), `outside_availability` (bool), `doctor` `{id, name: doctor->user->name, title}`,
     `patient` `{id, full_name, phone}` — never `note`, national ID, address, emergency contact
@@ -333,7 +333,7 @@ times.
     `status_changed_by` as `{id, name}` or null, `booked_at` (`created_at`), `rescheduled_at`,
     `status_changed_at` (ISO 8601 or null), `cancellation_reason`.
 
-- [ ] T025 [US1] Create `app/Modules/Appointments/Http/Controllers/AppointmentController.php` with `store()`, and add the route
+- [X] T025 [US1] Create `app/Modules/Appointments/Http/Controllers/AppointmentController.php` with `store()`, and add the route
   - Scope: `store(BookAppointmentRequest $request)` →
     `AppointmentResource::make($this->booking->book($request->user(), $request->validated()))->response()->setStatusCode(201)`.
     Route in `routes/api.php`: `Route::post('/appointments', [AppointmentController::class,
@@ -341,7 +341,7 @@ times.
   - Accept: T020 passes; `route:list --path=appointments` shows the route.
   - Depends: T023, T024
 
-- [ ] T026 [US1] Create `tests/Support/book-appointment.php` (child process for R9)
+- [X] T026 [US1] Create `tests/Support/book-appointment.php` (child process for R9)
   - Scope: plain PHP script: `require __DIR__.'/../../vendor/autoload.php'`; `$app = require
     __DIR__.'/../../bootstrap/app.php'`; bootstrap the console kernel; **exit 2 unless**
     `DB::connection()->getDatabaseName() === 'clinic_testing'`. Arguments: `actorId patientId
@@ -350,7 +350,7 @@ times.
     `{"result":"booked","id":N}`, `{"result":"conflict","reason":"..."}`, or
     `{"result":"error","class":"...","message":"..."}`; exit 0.
 
-- [ ] T027 [US1] Write `tests/Feature/Appointments/ConcurrentBookingTest.php` `#[Group('concurrency')]` (SC-002, R9)
+- [X] T027 [US1] Write `tests/Feature/Appointments/ConcurrentBookingTest.php` `#[Group('concurrency')]` (SC-002, R9)
   - Scope: `use DatabaseTruncation` (not `RefreshDatabase`: children need committed data). No
     `travelTo`; pick `$date` = the next Sunday at least 2 days after the real clinic today. Create
     a doctor with a Sunday 09:00–10:00 schedule, 8 patients, a receptionist. `$startAt =
