@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  The same slot again: 409 with `reason` `slot_booked`. If the doctor is free but the patient
+  already has an overlapping appointment with any doctor, the reason is `patient_busy`. Clients
+  branch on `reason`, which is never translated. Of simultaneous bookings for one slot, exactly
+  one succeeds.
+method: POST
+url: '{{base_url}}/appointments'
+order: 2000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{patient_id}},
+      "doctor_id": {{doctor_id}},
+      "date": "{{slots_from}}",
+      "start": "09:00"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('409 slot_booked', () => {
+        pm.response.to.have.status(409);
+        pm.expect(pm.response.json()).to.have.keys('message', 'reason');
+        pm.expect(pm.response.json().reason).to.eql('slot_booked');
+      });
+examples: './.resources/book a taken slot.resources/examples'

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments'
+  method: POST
+response:
+  statusCode: 409
+  statusText: Conflict
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This patient already has an appointment at this time.","reason":"patient_busy"}
+order: 2000

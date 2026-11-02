@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments/1/no-show'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This appointment has not started yet.","errors":{"appointment":["This appointment has not started yet."]}}
+order: 2000

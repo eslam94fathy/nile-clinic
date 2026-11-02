@@ -1,0 +1,40 @@
+$kind: http-request
+description: |-
+  Book the patient into a free slot. date `Y-m-d` from the clinic's today to 90 days ahead;
+  start `HH:MM` must be a slot start the doctor offers that day (else 422 on `start`). note:
+  optional, at most 500 characters, administrative only (no medical details). An unknown
+  patient_id or doctor_id is 422. The id is stored in `appointment_id`.
+method: POST
+url: '{{base_url}}/appointments'
+order: 1000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{patient_id}},
+      "doctor_id": {{doctor_id}},
+      "date": "{{slots_from}}",
+      "start": "09:00",
+      "note": "Postman synthetic first visit"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 with the booked slot', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ date: pm.collectionVariables.get('slots_from'), start: '09:00', end: '09:20', status: 'scheduled', outside_availability: false });
+        pm.expect(data.patient).to.have.keys('id', 'full_name', 'phone');
+        pm.expect(data.patient.id).to.eql(Number(pm.collectionVariables.get('patient_id')));
+        pm.expect(data.doctor.id).to.eql(Number(pm.collectionVariables.get('doctor_id')));
+        pm.collectionVariables.set('appointment_id', String(data.id));
+      });
+examples: './.resources/book appointment.resources/examples'

@@ -1,0 +1,37 @@
+$kind: http-request
+description: |-
+  Move a scheduled appointment that has not started to another slot of the same doctor; same
+  rules and conflicts as booking. It may move into a slot overlapping its own current time. The
+  old slot is offered again. Cancelled, no-show, or started: 422 on `appointment`.
+method: POST
+url: '{{base_url}}/appointments/:appointment/reschedule'
+order: 5000
+pathVariables:
+  - key: 'appointment'
+    value: '{{appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "date": "{{slots_from}}",
+      "start": "09:20"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 at the new time', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ start: '09:20', end: '09:40', status: 'scheduled' });
+        pm.expect(data.rescheduled_by).to.not.eql(null);
+      });
+examples: './.resources/reschedule appointment.resources/examples'

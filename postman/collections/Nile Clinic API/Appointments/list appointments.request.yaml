@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Appointments with date from..to (at most 92 days; past dates allowed), ordered by date, start,
+  then id. Optional filters: doctor_id, patient_id, status (scheduled, cancelled, no_show),
+  outside_availability (1 or 0: upcoming appointments no longer inside the doctor's hours, time
+  off, or active status). Pages: page, per_page (1–100, default 15). Lists never include the
+  note, national ID, address, or emergency contact.
+method: GET
+url: '{{base_url}}/appointments?from={{slots_from}}&to={{slots_to}}&doctor_id={{doctor_id}}'
+order: 3000
+queryParams:
+  - key: 'from'
+    value: '{{slots_from}}'
+  - key: 'to'
+    value: '{{slots_to}}'
+    description: 'Inclusive; at most 92 days including both ends'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+  - key: 'patient_id'
+    value: '{{patient_id}}'
+    disabled: true
+  - key: 'status'
+    value: 'scheduled'
+    disabled: true
+  - key: 'outside_availability'
+    value: '1'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the booked appointment, summary fields only', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        const item = data.find((a) => a.id === Number(pm.collectionVariables.get('appointment_id')));
+        pm.expect(item).to.have.keys('id', 'date', 'start', 'end', 'status', 'outside_availability', 'doctor', 'patient');
+      });
+examples: './.resources/list appointments.resources/examples'

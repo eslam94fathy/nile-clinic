@@ -6,11 +6,12 @@ description: |-
   Contracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,
   `specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,
   `specs/003-patient-records/contracts/patients.openapi.yaml`,
-  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`, and
-  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.
+  `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,
+  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`, and
+  `specs/006-appointments/contracts/appointments.openapi.yaml`.
 
   **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →
-  Doctors → Scheduling → Auth/sign out. Select the **Nile Clinic Local** environment and set
+  Doctors → Scheduling → Appointments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
   `admin_email` / `admin_password` to an administrator created with `php artisan
   staff:create-admin`. All data must be synthetic.
 
@@ -61,3 +62,6 @@ variables:
   - key: time_off_id
     value: ''
     description: 'Set by "Scheduling/record time off".'
+  - key: appointment_id
+    value: ''
+    description: 'Set by "Appointments/book appointment".'

@@ -1,0 +1,12 @@
+$kind: collection
+name: Appointments
+description: |-
+  Booking and managing appointments (feature 006). `/appointments…` is for administrators and
+  receptionists; `/doctors/me/appointments…` is for doctors. A booking must start on a slot the
+  doctor currently offers (Scheduling/list slots) and takes that slot's end; booked slots are no
+  longer offered. A taken time is `409` with a fixed `reason`: `slot_booked` (the doctor) or
+  `patient_busy` (the patient). Reschedule and cancel only before the start; no-show only from
+  the start. Runs after Scheduling (uses `patient_id`, `doctor_id`, `slots_from`, `slots_to`).
+  Appointments are never deleted. Contract:
+  `specs/006-appointments/contracts/appointments.openapi.yaml`.
+order: 8000
