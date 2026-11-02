@@ -613,20 +613,20 @@ a future appointment → `422 not_started`.
     `409` with `reason` for taken times; `outside_availability` after schedule changes; doctors use
     `/api/v1/doctors/me/appointments`; link the contract. Note the `concurrency` test group.
 
-- [ ] T048 Run Pint and the full suite
+- [X] T048 Run Pint and the full suite
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline
     - `docker compose exec app php artisan test --group=concurrency` → pass
   - Depends: T045, T046, T047
 
-- [ ] T049 Run quickstart Q1–Q9 from `specs/006-appointments/quickstart.md` on the development stack
+- [X] T049 Run quickstart Q1–Q9 from `specs/006-appointments/quickstart.md` on the development stack
   - Scope: synthetic data only; Q8 against `clinic_testing` only (adapt the factory call to the
     implemented states; record what was run).
   - Accept: every Q-step's expected outcome is observed, including Q8 under 2 s.
   - Depends: T048
 
-- [ ] T050 Record the results in `specs/006-appointments/verification.md`
+- [X] T050 Record the results in `specs/006-appointments/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; failures reported as
     failures (Constitution VIII). Postman collection update is a separate follow-up (as for 005).
   - Depends: T049
