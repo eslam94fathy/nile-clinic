@@ -570,14 +570,14 @@ list returns exactly their two with the short patient summary.
 **Independent Test**: Book, move the clock past the start, mark no-show → status `no_show`; marking
 a future appointment → `422 not_started`.
 
-- [ ] T043 [P] [US4] Write `tests/Feature/Appointments/NoShowTest.php` (US4-1…3, FR-013, FR-014)
+- [X] T043 [P] [US4] Write `tests/Feature/Appointments/NoShowTest.php` (US4-1…3, FR-013, FR-014)
   - Scope: book Sunday 09:20 at 08:00; `travelTo` 09:20 (exactly the start: started) → no-show
     `200`, `status: no_show`, `status_changed_by/at`; at 09:19 → `422 not_started`; cancelled or
     already no-show → `422 not_changeable`; a no-show appointment cannot be rescheduled or
     cancelled (`422 not_changeable`) and does not hide its slot; unknown id → `404`; doctor actor
     → `403`.
 
-- [ ] T044 [US4] Add `markNoShow()` to `AppointmentService` and `noShow()` to `AppointmentActionController`, with the route
+- [X] T044 [US4] Add `markNoShow()` to `AppointmentService` and `noShow()` to `AppointmentActionController`, with the route
   - Scope: service: transaction, `lockById` (null → 404); not `scheduled` → `not_changeable`;
     not started → `ValidationException(['appointment' => not_started])`; update `status`
     `no_show`, `status_changed_by`, `status_changed_at`. Controller: `noShow(int $appointment)`

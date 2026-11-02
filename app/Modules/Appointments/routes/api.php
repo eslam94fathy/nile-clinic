@@ -20,5 +20,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
         Route::post('/appointments/{appointment}/reschedule', [AppointmentActionController::class, 'reschedule'])->name('appointments.reschedule');
         Route::post('/appointments/{appointment}/cancel', [AppointmentActionController::class, 'cancel'])->name('appointments.cancel');
+        Route::post('/appointments/{appointment}/no-show', [AppointmentActionController::class, 'noShow'])->name('appointments.no-show');
     });
 });

@@ -94,6 +94,32 @@ class AppointmentService
     }
 
     /**
+     * Record that the patient did not come: only a scheduled appointment that has started
+     * (FR-013, FR-014, research R5).
+     *
+     * @throws AppointmentNotFoundException
+     * @throws ValidationException when cancelled or already no-show, or not started yet
+     */
+    public function markNoShow(User $actor, int $id): Appointment
+    {
+        DB::transaction(function () use ($actor, $id) {
+            $appointment = $this->lockChangeable($id);
+
+            if (! $appointment->hasStarted(ClinicClock::now())) {
+                throw $this->refusal('not_started');
+            }
+
+            $this->appointments->update($appointment, [
+                'status' => AppointmentStatus::NoShow,
+                'status_changed_by' => $actor->id,
+                'status_changed_at' => now(),
+            ]);
+        });
+
+        return $this->find($id);
+    }
+
+    /**
      * The appointment, locked until the transaction ends, if it is still scheduled.
      *
      * @throws AppointmentNotFoundException
