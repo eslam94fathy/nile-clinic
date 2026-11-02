@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`, and\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Auth/sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`, and\n`specs/006-appointments/contracts/appointments.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -3238,7 +3238,7 @@
     },
     {
       "name": "Scheduling",
-      "description": "Weekly schedules, time off, and bookable slots (feature 005). Every active staff member can\nread them; only administrators change them; `/doctors/me/…` is for doctors. All dates and\ntimes are the clinic's wall clock (`CLINIC_TIMEZONE`, default Africa/Cairo). Runs after\nDoctors (uses `doctor_id`) and clears the schedule at the end. Contract:\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.",
+      "description": "Weekly schedules, time off, and bookable slots (feature 005). Every active staff member can\nread them; only administrators change them; `/doctors/me/…` is for doctors. All dates and\ntimes are the clinic's wall clock (`CLINIC_TIMEZONE`, default Africa/Cairo). Runs after\nDoctors (uses `doctor_id`); the schedule is kept for Appointments and cleared by\n\"clear weekly schedule\" at the end of the run. Contract:\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`.",
       "item": [
         {
           "name": "set weekly schedule",
@@ -4189,22 +4189,344 @@
               "body": "{\"message\":\"You are not allowed to perform this action.\"}"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "description": "Booking and managing appointments (feature 006). `/appointments…` is for administrators and\nreceptionists; `/doctors/me/appointments…` is for doctors. A booking must start on a slot the\ndoctor currently offers (Scheduling/list slots) and takes that slot's end; booked slots are no\nlonger offered. A taken time is `409` with a fixed `reason`: `slot_booked` (the doctor) or\n`patient_busy` (the patient). Reschedule and cancel only before the start; no-show only from\nthe start. Runs after Scheduling (uses `patient_id`, `doctor_id`, `slots_from`, `slots_to`).\nAppointments are never deleted. Contract:\n`specs/006-appointments/contracts/appointments.openapi.yaml`.",
+      "item": [
         {
-          "name": "clear weekly schedule",
+          "name": "book appointment",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                  "pm.test('201 with the booked slot', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ date: pm.collectionVariables.get('slots_from'), start: '09:00', end: '09:20', status: 'scheduled', outside_availability: false });",
+                  "  pm.expect(data.patient).to.have.keys('id', 'full_name', 'phone');",
+                  "  pm.expect(data.patient.id).to.eql(Number(pm.collectionVariables.get('patient_id')));",
+                  "  pm.expect(data.doctor.id).to.eql(Number(pm.collectionVariables.get('doctor_id')));",
+                  "  pm.collectionVariables.set('appointment_id', String(data.id));",
+                  "});"
                 ]
               }
             }
           ],
           "request": {
-            "method": "DELETE",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patient_id}},\n  \"doctor_id\": {{doctor_id}},\n  \"date\": \"{{slots_from}}\",\n  \"start\": \"09:00\",\n  \"note\": \"Postman synthetic first visit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "Book the patient into a free slot. date `Y-m-d` from the clinic's today to 90 days ahead;\nstart `HH:MM` must be a slot start the doctor offers that day (else 422 on `start`). note:\noptional, at most 500 characters, administrative only (no medical details). An unknown\npatient_id or doctor_id is 422. The id is stored in `appointment_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"date\":\"2026-11-08\",\"start\":\"09:20\",\"end\":\"09:40\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"},\"note\":\"Synthetic first visit\",\"booked_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"booked_at\":\"2026-11-02T11:16:01.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            },
+            {
+              "name": "422 Not an available slot",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This time is not an available slot for this doctor.\",\"errors\":{\"start\":[\"This time is not an available slot for this doctor.\"]}}"
+            },
+            {
+              "name": "422 Unknown patient",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No patient was found with this patient number.\",\"errors\":{\"patient_id\":[\"No patient was found with this patient number.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "book a taken slot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 slot_booked', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "  pm.expect(pm.response.json()).to.have.keys('message', 'reason');",
+                  "  pm.expect(pm.response.json().reason).to.eql('slot_booked');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patient_id}},\n  \"doctor_id\": {{doctor_id}},\n  \"date\": \"{{slots_from}}\",\n  \"start\": \"09:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "The same slot again: 409 with `reason` `slot_booked`. If the doctor is free but the patient\nalready has an overlapping appointment with any doctor, the reason is `patient_busy`. Clients\nbranch on `reason`, which is never translated. Of simultaneous bookings for one slot, exactly\none succeeds."
+          },
+          "response": [
+            {
+              "name": "409 Slot booked",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This slot is already booked.\",\"reason\":\"slot_booked\"}"
+            },
+            {
+              "name": "409 Patient busy",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This patient already has an appointment at this time.\",\"reason\":\"patient_busy\"}"
+            }
+          ]
+        },
+        {
+          "name": "list appointments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the booked appointment, summary fields only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  const item = data.find((a) => a.id === Number(pm.collectionVariables.get('appointment_id')));",
+                  "  pm.expect(item).to.have.keys('id', 'date', 'start', 'end', 'status', 'outside_availability', 'doctor', 'patient');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
             "header": [
               {
                 "key": "Accept",
@@ -4216,30 +4538,51 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/doctors/:doctor/schedule",
+              "raw": "{{base_url}}/appointments?from={{slots_from}}&to={{slots_to}}&doctor_id={{doctor_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "doctors",
-                ":doctor",
-                "schedule"
+                "appointments"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "doctor",
-                  "value": "{{doctor_id}}",
-                  "description": "The doctor id (not the staff account id)"
+                  "key": "from",
+                  "value": "{{slots_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{slots_to}}",
+                  "description": "Inclusive; at most 92 days including both ends"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "patient_id",
+                  "value": "{{patient_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "scheduled",
+                  "disabled": true
+                },
+                {
+                  "key": "outside_availability",
+                  "value": "1",
+                  "disabled": true
                 }
               ]
             },
-            "description": "The doctor then has no working hours and no slots. Idempotent. Runs last in this folder."
+            "description": "Appointments with date from..to (at most 92 days; past dates allowed), ordered by date, start,\nthen id. Optional filters: doctor_id, patient_id, status (scheduled, cancelled, no_show),\noutside_availability (1 or 0: upcoming appointments no longer inside the doctor's hours, time\noff, or active status). Pages: page, per_page (1–100, default 15). Lists never include the\nnote, national ID, address, or emergency contact."
           },
           "response": [
             {
-              "name": "403 Not an administrator",
+              "name": "200 OK",
               "originalRequest": {
-                "method": "DELETE",
+                "method": "GET",
                 "header": [
                   {
                     "key": "Accept",
@@ -4251,14 +4594,807 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/doctors/2/schedule",
+                  "raw": "{{base_url}}/appointments?from=2026-11-08&to=2026-11-10&doctor_id=2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-08"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-10"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":1,\"date\":\"2026-11-08\",\"start\":\"09:20\",\"end\":\"09:40\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"}},{\"id\":2,\"date\":\"2026-11-10\",\"start\":\"10:00\",\"end\":\"10:20\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"}}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/appointments?from=2026-11-08&to=2026-11-10&doctor_id=2&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/appointments?from=2026-11-08&to=2026-11-10&doctor_id=2&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/appointments?from=2026-11-08&to=2026-11-10&doctor_id=2&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/appointments\",\"per_page\":15,\"to\":2,\"total\":2}}"
+            },
+            {
+              "name": "422 Range too long",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments?from=2026-11-01&to=2027-02-01",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2027-02-01"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The date range can be at most 92 days.\",\"errors\":{\"to\":[\"The date range can be at most 92 days.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the full record', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.keys('id', 'date', 'start', 'end', 'status', 'outside_availability', 'doctor', 'patient', 'note', 'booked_by', 'booked_at', 'rescheduled_by', 'rescheduled_at', 'status_changed_by', 'status_changed_at', 'cancellation_reason');",
+                  "  pm.expect(data.note).to.eql('Postman synthetic first visit');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "One appointment with its note and who booked, rescheduled, or changed its status, and when.\nUnknown id: 404."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"date\":\"2026-11-08\",\"start\":\"09:20\",\"end\":\"09:40\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"},\"note\":\"Synthetic first visit\",\"booked_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"booked_at\":\"2026-11-02T11:16:01.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No appointment was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "reschedule appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 at the new time', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ start: '09:20', end: '09:40', status: 'scheduled' });",
+                  "  pm.expect(data.rescheduled_by).to.not.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{slots_from}}\",\n  \"start\": \"09:20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/reschedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Move a scheduled appointment that has not started to another slot of the same doctor; same\nrules and conflicts as booking. It may move into a slot overlapping its own current time. The\nold slot is offered again. Cancelled, no-show, or started: 422 on `appointment`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/reschedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "reschedule"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"date\":\"2026-11-10\",\"start\":\"10:20\",\"end\":\"10:40\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"},\"note\":\"Synthetic first visit\",\"booked_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"booked_at\":\"2026-11-02T11:16:01.000000Z\",\"rescheduled_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"rescheduled_at\":\"2026-11-02T11:16:05.000000Z\",\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            },
+            {
+              "name": "409 Slot booked",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/reschedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "reschedule"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This slot is already booked.\",\"reason\":\"slot_booked\"}"
+            },
+            {
+              "name": "422 Not changeable",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/reschedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "reschedule"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This appointment can no longer be changed.\",\"errors\":{\"appointment\":[\"This appointment can no longer be changed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "mark no-show",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 not started yet (200 once the start has passed)', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.keys('appointment');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/no-show",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "no-show"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Record that the patient did not come: only a scheduled appointment whose start has passed.\nThe booking above is in the future, so a normal run gets 422 `not_started`. A no-show is\nfinal and frees its slot."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/no-show",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "no-show"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"date\":\"2026-11-08\",\"start\":\"09:20\",\"end\":\"09:40\",\"status\":\"no_show\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"},\"note\":\"Synthetic first visit\",\"booked_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"booked_at\":\"2026-11-02T11:16:01.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"status_changed_at\":\"2026-11-08T07:45:00.000000Z\",\"cancellation_reason\":null}}"
+            },
+            {
+              "name": "422 Not started",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/no-show",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "no-show"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This appointment has not started yet.\",\"errors\":{\"appointment\":[\"This appointment has not started yet.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "cancel appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 cancelled with the reason', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ status: 'cancelled', cancellation_reason: 'Postman synthetic reason' });",
+                  "  pm.expect(data.status_changed_by).to.not.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Postman synthetic reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Cancel a scheduled appointment that has not started; the slot is offered again. reason:\noptional, at most 255 characters. Final: cancelling again, or a started appointment, is 422\non `appointment`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":1,\"date\":\"2026-11-10\",\"start\":\"10:20\",\"end\":\"10:40\",\"status\":\"cancelled\",\"outside_availability\":false,\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"phone\":\"01000006001\"},\"note\":\"Synthetic first visit\",\"booked_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"booked_at\":\"2026-11-02T11:16:01.000000Z\",\"rescheduled_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"rescheduled_at\":\"2026-11-02T11:16:05.000000Z\",\"status_changed_by\":{\"id\":9,\"name\":\"QS4 Reception\"},\"status_changed_at\":\"2026-11-02T11:16:05.000000Z\",\"cancellation_reason\":\"Synthetic reason\"}}"
+            },
+            {
+              "name": "422 Not changeable",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/1/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "1",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This appointment can no longer be changed.\",\"errors\":{\"appointment\":[\"This appointment can no longer be changed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list own appointments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 for a doctor, 403 for other roles', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/appointments?from={{slots_from}}&to={{slots_to}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{slots_from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{slots_to}}"
+                },
+                {
+                  "key": "status",
+                  "value": "scheduled",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The signed-in doctor's own appointments (from, to, status, page, per_page as above), with the\npatient as {id, full_name, sex, date_of_birth}; also `/doctors/me/appointments/{id}`, where\nanother doctor's id is 404. Other roles get 403, so a normal administrator run returns 403.\nSign in as `{{new_doctor_email}}` / `postman-doctor-pass-1` to get 200."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/appointments?from=2026-11-08&to=2026-11-10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "doctors",
-                    "2",
-                    "schedule"
+                    "me",
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-08"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":2,\"date\":\"2026-11-10\",\"start\":\"10:00\",\"end\":\"10:20\",\"status\":\"scheduled\",\"outside_availability\":false,\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"sex\":\"male\",\"date_of_birth\":\"1990-01-01\"}},{\"id\":1,\"date\":\"2026-11-10\",\"start\":\"10:20\",\"end\":\"10:40\",\"status\":\"cancelled\",\"outside_availability\":false,\"patient\":{\"id\":6,\"full_name\":\"Synthetic Qsix One\",\"sex\":\"male\",\"date_of_birth\":\"1990-01-01\"}}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/appointments?from=2026-11-08&to=2026-11-10&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/appointments?from=2026-11-08&to=2026-11-10&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/appointments?from=2026-11-08&to=2026-11-10&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/appointments\",\"per_page\":15,\"to\":2,\"total\":2}}"
+            },
+            {
+              "name": "403 Not a doctor",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/appointments?from=2026-11-08&to=2026-11-10",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-08"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-10"
+                    }
                   ]
                 }
               },
@@ -4274,6 +5410,91 @@
               "body": "{\"message\":\"You are not allowed to perform this action.\"}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "clear weekly schedule",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "{{locale}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/doctors/:doctor/schedule",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "doctors",
+            ":doctor",
+            "schedule"
+          ],
+          "variable": [
+            {
+              "key": "doctor",
+              "value": "{{doctor_id}}",
+              "description": "The doctor id (not the staff account id)"
+            }
+          ]
+        },
+        "description": "Clean-up after the Scheduling and Appointments folders: the doctor then has no working hours\nand no slots. Never blocked by appointments; any upcoming ones would show\n`outside_availability: true`. Idempotent. Runs just before sign out."
+      },
+      "response": [
+        {
+          "name": "403 Not an administrator",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/2/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "2",
+                "schedule"
+              ]
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\"message\":\"You are not allowed to perform this action.\"}"
         }
       ]
     },
@@ -4393,6 +5614,11 @@
       "key": "time_off_id",
       "value": "",
       "description": "Set by \"Scheduling/record time off\"."
+    },
+    {
+      "key": "appointment_id",
+      "value": "",
+      "description": "Set by \"Appointments/book appointment\"."
     }
   ]
 }

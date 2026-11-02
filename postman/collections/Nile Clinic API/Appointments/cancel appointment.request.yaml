@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  Cancel a scheduled appointment that has not started; the slot is offered again. reason:
+  optional, at most 255 characters. Final: cancelling again, or a started appointment, is 422
+  on `appointment`.
+method: POST
+url: '{{base_url}}/appointments/:appointment/cancel'
+order: 7000
+pathVariables:
+  - key: 'appointment'
+    value: '{{appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Postman synthetic reason"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 cancelled with the reason', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ status: 'cancelled', cancellation_reason: 'Postman synthetic reason' });
+        pm.expect(data.status_changed_by).to.not.eql(null);
+      });
+examples: './.resources/cancel appointment.resources/examples'

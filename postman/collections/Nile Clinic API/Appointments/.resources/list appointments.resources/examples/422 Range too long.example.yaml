@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments?from=2026-11-01&to=2027-02-01'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The date range can be at most 92 days.","errors":{"to":["The date range can be at most 92 days."]}}
+order: 2000

@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  The signed-in doctor's own appointments (from, to, status, page, per_page as above), with the
+  patient as {id, full_name, sex, date_of_birth}; also `/doctors/me/appointments/{id}`, where
+  another doctor's id is 404. Other roles get 403, so a normal administrator run returns 403.
+  Sign in as `{{new_doctor_email}}` / `postman-doctor-pass-1` to get 200.
+method: GET
+url: '{{base_url}}/doctors/me/appointments?from={{slots_from}}&to={{slots_to}}'
+order: 8000
+queryParams:
+  - key: 'from'
+    value: '{{slots_from}}'
+  - key: 'to'
+    value: '{{slots_to}}'
+  - key: 'status'
+    value: 'scheduled'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: 'pm.test(''200 for a doctor, 403 for other roles'', () => pm.expect(pm.response.code).to.be.oneOf([200, 403]));'
+examples: './.resources/list own appointments.resources/examples'

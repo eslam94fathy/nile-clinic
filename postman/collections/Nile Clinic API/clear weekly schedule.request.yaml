@@ -1,9 +1,11 @@
 $kind: http-request
 description: |-
-  The doctor then has no working hours and no slots. Idempotent. Runs last in this folder.
+  Clean-up after the Scheduling and Appointments folders: the doctor then has no working hours
+  and no slots. Never blocked by appointments; any upcoming ones would show
+  `outside_availability: true`. Idempotent. Runs just before sign out.
 method: DELETE
 url: '{{base_url}}/doctors/:doctor/schedule'
-order: 8000
+order: 8500
 pathVariables:
   - key: 'doctor'
     value: '{{doctor_id}}'

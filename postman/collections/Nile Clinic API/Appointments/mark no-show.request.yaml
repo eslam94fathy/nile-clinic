@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Record that the patient did not come: only a scheduled appointment whose start has passed.
+  The booking above is in the future, so a normal run gets 422 `not_started`. A no-show is
+  final and frees its slot.
+method: POST
+url: '{{base_url}}/appointments/:appointment/no-show'
+order: 6000
+pathVariables:
+  - key: 'appointment'
+    value: '{{appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 not started yet (200 once the start has passed)', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.keys('appointment');
+      });
+examples: './.resources/mark no-show.resources/examples'

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments'
+  method: POST
+response:
+  statusCode: 409
+  statusText: Conflict
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This slot is already booked.","reason":"slot_booked"}
+order: 1000

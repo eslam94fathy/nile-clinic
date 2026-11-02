@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  One appointment with its note and who booked, rescheduled, or changed its status, and when.
+  Unknown id: 404.
+method: GET
+url: '{{base_url}}/appointments/:appointment'
+order: 4000
+pathVariables:
+  - key: 'appointment'
+    value: '{{appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the full record', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data).to.have.keys('id', 'date', 'start', 'end', 'status', 'outside_availability', 'doctor', 'patient', 'note', 'booked_by', 'booked_at', 'rescheduled_by', 'rescheduled_at', 'status_changed_by', 'status_changed_at', 'cancellation_reason');
+        pm.expect(data.note).to.eql('Postman synthetic first visit');
+      });
+examples: './.resources/get appointment.resources/examples'
