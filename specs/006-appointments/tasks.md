@@ -459,7 +459,7 @@ Tuesday 10:00 not), then cancel (Tuesday 10:00 offered again; status `cancelled`
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T033 [P] [US3] Write `tests/Feature/Appointments/RescheduleAppointmentTest.php` (US3-1…3, US3-5, FR-011)
+- [X] T033 [P] [US3] Write `tests/Feature/Appointments/RescheduleAppointmentTest.php` (US3-1…3, US3-5, FR-011)
   - Scope: clock fixed; standard test doctor.
     - Sunday 09:20 → Tuesday 10:00 → `200`; same `id`, patient, doctor; `rescheduled_by` the
       actor, `rescheduled_at` set; `/slots` shows Sunday 09:20 again and not Tuesday 10:00
@@ -472,7 +472,7 @@ Tuesday 10:00 not), then cancel (Tuesday 10:00 offered again; status `cancelled`
     - cancelled, no-show, or started (clock at 09:30) → `422` on `appointment` `not_changeable`
     - unknown id → `404`; doctor actor → `403`; missing `date`/`start` → `422`
 
-- [ ] T034 [P] [US3] Write `tests/Feature/Appointments/CancelAppointmentTest.php` (US3-4…7, FR-012, FR-014)
+- [X] T034 [P] [US3] Write `tests/Feature/Appointments/CancelAppointmentTest.php` (US3-4…7, FR-012, FR-014)
   - Scope: cancel with `{"reason": "Synthetic reason"}` → `200`, `status: cancelled`,
     `status_changed_by`, `status_changed_at`, `cancellation_reason`; `/slots` offers the slot
     again; booking the slot for another patient → `201` and the cancelled row unchanged; cancel
@@ -482,7 +482,7 @@ Tuesday 10:00 not), then cancel (Tuesday 10:00 offered again; status `cancelled`
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Add `reschedule()` to `app/Modules/Appointments/Services/BookingService.php` (R3, R4)
+- [X] T035 [US3] Add `reschedule()` to `app/Modules/Appointments/Services/BookingService.php` (R3, R4)
   - Scope: `reschedule(User $actor, int $appointmentId, string $date, string $start): Appointment`.
     One `DB::transaction(..., attempts: 3)`, in this order: `lockById($appointmentId)` (null →
     `AppointmentNotFoundException`); status must be `scheduled` and not started (else
@@ -493,19 +493,19 @@ Tuesday 10:00 not), then cancel (Tuesday 10:00 offered again; status `cancelled`
     Extract the shared slot/overlap check into one private method used by both `book()` and
     `reschedule()`. The horizon check (past or beyond 90 days) is in the request (T036).
 
-- [ ] T036 [US3] Create `RescheduleAppointmentRequest.php` and `CancelAppointmentRequest.php` in `app/Modules/Appointments/Http/Requests/`
+- [X] T036 [US3] Create `RescheduleAppointmentRequest.php` and `CancelAppointmentRequest.php` in `app/Modules/Appointments/Http/Requests/`
   - Scope: both `authorize()` → `can('update', Appointment::class)`. Reschedule: `date`, `start`
     as in `BookAppointmentRequest` with the same horizon `after()` (share via a small private
     trait or copy — prefer one trait `ValidatesBookableDate` in `Http/Requests/Concerns/` if both
     requests need it). Cancel: `reason` nullable string max 255, trimmed, empty → null.
 
-- [ ] T037 [US3] Add `cancel()` to `app/Modules/Appointments/Services/AppointmentService.php`
+- [X] T037 [US3] Add `cancel()` to `app/Modules/Appointments/Services/AppointmentService.php`
   - Scope: `cancel(User $actor, int $id, ?string $reason): Appointment` — transaction:
     `lockById` (null → 404); `scheduled` and not started, else `not_changeable`; update `status`
     `cancelled`, `status_changed_by`, `status_changed_at` `now()`, `cancellation_reason`. Return
     `find($id)`.
 
-- [ ] T038 [US3] Create `app/Modules/Appointments/Http/Controllers/AppointmentActionController.php` with `reschedule()` and `cancel()`, and the routes
+- [X] T038 [US3] Create `app/Modules/Appointments/Http/Controllers/AppointmentActionController.php` with `reschedule()` and `cancel()`, and the routes
   - Scope: both return `AppointmentResource` (200). Routes in the `whereNumber('appointment')`
     group: `POST /appointments/{appointment}/reschedule` `appointments.reschedule`;
     `POST /appointments/{appointment}/cancel` `appointments.cancel`.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Appointments\Http\Controllers\AppointmentActionController;
 use App\Modules\Appointments\Http\Controllers\AppointmentController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,5 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::whereNumber('appointment')->group(function () {
         Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
+        Route::post('/appointments/{appointment}/reschedule', [AppointmentActionController::class, 'reschedule'])->name('appointments.reschedule');
+        Route::post('/appointments/{appointment}/cancel', [AppointmentActionController::class, 'cancel'])->name('appointments.cancel');
     });
 });
