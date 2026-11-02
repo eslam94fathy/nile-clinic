@@ -6,6 +6,8 @@ use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
+use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Scheduling\Support\ClinicClock;
 use App\Modules\Staff\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -13,12 +15,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Finding appointments (US2) and changing their status (US3, US4).
+ * Finding appointments (US2, US5) and changing their status (US3, US4).
  */
 class AppointmentService
 {
     public function __construct(
         private readonly AppointmentRepository $appointments,
+        private readonly DoctorService $doctors,
     ) {}
 
     /**
@@ -36,6 +39,31 @@ class AppointmentService
     public function find(int $id): Appointment
     {
         return $this->appointments->find($id, ClinicClock::now()) ?? throw new AppointmentNotFoundException;
+    }
+
+    /**
+     * The signed-in doctor's own appointments (FR-015).
+     *
+     * @param  array{from: string, to: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, Appointment>
+     *
+     * @throws DoctorNotFoundException when the doctor has no profile
+     */
+    public function listOwn(User $user, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->appointments->paginateForDoctor($this->doctors->findOwn($user)->id, $filters, ClinicClock::now(), $perPage);
+    }
+
+    /**
+     * Another doctor's appointment is reported as not found (research R8).
+     *
+     * @throws DoctorNotFoundException when the doctor has no profile
+     * @throws AppointmentNotFoundException
+     */
+    public function findOwn(User $user, int $id): Appointment
+    {
+        return $this->appointments->findForDoctor($this->doctors->findOwn($user)->id, $id, ClinicClock::now())
+            ?? throw new AppointmentNotFoundException;
     }
 
     /**

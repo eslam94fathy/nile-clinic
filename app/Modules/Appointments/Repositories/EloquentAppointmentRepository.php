@@ -67,6 +67,28 @@ class EloquentAppointmentRepository implements AppointmentRepository
             ->withQueryString();
     }
 
+    public function paginateForDoctor(int $doctorId, array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator
+    {
+        return $this->withOutsideAvailability(Appointment::query(), $now)
+            ->where('appointments.doctor_id', $doctorId)
+            ->whereBetween('appointments.date', [$filters['from'], $filters['to']])
+            ->when(isset($filters['status']), fn ($query) => $query->where('appointments.status', $filters['status']))
+            ->with('patient')
+            ->orderBy('appointments.date')
+            ->orderBy('appointments.start_minute')
+            ->orderBy('appointments.id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function findForDoctor(int $doctorId, int $id, CarbonImmutable $now): ?Appointment
+    {
+        return $this->withOutsideAvailability(Appointment::query(), $now)
+            ->where('appointments.doctor_id', $doctorId)
+            ->with('patient')
+            ->find($id);
+    }
+
     /**
      * @param  Builder<Appointment>  $query
      * @return Builder<Appointment>

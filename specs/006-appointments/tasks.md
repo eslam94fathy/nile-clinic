@@ -525,7 +525,7 @@ list returns exactly their two with the short patient summary.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T039 [P] [US5] Write `tests/Feature/Appointments/OwnAppointmentsTest.php` (US5-1…5, FR-015–FR-017)
+- [X] T039 [P] [US5] Write `tests/Feature/Appointments/OwnAppointmentsTest.php` (US5-1…5, FR-015–FR-017)
   - Scope: clock fixed. Own list for a range → only own appointments, ordered, each with exactly
     `OwnAppointmentSummary` keys: `patient {id, full_name, sex, date_of_birth}` (no `phone`, no
     sensitive fields, no `doctor`, no `note`); `status` filter; range rules as T028. Own show →
@@ -536,14 +536,14 @@ list returns exactly their two with the short patient summary.
 
 ### Implementation for User Story 5
 
-- [ ] T040 [US5] Add own-doctor queries to `AppointmentRepository` / `EloquentAppointmentRepository`
+- [X] T040 [US5] Add own-doctor queries to `AppointmentRepository` / `EloquentAppointmentRepository`
   - Scope: `paginateForDoctor(int $doctorId, array $filters, CarbonImmutable $now, int $perPage)`
     (`from`, `to`, optional `status`; relations `patient` only) and
     `findForDoctor(int $doctorId, int $id, CarbonImmutable $now): ?Appointment` (null when the
     appointment belongs to another doctor, R8); both select `outside_availability` with the T030
     expression.
 
-- [ ] T041 [US5] Create `ListOwnAppointmentsRequest.php`, `OwnAppointmentSummaryResource.php`, `OwnAppointmentResource.php`, and add `listOwn()` / `findOwn()` to `AppointmentService`
+- [X] T041 [US5] Create `ListOwnAppointmentsRequest.php`, `OwnAppointmentSummaryResource.php`, `OwnAppointmentResource.php`, and add `listOwn()` / `findOwn()` to `AppointmentService`
   - Scope: request: `authorize()` → `can('viewOwn', Appointment::class)`; rules `from`, `to`,
     `status`, `page`, `per_page` and the 92-day `after()` as `ListAppointmentsRequest` (share the
     rule via the request constant). Resources per the contract (`OwnAppointmentSummary`,
@@ -551,7 +551,7 @@ list returns exactly their two with the short patient summary.
     $perPage)` and `findOwn(User $user, int $id)` resolve `DoctorService::findOwn($user)` (404 when
     no profile) and call the T040 methods; `findOwn` → `AppointmentNotFoundException` on null.
 
-- [ ] T042 [US5] Create `app/Modules/Appointments/Http/Controllers/OwnAppointmentController.php` and the routes
+- [X] T042 [US5] Create `app/Modules/Appointments/Http/Controllers/OwnAppointmentController.php` and the routes
   - Scope: `index(ListOwnAppointmentsRequest)`; `show(int $appointment)` with
     `Gate::authorize('viewOwn', Appointment::class)` first. Routes: `GET /doctors/me/appointments`
     `appointments.me.index`; `GET /doctors/me/appointments/{appointment}` `appointments.me.show`

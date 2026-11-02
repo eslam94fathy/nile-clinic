@@ -52,4 +52,20 @@ interface AppointmentRepository
      * @return LengthAwarePaginator<int, Appointment>
      */
     public function paginate(array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator;
+
+    /**
+     * One page of this doctor's appointments with date from..to (inclusive), ordered by date,
+     * start, then id, with the patient loaded and outside_availability computed as of $now
+     * (FR-015). Optional status filter.
+     *
+     * @param  array{from: string, to: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, Appointment>
+     */
+    public function paginateForDoctor(int $doctorId, array $filters, CarbonImmutable $now, int $perPage): LengthAwarePaginator;
+
+    /**
+     * The appointment with the patient loaded and outside_availability computed, or null when
+     * there is none or it belongs to another doctor (research R8).
+     */
+    public function findForDoctor(int $doctorId, int $id, CarbonImmutable $now): ?Appointment;
 }
