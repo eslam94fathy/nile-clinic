@@ -1,0 +1,285 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Audit Logs
+  version: 1.0.0
+  description: >
+    The endpoint introduced by feature 011. It is for active administrators only; receptionists and doctors get 403. Responses
+    are JSON, and field names and structure are identical in every locale; only `message` texts change with Accept-Language (en,
+    ar; fallback en). Actions, outcomes, and record types are fixed English identifiers. Entries identify patients by internal
+    identifier only, and never hold medical content, patient details, passwords, or credentials. No route changes or deletes an
+    entry. Every other feature's responses are unchanged, except for a general 500 if an entry cannot be saved (FR-007). Outside debug
+    mode, the message of any unexpected 500 follows Accept-Language (FR-015).
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /audit-entries:
+    get:
+      operationId: searchAuditEntries
+      summary: Search the audit trail, newest first (FR-009–FR-012)
+      description: >
+        All filters are optional and combine with AND. `staff_id` matches entries where that staff member acted, or where their
+        account was acted on. Unknown ids return an empty page. Each request is itself recorded as `audit.searched`, after its results
+        are read, so a search does not list itself. Paging uses a cursor, so results stay stable as new entries are added, and there
+        is no total.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: from
+          in: query
+          description: First clinic date included (Y-m-d).
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: Last clinic date included (Y-m-d). Not before `from`.
+          schema: { type: string, format: date }
+        - name: staff_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: patient_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: subject_type
+          in: query
+          description: Required with `subject_id`.
+          schema: { $ref: '#/components/schemas/AuditSubject' }
+        - name: subject_id
+          in: query
+          description: Required with `subject_type`.
+          schema: { type: integer, minimum: 1 }
+        - name: action
+          in: query
+          schema: { $ref: '#/components/schemas/AuditAction' }
+        - name: outcome
+          in: query
+          schema: { $ref: '#/components/schemas/AuditOutcome' }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - name: cursor
+          in: query
+          description: The opaque `next_cursor` or `prev_cursor` of an earlier response.
+          schema: { type: string }
+      responses:
+        '200':
+          description: One page of entries, which may be empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditEntry' }
+                  links:
+                    type: object
+                    properties:
+                      first: { type: [string, 'null'] }
+                      last: { type: [string, 'null'] }
+                      prev: { type: [string, 'null'] }
+                      next: { type: [string, 'null'] }
+                  meta:
+                    type: object
+                    required: [path, per_page, next_cursor, prev_cursor]
+                    properties:
+                      path: { type: string }
+                      per_page: { type: integer }
+                      next_cursor: { type: [string, 'null'] }
+                      prev_cursor: { type: [string, 'null'] }
+              example:
+                data:
+                  - id: 8124
+                    occurred_at: '2026-11-05T14:22:31+00:00'
+                    action: discount.set
+                    outcome: succeeded
+                    actor: { type: staff, id: 3, name: Synthetic Admin, role: administrator }
+                    subject: { type: charge, id: 57 }
+                    patient_id: 12
+                    network_address: 203.0.113.10
+                    changes:
+                      fields: [discount, discount_reason, status]
+                      values:
+                        discount: { from: '0.00', to: '200.00' }
+                        status: { from: unpaid, to: paid }
+                    filters: null
+                links: { first: null, last: null, prev: null, next: null }
+                meta: { path: 'http://localhost:8080/api/v1/audit-entries', per_page: 15, next_cursor: null, prev_cursor: null }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      schema: { type: string, enum: [en, ar], default: en }
+
+  responses:
+    Unauthenticated:
+      description: Missing, invalid, or expired access, or a deactivated account.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Signed in, but not an administrator. Returned before any validation.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: A malformed filter or cursor, `to` before `from`, or only one of `subject_type` and `subject_id`.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message, errors]
+            properties:
+              message: { type: string }
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items: { type: string }
+
+  schemas:
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+
+    AuditEntry:
+      type: object
+      required: [id, occurred_at, action, outcome, actor, subject, patient_id, network_address, changes, filters]
+      properties:
+        id: { type: integer }
+        occurred_at:
+          type: string
+          format: date-time
+          description: The exact time, in UTC.
+        action: { $ref: '#/components/schemas/AuditAction' }
+        outcome: { $ref: '#/components/schemas/AuditOutcome' }
+        actor: { $ref: '#/components/schemas/AuditActor' }
+        subject:
+          oneOf:
+            - $ref: '#/components/schemas/AuditEntrySubject'
+            - type: 'null'
+        patient_id:
+          type: [integer, 'null']
+          description: Internal identifier only. Patient details are never included.
+        network_address: { type: [string, 'null'] }
+        changes:
+          oneOf:
+            - $ref: '#/components/schemas/AuditChanges'
+            - type: 'null'
+        filters:
+          type: [object, 'null']
+          description: The validated filters, on `audit.searched` only.
+
+    AuditActor:
+      type: object
+      required: [type, id, name, role]
+      description: >
+        `name` is the staff member's current name, and `role` is the role held at the time. All three other fields are null for `system`
+        (the first administrator's command) and `unknown` (a sign-in for an email matching no account). For a `refused` `auth.sign_in`,
+        the staff member is the account that was targeted, not necessarily the person who tried.
+      properties:
+        type: { type: string, enum: [staff, system, unknown] }
+        id: { type: [integer, 'null'] }
+        name: { type: [string, 'null'] }
+        role:
+          type: [string, 'null']
+          enum: [administrator, receptionist, doctor, null]
+
+    AuditEntrySubject:
+      type: object
+      required: [type, id]
+      description: The record acted on. It may have been removed since; its identifier stays.
+      properties:
+        type: { $ref: '#/components/schemas/AuditSubject' }
+        id: { type: integer }
+
+    AuditChanges:
+      type: object
+      required: [fields, values]
+      properties:
+        fields:
+          type: array
+          items: { type: string }
+          description: Names of the fields changed.
+        values:
+          type: object
+          description: >
+            Before and after values for statuses, money, roles, appointment times, and doctor assignments only (FR-006). `from` is null on creation.
+            No other field's value is ever present.
+          additionalProperties:
+            type: object
+            required: [from, to]
+            properties:
+              from: {}
+              to: {}
+
+    AuditOutcome:
+      type: string
+      enum: [succeeded, refused]
+
+    AuditSubject:
+      type: string
+      enum: [staff_member, patient, specialty, doctor, time_off, appointment, visit, encounter, charge]
+
+    AuditAction:
+      type: string
+      enum:
+        - auth.sign_in
+        - auth.sign_out
+        - auth.password_changed
+        - staff.created
+        - staff.updated
+        - staff.deactivated
+        - staff.reactivated
+        - staff.password_reset
+        - patient.registered
+        - patient.updated
+        - patient.opened
+        - specialty.created
+        - specialty.updated
+        - specialty.deactivated
+        - specialty.reactivated
+        - doctor.created
+        - doctor.updated
+        - schedule.set
+        - schedule.cleared
+        - time_off.added
+        - time_off.removed
+        - appointment.booked
+        - appointment.rescheduled
+        - appointment.cancelled
+        - appointment.no_show
+        - visit.checked_in
+        - visit.walk_in_added
+        - visit.left
+        - visit.check_in_undone
+        - visit.called
+        - visit.finished
+        - encounter.started
+        - encounter.draft_saved
+        - encounter.finalized
+        - encounter.addendum_added
+        - encounter.opened
+        - encounter.history_viewed
+        - fee.set
+        - charge.created
+        - payment.recorded
+        - refund.recorded
+        - discount.set
+        - charge.cancelled
+        - audit.searched
