@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?staff_id=86&per_page=100'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":287,"occurred_at":"2026-11-05T20:35:01.000000Z","action":"staff.deactivated","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"staff_member","id":86},"patient_id":null,"network_address":"172.22.0.1","changes":{"fields":["is_active"],"values":{"is_active":{"to":false,"from":true}}},"filters":null},{"id":286,"occurred_at":"2026-11-05T20:35:01.000000Z","action":"staff.password_reset","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"staff_member","id":86},"patient_id":null,"network_address":"172.22.0.1","changes":{"fields":["password"],"values":{}},"filters":null},{"id":285,"occurred_at":"2026-11-05T20:35:00.000000Z","action":"staff.updated","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"staff_member","id":86},"patient_id":null,"network_address":"172.22.0.1","changes":{"fields":["name","role"],"values":{"role":{"to":"doctor","from":"receptionist"}}},"filters":null}],"links":{"first":null,"last":null,"prev":null,"next":null},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":100,"next_cursor":null,"prev_cursor":null}}
+order: 1000

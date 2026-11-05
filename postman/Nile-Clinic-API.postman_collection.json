@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`,\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`,\n`specs/009-payments/contracts/payments.openapi.yaml`, and\n`specs/010-reports/contracts/reports.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → Payments → Reports → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`,\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`,\n`specs/009-payments/contracts/payments.openapi.yaml`,\n`specs/010-reports/contracts/reports.openapi.yaml`, and\n`specs/011-audit-logs/contracts/audit.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → Payments → Reports → Audit Logs → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -14948,6 +14948,1651 @@
       ]
     },
     {
+      "name": "Audit Logs",
+      "description": "A permanent trail of who did what and when on sensitive records (feature 011). For administrators only; receptionists and\ndoctors get 403. Nothing can change or delete an entry. Entries identify patients by internal identifier only, and hold field\nnames, plus before and after values only for statuses, money, roles, appointment times, and doctor assignments. They never hold\npatient details, clinical text, reasons, or passwords.\n\nRuns after Reports (uses `patient_id`, `charge_id`, `staff_member_id`, `doctor_user_id`, `encounter_id`, `encounter_date`, and\n`new_doctor_email`), because it searches for what the earlier folders did. Pages use a cursor, with no total. Contract:\n`specs/011-audit-logs/contracts/audit.openapi.yaml`.",
+      "item": [
+        {
+          "name": "search by patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, this patient only, newest first, with no total', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, meta } = pm.response.json();",
+                  "  const ids = data.map((entry) => entry.id);",
+                  "  const patient = Number(pm.collectionVariables.get('patient_id'));",
+                  "  pm.expect(data.every((entry) => entry.patient_id === patient)).to.eql(true);",
+                  "  pm.expect(ids).to.eql([...ids].sort((a, b) => b - a));",
+                  "  pm.expect(meta).to.not.have.property('total');",
+                  "  pm.expect(data.map((entry) => entry.action)).to.include.members(['patient.registered', 'patient.updated', 'patient.opened']);",
+                  "});",
+                  "pm.test('entries hold no patient details, only the names of fields that changed', () => {",
+                  "  const { data } = pm.response.json();",
+                  "  data.forEach((entry) => {",
+                  "    pm.expect(entry).to.not.have.property('patient');",
+                  "    const values = entry.changes ? Object.keys(entry.changes.values) : [];",
+                  "    pm.expect(values).to.not.include.members(['full_name']);",
+                  "    pm.expect(values).to.not.include.members(['phone']);",
+                  "    pm.expect(values).to.not.include.members(['national_id']);",
+                  "    pm.expect(values).to.not.include.members(['address']);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?patient_id={{patient_id}}&per_page=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "patient_id",
+                  "value": "{{patient_id}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "100"
+                },
+                {
+                  "key": "from",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "staff_id",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_type",
+                  "value": "charge",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "patient.opened",
+                  "disabled": true
+                },
+                {
+                  "key": "outcome",
+                  "value": "refused",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{audit_cursor}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Everything about one patient, across their details, appointments, visits, records, and charges, newest first. Patients appear by internal\nidentifier only. All filters are optional and combine with AND. Unknown ids give an empty page, not an error."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?patient_id=51&per_page=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "patient_id",
+                      "value": "51"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":346,\"occurred_at\":\"2026-11-05T20:35:25.000000Z\",\"action\":\"visit.check_in_undone\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"visit\",\"id\":90},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null},{\"id\":345,\"occurred_at\":\"2026-11-05T20:35:24.000000Z\",\"action\":\"charge.cancelled\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"charge\",\"id\":37},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"status\",\"cancel_reason\"],\"values\":{\"status\":{\"to\":\"cancelled\",\"from\":\"unpaid\"}}},\"filters\":null},{\"id\":344,\"occurred_at\":\"2026-11-05T20:35:24.000000Z\",\"action\":\"charge.created\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"charge\",\"id\":37},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"discount\",\"amount_paid\",\"queue_entry_id\",\"doctor_id\",\"patient_id\",\"date\",\"status\",\"fee\"],\"values\":{\"fee\":{\"to\":\"400.00\",\"from\":null},\"status\":{\"to\":\"unpaid\",\"from\":null},\"discount\":{\"to\":\"0.00\",\"from\":null},\"amount_paid\":{\"to\":\"0.00\",\"from\":null}}},\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":null},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":100,\"next_cursor\":null,\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "search by record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with this charge only, and its before and after values', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data } = pm.response.json();",
+                  "  const charge = Number(pm.collectionVariables.get('charge_id'));",
+                  "  pm.expect(data.every((entry) => entry.subject.type === 'charge' && entry.subject.id === charge)).to.eql(true);",
+                  "  const created = data.find((entry) => entry.action === 'charge.created');",
+                  "  pm.expect(created.changes.values.fee.from).to.eql(null);",
+                  "  pm.expect(created.outcome).to.eql('succeeded');",
+                  "  pm.expect(created.actor.type).to.eql('staff');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?subject_type=charge&subject_id={{charge_id}}&per_page=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "subject_type",
+                  "value": "charge"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "{{charge_id}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Who changed one record. `subject_type` and `subject_id` go together. Entries hold field names, plus before and after values only for\nstatuses, money, roles, appointment times, and doctor assignments. Entries outlive a record that is later removed."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?subject_type=charge&subject_id=35&per_page=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "subject_type",
+                      "value": "charge"
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "35"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":339,\"occurred_at\":\"2026-11-05T20:35:22.000000Z\",\"action\":\"charge.cancelled\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"charge\",\"id\":35},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"status\",\"cancel_reason\"],\"values\":{\"status\":{\"to\":\"cancelled\",\"from\":\"unpaid\"}}},\"filters\":null},{\"id\":338,\"occurred_at\":\"2026-11-05T20:35:22.000000Z\",\"action\":\"refund.recorded\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"charge\",\"id\":35},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"status\",\"amount_paid\"],\"values\":{\"status\":{\"to\":\"unpaid\",\"from\":\"paid\"},\"amount_paid\":{\"to\":\"0.00\",\"from\":\"300.00\"}}},\"filters\":null},{\"id\":336,\"occurred_at\":\"2026-11-05T20:35:20.000000Z\",\"action\":\"payment.recorded\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"charge\",\"id\":35},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"status\",\"amount_paid\"],\"values\":{\"status\":{\"to\":\"paid\",\"from\":\"partially_paid\"},\"amount_paid\":{\"to\":\"300.00\",\"from\":\"100.10\"}}},\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":null},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":100,\"next_cursor\":null,\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "search by staff member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with what was done to this account, naming who did it', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const staff = Number(pm.collectionVariables.get('staff_member_id'));",
+                  "  const created = pm.response.json().data.find((entry) => entry.action === 'staff.created');",
+                  "  pm.expect(created.subject).to.eql({ type: 'staff_member', id: staff });",
+                  "  pm.expect(created.actor.role).to.eql('administrator');",
+                  "  pm.expect(created.changes.fields).to.include('password');",
+                  "  pm.expect(created.changes.values).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?staff_id={{staff_member_id}}&per_page=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "staff_id",
+                  "value": "{{staff_member_id}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "What a staff member did, and what was done to their account. The name is their current one, and the role is the one held at the time."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?staff_id=86&per_page=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "staff_id",
+                      "value": "86"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":287,\"occurred_at\":\"2026-11-05T20:35:01.000000Z\",\"action\":\"staff.deactivated\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"staff_member\",\"id\":86},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"is_active\"],\"values\":{\"is_active\":{\"to\":false,\"from\":true}}},\"filters\":null},{\"id\":286,\"occurred_at\":\"2026-11-05T20:35:01.000000Z\",\"action\":\"staff.password_reset\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"staff_member\",\"id\":86},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"password\"],\"values\":{}},\"filters\":null},{\"id\":285,\"occurred_at\":\"2026-11-05T20:35:00.000000Z\",\"action\":\"staff.updated\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"staff_member\",\"id\":86},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":{\"fields\":[\"name\",\"role\"],\"values\":{\"role\":{\"to\":\"doctor\",\"from\":\"receptionist\"}}},\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":null},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":100,\"next_cursor\":null,\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "fail a sign-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 refused', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-wrong-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup: a wrong password, so that the next request has a refused attempt to find."
+          },
+          "response": [
+            {
+              "name": "422 Refused",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"These credentials do not match our records.\",\"errors\":{\"email\":[\"These credentials do not match our records.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "search refused sign-ins",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with refused sign-ins on this account, and no password', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data } = pm.response.json();",
+                  "  pm.expect(data.length).to.be.above(0);",
+                  "  pm.expect(data.every((entry) => entry.outcome === 'refused' && entry.action === 'auth.sign_in')).to.eql(true);",
+                  "  pm.expect(data[0].changes).to.eql(null);",
+                  "  pm.expect(pm.response.text()).to.not.include('postman-wrong-pass-1');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?staff_id={{doctor_user_id}}&action=auth.sign_in&outcome=refused",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "staff_id",
+                  "value": "{{doctor_user_id}}"
+                },
+                {
+                  "key": "action",
+                  "value": "auth.sign_in"
+                },
+                {
+                  "key": "outcome",
+                  "value": "refused"
+                }
+              ]
+            },
+            "description": "Filters combine. A refused sign-in names the account that was targeted, not necessarily the person who tried. Neither the password nor an\nunknown email's text is ever stored."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?staff_id=87&action=auth.sign_in&outcome=refused",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "staff_id",
+                      "value": "87"
+                    },
+                    {
+                      "key": "action",
+                      "value": "auth.sign_in"
+                    },
+                    {
+                      "key": "outcome",
+                      "value": "refused"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":354,\"occurred_at\":\"2026-11-05T20:35:30.000000Z\",\"action\":\"auth.sign_in\",\"outcome\":\"refused\",\"actor\":{\"type\":\"staff\",\"id\":87,\"name\":\"Postman Doctor\",\"role\":\"doctor\"},\"subject\":{\"type\":\"staff_member\",\"id\":87},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":null},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":15,\"next_cursor\":null,\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "search a period",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a page and a cursor to the next one', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, meta } = pm.response.json();",
+                  "  pm.expect(data).to.have.lengthOf(5);",
+                  "  pm.expect(meta.next_cursor).to.be.a('string');",
+                  "  pm.collectionVariables.set('audit_cursor', meta.next_cursor);",
+                  "  pm.collectionVariables.set('audit_last_id', data[data.length - 1].id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?from={{encounter_date}}&to={{encounter_date}}&per_page=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Clinic days, both included, of any length. Results use a cursor rather than page numbers, because each search adds an entry and would shift\nnumbered pages. There is no total. Stores `meta.next_cursor` in `audit_cursor`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "5"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":355,\"occurred_at\":\"2026-11-05T20:35:30.000000Z\",\"action\":\"audit.searched\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":null,\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":{\"action\":\"auth.sign_in\",\"outcome\":\"refused\",\"staff_id\":87}},{\"id\":354,\"occurred_at\":\"2026-11-05T20:35:30.000000Z\",\"action\":\"auth.sign_in\",\"outcome\":\"refused\",\"actor\":{\"type\":\"staff\",\"id\":87,\"name\":\"Postman Doctor\",\"role\":\"doctor\"},\"subject\":{\"type\":\"staff_member\",\"id\":87},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null},{\"id\":353,\"occurred_at\":\"2026-11-05T20:35:29.000000Z\",\"action\":\"audit.searched\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":null,\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":{\"staff_id\":86}}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":\"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\"},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":5,\"next_cursor\":\"eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\",\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "search the next page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, continuing after the last page', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data } = pm.response.json();",
+                  "  pm.expect(data.length).to.be.above(0);",
+                  "  pm.expect(data[0].id).to.be.below(Number(pm.collectionVariables.get('audit_last_id')));",
+                  "  pm.collectionVariables.set('audit_cursor', '');",
+                  "  pm.collectionVariables.set('audit_last_id', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?from={{encounter_date}}&to={{encounter_date}}&per_page=5&cursor={{audit_cursor}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "5"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{audit_cursor}}"
+                }
+              ]
+            },
+            "description": "The same filters with the cursor. The page continues where the last one ended, with nothing repeated, although that search added an entry."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "5"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":350,\"occurred_at\":\"2026-11-05T20:35:29.000000Z\",\"action\":\"auth.sign_out\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":87,\"name\":\"Postman Doctor\",\"role\":\"doctor\"},\"subject\":{\"type\":\"staff_member\",\"id\":87},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null},{\"id\":349,\"occurred_at\":\"2026-11-05T20:35:28.000000Z\",\"action\":\"auth.sign_in\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":87,\"name\":\"Postman Doctor\",\"role\":\"doctor\"},\"subject\":{\"type\":\"staff_member\",\"id\":87},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null},{\"id\":348,\"occurred_at\":\"2026-11-05T20:35:26.000000Z\",\"action\":\"auth.sign_out\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":87,\"name\":\"Postman Doctor\",\"role\":\"doctor\"},\"subject\":{\"type\":\"staff_member\",\"id\":87},\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":\"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUwLCJfcG9pbnRzVG9OZXh0SXRlbXMiOmZhbHNlfQ\",\"next\":\"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzQ2LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\"},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":5,\"next_cursor\":\"eyJpZCI6MzQ2LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\",\"prev_cursor\":\"eyJpZCI6MzUwLCJfcG9pbnRzVG9OZXh0SXRlbXMiOmZhbHNlfQ\"}}"
+            }
+          ]
+        },
+        {
+          "name": "search the searches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the last search and its filters', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const [entry] = pm.response.json().data;",
+                  "  pm.expect(entry.subject).to.eql(null);",
+                  "  pm.expect(entry.filters).to.have.all.keys('from', 'to');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?action=audit.searched&per_page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "audit.searched"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Every search is itself recorded, with its filters, and does not list itself."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?action=audit.searched&per_page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "audit.searched"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":357,\"occurred_at\":\"2026-11-05T20:35:30.000000Z\",\"action\":\"audit.searched\",\"outcome\":\"succeeded\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":null,\"patient_id\":null,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":{\"to\":\"2026-11-05\",\"from\":\"2026-11-05\"}}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":\"http://localhost:8080/api/v1/audit-entries?action=audit.searched&per_page=1&cursor=eyJpZCI6MzU3LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\"},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":1,\"next_cursor\":\"eyJpZCI6MzU3LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9\",\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "search with the end before the start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on to', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('to');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-11-05"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-11-01"
+                }
+              ]
+            },
+            "description": "`to` may not be before `from`."
+          },
+          "response": [
+            {
+              "name": "422 Validation",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-01",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-01"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The to date field must be a date after or equal to from date.\",\"errors\":{\"to\":[\"The to date field must be a date after or equal to from date.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "search with a record id alone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on subject_type', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('subject_type');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?subject_id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "subject_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "`subject_type` and `subject_id` go together."
+          },
+          "response": [
+            {
+              "name": "422 Validation",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?subject_id=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "subject_id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The record type field is required when record is present.\",\"errors\":{\"subject_type\":[\"The record type field is required when record is present.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "search with a bad cursor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on cursor', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('cursor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?cursor=not-a-cursor",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "not-a-cursor"
+                }
+              ]
+            },
+            "description": "A cursor must come from an earlier response."
+          },
+          "response": [
+            {
+              "name": "422 Validation",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?cursor=not-a-cursor",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "cursor",
+                      "value": "not-a-cursor"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The cursor is not valid.\",\"errors\":{\"cursor\":[\"The cursor is not valid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "open a medical record as administrator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for an administrator', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/{{encounter_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                "{{encounter_id}}"
+              ]
+            },
+            "description": "Setup: administrators may not read medical records, so this attempt is refused, and recorded for the next request."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/18",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "18"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "search refused openings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the refused attempt, naming the role held', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const [entry] = pm.response.json().data;",
+                  "  pm.expect(entry.outcome).to.eql('refused');",
+                  "  pm.expect(entry.actor.role).to.eql('administrator');",
+                  "  pm.expect(entry.changes).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-entries?subject_type=encounter&subject_id={{encounter_id}}&action=encounter.opened&outcome=refused",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "subject_type",
+                  "value": "encounter"
+                },
+                {
+                  "key": "subject_id",
+                  "value": "{{encounter_id}}"
+                },
+                {
+                  "key": "action",
+                  "value": "encounter.opened"
+                },
+                {
+                  "key": "outcome",
+                  "value": "refused"
+                }
+              ]
+            },
+            "description": "Refused attempts to open a medical record or a patient's history are recorded. The response to the refused person does not change. No\nclinical content is ever stored."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?subject_type=encounter&subject_id=18&action=encounter.opened&outcome=refused",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "subject_type",
+                      "value": "encounter"
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "18"
+                    },
+                    {
+                      "key": "action",
+                      "value": "encounter.opened"
+                    },
+                    {
+                      "key": "outcome",
+                      "value": "refused"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":359,\"occurred_at\":\"2026-11-05T20:35:32.000000Z\",\"action\":\"encounter.opened\",\"outcome\":\"refused\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"encounter\",\"id\":18},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null},{\"id\":330,\"occurred_at\":\"2026-11-05T20:35:18.000000Z\",\"action\":\"encounter.opened\",\"outcome\":\"refused\",\"actor\":{\"type\":\"staff\",\"id\":79,\"name\":\"Naomi Rempel\",\"role\":\"administrator\"},\"subject\":{\"type\":\"encounter\",\"id\":18},\"patient_id\":51,\"network_address\":\"172.22.0.1\",\"changes\":null,\"filters\":null}],\"links\":{\"first\":null,\"last\":null,\"prev\":null,\"next\":null},\"meta\":{\"path\":\"http://localhost:8080/api/v1/audit-entries\",\"per_page\":15,\"next_cursor\":null,\"prev_cursor\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "sign in as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a doctor token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.collectionVariables.set('doctor_token', pm.response.json().data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup for the refusal check: signs in the doctor and stores the token in `doctor_token`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"token\":\"1|<plain-text token, shown once>\",\"token_type\":\"Bearer\",\"user\":{\"id\":87,\"name\":\"Synthetic Doctor\",\"email\":\"doctor@clinic.test\",\"role\":\"doctor\",\"is_active\":true,\"created_at\":\"2026-11-05T20:35:03+00:00\",\"updated_at\":\"2026-11-05T20:35:03+00:00\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "search as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for a doctor', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/audit-entries?patient_id={{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-entries"
+              ],
+              "query": [
+                {
+                  "key": "patient_id",
+                  "value": "{{patient_id}}"
+                }
+              ]
+            },
+            "description": "The trail is for administrators only: 403, before validation. Nobody, including an administrator, can change or delete an entry: no such route exists."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/audit-entries?patient_id=51",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "audit-entries"
+                  ],
+                  "query": [
+                    {
+                      "key": "patient_id",
+                      "value": "51"
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "sign out as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 signed out', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  pm.collectionVariables.set('doctor_token', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-out",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": "Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-out",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-out"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "clear weekly schedule",
       "event": [
         {
@@ -15217,7 +16862,7 @@
     {
       "key": "doctor_token",
       "value": "",
-      "description": "Set by the \"sign in as doctor\" requests in Queues, Encounters, Payments, and Reports; cleared by their \"sign out as doctor\" requests."
+      "description": "Set by the \"sign in as doctor\" requests in Queues, Encounters, Payments, Reports, and Audit Logs; cleared by their \"sign out as doctor\" requests."
     },
     {
       "key": "encounter_id",
@@ -15248,6 +16893,16 @@
       "key": "undo_charge_id",
       "value": "",
       "description": "Set by \"Payments/charge checked-in visit\"."
+    },
+    {
+      "key": "audit_cursor",
+      "value": "",
+      "description": "Set by \"Audit Logs/search a period\"; cleared by \"Audit Logs/search the next page\"."
+    },
+    {
+      "key": "audit_last_id",
+      "value": "",
+      "description": "Set by \"Audit Logs/search a period\"; cleared by \"Audit Logs/search the next page\"."
     }
   ]
 }

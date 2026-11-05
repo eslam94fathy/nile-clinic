@@ -1,0 +1,12 @@
+$kind: collection
+name: Audit Logs
+description: |-
+  A permanent trail of who did what and when on sensitive records (feature 011). For administrators only; receptionists and
+  doctors get 403. Nothing can change or delete an entry. Entries identify patients by internal identifier only, and hold field
+  names, plus before and after values only for statuses, money, roles, appointment times, and doctor assignments. They never hold
+  patient details, clinical text, reasons, or passwords.
+
+  Runs after Reports (uses `patient_id`, `charge_id`, `staff_member_id`, `doctor_user_id`, `encounter_id`, `encounter_date`, and
+  `new_doctor_email`), because it searches for what the earlier folders did. Pages use a cursor, with no total. Contract:
+  `specs/011-audit-logs/contracts/audit.openapi.yaml`.
+order: 8500

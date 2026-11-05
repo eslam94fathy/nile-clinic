@@ -1,0 +1,67 @@
+$kind: http-request
+description: |-
+  Everything about one patient, across their details, appointments, visits, records, and charges, newest first. Patients appear by internal
+  identifier only. All filters are optional and combine with AND. Unknown ids give an empty page, not an error.
+method: GET
+url: '{{base_url}}/audit-entries?patient_id={{patient_id}}&per_page=100'
+order: 1000
+queryParams:
+  - key: 'patient_id'
+    value: '{{patient_id}}'
+  - key: 'per_page'
+    value: '100'
+  - key: 'from'
+    value: '2026-01-01'
+    disabled: true
+  - key: 'to'
+    value: '2026-12-31'
+    disabled: true
+  - key: 'staff_id'
+    value: '1'
+    disabled: true
+  - key: 'subject_type'
+    value: 'charge'
+    disabled: true
+  - key: 'subject_id'
+    value: '1'
+    disabled: true
+  - key: 'action'
+    value: 'patient.opened'
+    disabled: true
+  - key: 'outcome'
+    value: 'refused'
+    disabled: true
+  - key: 'cursor'
+    value: '{{audit_cursor}}'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200, this patient only, newest first, with no total', () => {
+        pm.response.to.have.status(200);
+        const { data, meta } = pm.response.json();
+        const ids = data.map((entry) => entry.id);
+        const patient = Number(pm.collectionVariables.get('patient_id'));
+        pm.expect(data.every((entry) => entry.patient_id === patient)).to.eql(true);
+        pm.expect(ids).to.eql([...ids].sort((a, b) => b - a));
+        pm.expect(meta).to.not.have.property('total');
+        pm.expect(data.map((entry) => entry.action)).to.include.members(['patient.registered', 'patient.updated', 'patient.opened']);
+      });
+      pm.test('entries hold no patient details, only the names of fields that changed', () => {
+        const { data } = pm.response.json();
+        data.forEach((entry) => {
+          pm.expect(entry).to.not.have.property('patient');
+          const values = entry.changes ? Object.keys(entry.changes.values) : [];
+          pm.expect(values).to.not.include.members(['full_name']);
+          pm.expect(values).to.not.include.members(['phone']);
+          pm.expect(values).to.not.include.members(['national_id']);
+          pm.expect(values).to.not.include.members(['address']);
+        });
+      });
+examples: './.resources/search by patient.resources/examples'

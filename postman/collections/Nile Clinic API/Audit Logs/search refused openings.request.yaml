@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Refused attempts to open a medical record or a patient's history are recorded. The response to the refused person does not change. No
+  clinical content is ever stored.
+method: GET
+url: '{{base_url}}/audit-entries?subject_type=encounter&subject_id={{encounter_id}}&action=encounter.opened&outcome=refused'
+order: 13000
+queryParams:
+  - key: 'subject_type'
+    value: 'encounter'
+  - key: 'subject_id'
+    value: '{{encounter_id}}'
+  - key: 'action'
+    value: 'encounter.opened'
+  - key: 'outcome'
+    value: 'refused'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the refused attempt, naming the role held', () => {
+        pm.response.to.have.status(200);
+        const [entry] = pm.response.json().data;
+        pm.expect(entry.outcome).to.eql('refused');
+        pm.expect(entry.actor.role).to.eql('administrator');
+        pm.expect(entry.changes).to.eql(null);
+      });
+examples: './.resources/search refused openings.resources/examples'

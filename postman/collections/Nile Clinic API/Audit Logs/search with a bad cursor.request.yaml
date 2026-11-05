@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  A cursor must come from an earlier response.
+method: GET
+url: '{{base_url}}/audit-entries?cursor=not-a-cursor'
+order: 11000
+queryParams:
+  - key: 'cursor'
+    value: 'not-a-cursor'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 on cursor', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('cursor');
+      });
+examples: './.resources/search with a bad cursor.resources/examples'

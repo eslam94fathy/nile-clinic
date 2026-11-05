@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  Setup: a wrong password, so that the next request has a refused attempt to find.
+method: POST
+url: '{{base_url}}/auth/sign-in'
+order: 4000
+auth:
+  type: noauth
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{new_doctor_email}}",
+      "password": "postman-wrong-pass-1"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 refused', () => pm.response.to.have.status(422));
+examples: './.resources/fail a sign-in.resources/examples'

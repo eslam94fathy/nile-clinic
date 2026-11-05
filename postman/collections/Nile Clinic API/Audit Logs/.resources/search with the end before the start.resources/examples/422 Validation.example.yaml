@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-01'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The to date field must be a date after or equal to from date.","errors":{"to":["The to date field must be a date after or equal to from date."]}}
+order: 1000

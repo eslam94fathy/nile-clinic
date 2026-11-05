@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?cursor=not-a-cursor'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The cursor is not valid.","errors":{"cursor":["The cursor is not valid."]}}
+order: 1000

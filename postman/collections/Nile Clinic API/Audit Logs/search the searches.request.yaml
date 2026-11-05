@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Every search is itself recorded, with its filters, and does not list itself.
+method: GET
+url: '{{base_url}}/audit-entries?action=audit.searched&per_page=1'
+order: 8000
+queryParams:
+  - key: 'action'
+    value: 'audit.searched'
+  - key: 'per_page'
+    value: '1'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the last search and its filters', () => {
+        pm.response.to.have.status(200);
+        const [entry] = pm.response.json().data;
+        pm.expect(entry.subject).to.eql(null);
+        pm.expect(entry.filters).to.have.all.keys('from', 'to');
+      });
+examples: './.resources/search the searches.resources/examples'

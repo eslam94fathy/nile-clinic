@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Filters combine. A refused sign-in names the account that was targeted, not necessarily the person who tried. Neither the password nor an
+  unknown email's text is ever stored.
+method: GET
+url: '{{base_url}}/audit-entries?staff_id={{doctor_user_id}}&action=auth.sign_in&outcome=refused'
+order: 5000
+queryParams:
+  - key: 'staff_id'
+    value: '{{doctor_user_id}}'
+  - key: 'action'
+    value: 'auth.sign_in'
+  - key: 'outcome'
+    value: 'refused'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with refused sign-ins on this account, and no password', () => {
+        pm.response.to.have.status(200);
+        const { data } = pm.response.json();
+        pm.expect(data.length).to.be.above(0);
+        pm.expect(data.every((entry) => entry.outcome === 'refused' && entry.action === 'auth.sign_in')).to.eql(true);
+        pm.expect(data[0].changes).to.eql(null);
+        pm.expect(pm.response.text()).to.not.include('postman-wrong-pass-1');
+      });
+examples: './.resources/search refused sign-ins.resources/examples'

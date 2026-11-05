@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?patient_id=51&per_page=100'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":346,"occurred_at":"2026-11-05T20:35:25.000000Z","action":"visit.check_in_undone","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"visit","id":90},"patient_id":51,"network_address":"172.22.0.1","changes":null,"filters":null},{"id":345,"occurred_at":"2026-11-05T20:35:24.000000Z","action":"charge.cancelled","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"charge","id":37},"patient_id":51,"network_address":"172.22.0.1","changes":{"fields":["status","cancel_reason"],"values":{"status":{"to":"cancelled","from":"unpaid"}}},"filters":null},{"id":344,"occurred_at":"2026-11-05T20:35:24.000000Z","action":"charge.created","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"charge","id":37},"patient_id":51,"network_address":"172.22.0.1","changes":{"fields":["discount","amount_paid","queue_entry_id","doctor_id","patient_id","date","status","fee"],"values":{"fee":{"to":"400.00","from":null},"status":{"to":"unpaid","from":null},"discount":{"to":"0.00","from":null},"amount_paid":{"to":"0.00","from":null}}},"filters":null}],"links":{"first":null,"last":null,"prev":null,"next":null},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":100,"next_cursor":null,"prev_cursor":null}}
+order: 1000
