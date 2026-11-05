@@ -350,29 +350,29 @@ breakdown match by hand.
 
 **Purpose**: Authorization, privacy, read-only proof, messages, docs, measurement, and verification.
 
-- [ ] T030 [P] Write `tests/Feature/Reports/ReportsAuthorizationTest.php` (SC-006, FR-001, FR-020)
+- [X] T030 [P] Write `tests/Feature/Reports/ReportsAuthorizationTest.php` (SC-006, FR-001, FR-020)
   - Scope: as `PaymentsAuthorizationTest`, for all four endpoints: administrator `200`; receptionist and doctor `403` with `auth.forbidden`, **also** with invalid dates and with an unknown `doctor_id`, proving that they are refused before validation and lookup; no token `401`;
     a deactivated account's token `401`.
   - Verify: `--filter=ReportsAuthorizationTest` → pass.
 
-- [ ] T031 [P] Write `tests/Feature/Reports/ReportPrivacyTest.php` (SC-005, FR-004, FR-017, R11)
+- [X] T031 [P] Write `tests/Feature/Reports/ReportPrivacyTest.php` (SC-005, FR-004, FR-017, R11)
   - Scope: create a patient with unique synthetic values in name, patient number, phone, national ID, address, and emergency contact; an appointment note, cancellation reason, discount reason, refund reason, and cancel reason; and encounter text in every clinical field. Request all four reports across the period, and assert that none of the planted values appears in any response body. Then
     overwrite the clinical columns with `DB::table('encounters')->update(['diagnosis' => 'not-ciphertext', ...])`, and assert that `/reports/times` still returns `200` with correct counts, proving that they are never decrypted.
   - Verify: `--filter=ReportPrivacyTest` → pass.
 
-- [ ] T032 [P] Write `tests/Feature/Reports/ReportReadOnlyTest.php` (SC-007, FR-005)
+- [X] T032 [P] Write `tests/Feature/Reports/ReportReadOnlyTest.php` (SC-007, FR-005)
   - Scope: with records of every kind, snapshot the row counts and `max(updated_at)` of every table the reports read, request all four reports, and assert that nothing changed. With `DB::listen`, assert that every statement starts with `select`.
   - Verify: `--filter=ReportReadOnlyTest` → pass.
 
-- [ ] T033 [P] Write `tests/Feature/Reports/ReportsMessagesTest.php` (SC-008, FR-023)
+- [X] T033 [P] Write `tests/Feature/Reports/ReportsMessagesTest.php` (SC-008, FR-023)
   - Scope: as `PaymentsMessagesTest`, for `en` and `ar`: `range_too_long` with its day count, validation messages using the translated attributes, the unknown doctor message, and `auth.forbidden`. For each report, the JSON keys are identical in both locales, and statuses and methods are never translated.
   - Verify: `--filter=ReportsMessagesTest` → pass.
 
-- [ ] T034 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T034 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: Roadmap: 010 `Done` with the spec link; Audit logs `Next`. README: a short "Reports" section after "Payments": the four reports, administrators only, read only, periods of up to 366 days, money collected counts on the clinic day it was recorded while billing shows charges as they stand now, and no patient identifiers; link the contract.
   - Verify: `postman spec lint specs/010-reports/contracts/reports.openapi.yaml --issueType=syntax` → no issues.
 
-- [ ] T035 Run Pint and the full suite over `app/Modules/Reports/` and `tests/`
+- [X] T035 Run Pint and the full suite over `app/Modules/Reports/` and `tests/`
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline
