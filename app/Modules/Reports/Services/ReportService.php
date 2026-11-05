@@ -6,6 +6,7 @@ use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Payments\Enums\PaymentMethod;
 use App\Modules\Payments\Support\Money;
+use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Reports\Repositories\Contracts\ReportRepository;
 use App\Modules\Reports\Support\ReportMath;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -20,7 +21,6 @@ use Illuminate\Pagination\Paginator;
 class ReportService
 {
     private const NO_MONEY = ['received' => 0, 'refunded' => 0];
-
 
     public function __construct(
         private readonly ReportRepository $reports,
