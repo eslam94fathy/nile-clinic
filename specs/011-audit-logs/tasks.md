@@ -426,13 +426,13 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Independent Test**: Attempt to change or delete an entry as every role and confirm no way exists. Force an entry to fail to save and confirm that the change or the opening does not go ahead.
 
-- [ ] T042 [US4] Add `test_audit_searched` to `AuditActionCoverageTest` and search recording cases to `AuditSearchTest` — failing first, then record searches in `app/Modules/Audit/Services/AuditSearchService.php` (FR-011, US4 scenario 4)
+- [X] T042 [US4] Add `test_audit_searched` to `AuditActionCoverageTest` and search recording cases to `AuditSearchTest` — failing first, then record searches in `app/Modules/Audit/Services/AuditSearchService.php` (FR-011, US4 scenario 4)
   - Scope:
     - Test: each request writes one `audit.searched`, including each page, with `details.filters` equal to the validated filters; `per_page` and `cursor` not in it; a search does not list its own entry; a search by a rejected role or with a `422` writes none. Update the cursor test of T012 so that pages stay stable while real searches add entries. With `failAuditWrites()`, the search returns a general `500`, and no results.
     - Service: read first, then `record(AuditSearched, details: ['filters' => $filters])`, then return the page.
   - Verify: `--filter='AuditSearchTest|test_audit_searched'` → fails first, then passes.
 
-- [ ] T043 [P] [US4] Write `tests/Feature/Audit/AuditImmutabilityTest.php` (FR-014, US4 scenario 1)
+- [X] T043 [P] [US4] Write `tests/Feature/Audit/AuditImmutabilityTest.php` (FR-014, US4 scenario 1)
   - Scope:
     - As an administrator, `POST`, `PUT`, `PATCH`, and `DELETE` on `/audit-entries` and `/audit-entries/1` get `404` or `405`, and the entry is unchanged.
     - `route:list`: exactly one route with `audit-entries` in it, a `GET`.
@@ -440,7 +440,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - A deactivated staff member's entries remain; a removed visit's remain; deleting a user or patient with entries fails with a `QueryException`.
   - Verify: `--filter=AuditImmutabilityTest` → pass.
 
-- [ ] T044 [US4] Add `test_every_action_has_a_scenario` to `tests/Feature/Audit/AuditActionCoverageTest.php` (SC-001)
+- [X] T044 [US4] Add `test_every_action_has_a_scenario` to `tests/Feature/Audit/AuditActionCoverageTest.php` (SC-001)
   - Scope: for each `AuditAction::cases()`, assert that `method_exists($this, 'test_'.str_replace('.', '_', $case->value))`, and name any that are missing in the failure message.
   - Verify: `--filter=AuditActionCoverageTest` → all pass, covering 44 actions.
   - Depends: T032, T037, T040, T042

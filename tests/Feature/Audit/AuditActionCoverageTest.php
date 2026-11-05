@@ -732,4 +732,34 @@ class AuditActionCoverageTest extends TestCase
         $entry = $this->assertEntryByAdministrator(AuditAction::StaffPasswordReset, AuditSubject::StaffMember, $member->id, null);
         $this->assertSame(['fields' => ['password']], $entry->details);
     }
+
+    /* The trail itself (011) */
+
+    public function test_audit_searched(): void
+    {
+        $this->getJson('/api/v1/audit-entries?outcome=refused')->assertOk();
+
+        $entry = $this->assertOneEntry(AuditAction::AuditSearched, [
+            'outcome' => AuditOutcome::Succeeded,
+            'actor_id' => $this->administrator->id,
+            'actor_role' => 'administrator',
+            'subject_type' => null,
+            'subject_id' => null,
+            'patient_id' => null,
+            'network_address' => '127.0.0.1',
+        ]);
+        $this->assertSame(['filters' => ['outcome' => 'refused']], $entry->details);
+    }
+
+    /* SC-001: no action can be left out */
+
+    public function test_every_action_has_a_scenario(): void
+    {
+        $missing = array_filter(
+            AuditAction::cases(),
+            fn (AuditAction $action) => ! method_exists($this, 'test_'.str_replace('.', '_', $action->value)),
+        );
+
+        $this->assertSame([], array_column($missing, 'value'), 'These actions have no test method.');
+    }
 }

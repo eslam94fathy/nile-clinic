@@ -2,6 +2,7 @@
 
 namespace App\Modules\Audit\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Audit\Repositories\Contracts\AuditEntryRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -17,6 +18,7 @@ class AuditSearchService
 {
     public function __construct(
         private readonly AuditEntryRepository $entries,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -25,12 +27,19 @@ class AuditSearchService
      */
     public function search(array $filters, int $perPage): CursorPaginator
     {
-        return $this->entries->search(
+        $page = $this->entries->search(
             Arr::except($filters, ['from', 'to']),
             isset($filters['from']) ? $this->startOfClinicDay($filters['from']) : null,
             isset($filters['to']) ? $this->startOfClinicDay($filters['to'], addDays: 1) : null,
             $perPage,
         );
+
+        // Read first, then record, so that a search does not list itself (FR-011). Every page is recorded,
+        // because a cursor could otherwise be used to skip the entry. If it cannot be saved, nothing is
+        // returned (FR-007).
+        $this->audit->record(AuditAction::AuditSearched, details: ['filters' => $filters]);
+
+        return $page;
     }
 
     private function startOfClinicDay(string $date, int $addDays = 0): CarbonImmutable

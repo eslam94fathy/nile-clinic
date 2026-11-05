@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Feature\Audit\Concerns\InteractsWithAuditEntries;
 use Tests\TestCase;
 
 /**
@@ -21,7 +22,7 @@ use Tests\TestCase;
  */
 class AuditSearchTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithAuditEntries, RefreshDatabase;
 
     private User $administrator;
 
@@ -75,7 +76,7 @@ class AuditSearchTest extends TestCase
             $this->assertSame([$target->id], $this->idsFor($query), json_encode($query));
         }
 
-        $this->assertSame([$other->id, $target->id], $this->idsFor(['per_page' => 2]));
+        $this->assertSame([$other->id, $target->id], $this->idsFor(['per_page' => 100]));
     }
 
     public function test_filters_combine(): void
@@ -136,7 +137,7 @@ class AuditSearchTest extends TestCase
         $after = AuditEntry::factory()->create(['created_at' => $last->addMinute()->utc()]);
 
         $this->assertSame([$end->id, $first->id], $this->idsFor(['from' => $day, 'to' => $day]));
-        $this->assertSame([$after->id, $end->id, $first->id], $this->idsFor(['from' => $day, 'per_page' => 3]));
+        $this->assertSame([$after->id, $end->id, $first->id], $this->idsFor(['from' => $day, 'per_page' => 100]));
         $this->assertSame([$first->id, $before->id], array_values(array_slice($this->idsFor(['to' => $day, 'per_page' => 3]), 1)));
     }
 
@@ -263,5 +264,93 @@ class AuditSearchTest extends TestCase
         $entry = AuditEntry::factory()->create(['actor_id' => $member->id]);
 
         $this->assertSame([$entry->id], $this->idsFor(['staff_id' => $member->id]));
+    }
+
+    /* A search is itself recorded (FR-011, US4 scenario 4) */
+
+    public function test_a_search_is_recorded_with_its_filters(): void
+    {
+        $patient = Patient::factory()->create();
+
+        $this->search([
+            'patient_id' => $patient->id,
+            'action' => 'patient.opened',
+            'from' => '2026-11-01',
+            'per_page' => 5,
+        ]);
+
+        $entry = AuditEntry::query()->where('action', AuditAction::AuditSearched)->sole();
+
+        $this->assertSame($this->administrator->id, $entry->actor_id);
+        $this->assertSame('administrator', $entry->actor_role);
+        $this->assertNull($entry->subject_type);
+        $this->assertEquals(['filters' => [
+            'patient_id' => $patient->id,
+            'action' => 'patient.opened',
+            'from' => '2026-11-01',
+        ]], $entry->details);
+    }
+
+    public function test_a_search_entry_is_shown_with_its_filters(): void
+    {
+        $this->search(['outcome' => 'refused']);
+
+        $this->search(['action' => 'audit.searched'])
+            ->assertJsonPath('data.0.filters', ['outcome' => 'refused'])
+            ->assertJsonPath('data.0.changes', null)
+            ->assertJsonPath('data.0.subject', null);
+    }
+
+    public function test_a_search_does_not_list_itself(): void
+    {
+        $this->search(['action' => 'audit.searched'])->assertJsonPath('data', []);
+    }
+
+    public function test_every_page_is_recorded(): void
+    {
+        AuditEntry::factory()->count(3)->create();
+
+        $cursor = $this->search(['action' => 'patient.updated', 'per_page' => 1])->json('meta.next_cursor');
+        $this->search(['action' => 'patient.updated', 'per_page' => 1, 'cursor' => $cursor]);
+
+        $this->assertSame(2, AuditEntry::query()->where('action', AuditAction::AuditSearched)->count());
+    }
+
+    public function test_real_searches_do_not_disturb_paging(): void
+    {
+        $created = AuditEntry::factory()->count(7)->create()->modelKeys();
+
+        $seen = [];
+        $query = ['per_page' => 3];
+
+        // No action filter: each page's own search entry lands in the list that is being walked.
+        do {
+            $response = $this->search($query);
+            $seen = [...$seen, ...array_column($response->json('data'), 'id')];
+            $query['cursor'] = $response->json('meta.next_cursor');
+        } while ($query['cursor'] !== null);
+
+        $this->assertSame(array_reverse($created), array_values(array_intersect($seen, $created)));
+        $this->assertSame(count($seen), count(array_unique($seen)));
+    }
+
+    public function test_a_refused_or_invalid_search_is_not_recorded(): void
+    {
+        $this->getJson('/api/v1/audit-entries?from=bad')->assertUnprocessable();
+
+        Sanctum::actingAs(User::factory()->receptionist()->create());
+        $this->getJson('/api/v1/audit-entries')->assertForbidden();
+
+        $this->assertSame(0, AuditEntry::query()->count());
+    }
+
+    public function test_no_results_are_returned_when_the_entry_fails(): void
+    {
+        AuditEntry::factory()->create(['network_address' => '203.0.113.99']);
+        $this->failAuditWrites();
+
+        $response = $this->getJson('/api/v1/audit-entries')->assertStatus(500);
+
+        $this->assertStringNotContainsString('203.0.113.99', $response->getContent());
     }
 }
