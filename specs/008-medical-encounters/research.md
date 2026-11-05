@@ -2,8 +2,8 @@
 
 **Feature**: 008-medical-encounters | **Date**: 2026-11-05
 
-Facts below were checked on 2026-11-05 against `007-phase-8-polish` at `b8cdae4` (feature 007 is not
-yet merged into `main`) and the running stack: Laravel Framework 13.38.0, PHP 8.5.12, MySQL 9.7.4,
+Facts below were checked on 2026-11-05 against `007-phase-8-polish` at `b8cdae4` (the tip of feature 007,
+since merged into `main`) and the running stack: Laravel Framework 13.38.0, PHP 8.5.12, MySQL 9.7.4,
 and the existing `Staff`, `Patients`, `Doctors`, `Scheduling`, `Appointments`, and `Queues` modules.
 Spec clarifications Q1–Q3 were answered on 2026-11-05 (spec, Clarifications). Items marked
 *(approved — Dn)* were approved by the user on 2026-11-05 and are listed in the plan's Decisions

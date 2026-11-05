@@ -205,8 +205,6 @@ All four were approved by the user on 2026-11-05.
 - **`APP_KEY` becomes critical** (D1): today it protects sessions and cookies, which can be reissued.
   With encryption, losing it destroys medical records, and changing it without `APP_PREVIOUS_KEYS` makes
   them unreadable. Back it up separately before production. The README gains this warning.
-- **Feature 007 is not merged**: this plan is based on `007-phase-8-polish`. Merge it first, or branch
-  008 from its tip.
 - **Access depends on feature 007's list**: a change to how queue entries work could change who can
   read records. `EncounterAccessTest` fails if that happens.
 - **Deactivated authors**: their drafts stay unreadable, and their finalized records can't be corrected,

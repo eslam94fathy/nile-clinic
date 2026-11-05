@@ -349,7 +349,6 @@ doctor cannot add one.
 - How long records are retained, and how they must be protected, are among the Egyptian health-data
   obligations that need legal review before production use (Constitution I). Records are kept
   indefinitely until that review; protection at rest will be addressed during planning.
-- Feature 007 is not yet merged into `main` when this specification is written; this feature builds
-  on it.
+- This feature builds on feature 007, merged into `main` on 2026-11-05.
 - The 2-second and 500,000-record targets follow the scale of features 005–007 and can be tuned
   during planning.

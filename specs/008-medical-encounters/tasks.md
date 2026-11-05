@@ -49,7 +49,7 @@ written, **stop and report**; don't substitute an unverified one.
 
 **Purpose**: Confirm the starting point. No new dependencies (plan: Technical Context).
 
-- [ ] T001 Create branch `008-medical-encounters` and confirm the baseline
+- [X] T001 Create branch `008-medical-encounters` and confirm the baseline
   - Scope: the branch starts from `main` once feature 007 is merged, or from the tip of
     `007-phase-8-polish` if the user chooses that. If neither is decided, **stop and ask**.
   - Verify:
