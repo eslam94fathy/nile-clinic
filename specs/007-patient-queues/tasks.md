@@ -567,7 +567,7 @@ skipped by call next, the second's appointment is scheduled again.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T041 [P] Write `tests/Feature/Queues/QueuesAuthorizationTest.php` (SC-005)
+- [X] T041 [P] Write `tests/Feature/Queues/QueuesAuthorizationTest.php` (SC-005)
   - Scope: data providers over all nine endpoints with valid input (clock fixed): doctor × the six
     reception endpoints → `403` (`auth.forbidden`) and no row changed; administrator and
     receptionist × the six → success code; administrator and receptionist × the three `/me`
@@ -575,14 +575,14 @@ skipped by call next, the second's appointment is scheduled again.
     deactivated → `401` (`InteractsWithStaffTokens::usingToken()`); doctor with an invalid walk-in
     body → `403`, not `422`.
 
-- [ ] T042 [P] Write `tests/Feature/Queues/QueuesMessagesTest.php` (FR-019, SC-006)
+- [X] T042 [P] Write `tests/Feature/Queues/QueuesMessagesTest.php` (FR-019, SC-006)
   - Scope: for `en` and `ar`: `not_checkable`, `already_in_queue`, `patient_not_found`,
     `doctor_not_found`, `doctor_inactive`, `entry_not_found` (404), `not_changeable`,
     `visit_in_progress`, `nobody_waiting`, `no_current_visit`, a translated attribute name in a
     `required` message, `403` → `auth.forbidden`; JSON keys identical across locales; `status`
     values identical across locales.
 
-- [ ] T043 [P] Update `specs/006-appointments/contracts/appointments.openapi.yaml`, `docs/roadmap.md`, and `README.md`
+- [X] T043 [P] Update `specs/006-appointments/contracts/appointments.openapi.yaml`, `docs/roadmap.md`, and `README.md`
   - Scope: 006 contract: `Status` enum gains `checked_in`, `completed`, with a one-line note
     "added by feature 007; such appointments keep their slot and cannot be rescheduled, cancelled,
     or marked no-show". Roadmap: 007 `Done` with the spec link, 008 `Next`. README: a short "Patient
@@ -592,20 +592,20 @@ skipped by call next, the second's appointment is scheduled again.
     `/api/v1/doctors/me/queue`, `/call-next`, `/finish`; order rule; link the contract.
   - Verify: `postman spec lint specs/006-appointments/contracts/appointments.openapi.yaml --issueType=syntax` → no issues.
 
-- [ ] T044 Run Pint and the full suite
+- [X] T044 Run Pint and the full suite
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline
     - `docker compose exec app php artisan test --group=concurrency` → pass
   - Depends: T041, T042, T043
 
-- [ ] T045 Run quickstart Q1–Q7 from `specs/007-patient-queues/quickstart.md` on the development stack
+- [X] T045 Run quickstart Q1–Q7 from `specs/007-patient-queues/quickstart.md` on the development stack
   - Scope: synthetic data only; the doctor needs hours for the real clinic today (set them in Q2).
     Record what was run.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T044
 
-- [ ] T046 Record the results in `specs/007-patient-queues/verification.md`
+- [X] T046 Record the results in `specs/007-patient-queues/verification.md`
   - Scope: per Q-step: date, command, observed output summary, pass/fail; failures reported as
     failures (Constitution VIII). Postman collection update is a separate follow-up (as for 005,
     006).

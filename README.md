@@ -151,6 +151,24 @@ their own appointments at `/api/v1/doctors/me/appointments`.
 Every endpoint, field, and response is described in
 [specs/006-appointments/contracts/appointments.openapi.yaml](specs/006-appointments/contracts/appointments.openapi.yaml).
 
+## Patient queues
+
+Every queue is for the clinic's today. Administrators and receptionists check in a booked patient at
+`POST /api/v1/appointments/{id}/check-in`, add a walk-in at `POST /api/v1/queue/walk-ins`, and see
+the lists at `GET /api/v1/queue` and `GET /api/v1/doctors/{doctor}/queue`. They mark a waiting
+patient as left at `POST /api/v1/queue/{entry}/leave` and undo a check-in at
+`DELETE /api/v1/queue/{entry}`. Doctors use `GET /api/v1/doctors/me/queue`, then
+`POST /api/v1/doctors/me/queue/call-next` and `/finish`.
+
+- Lists are in queue order: booked patients by appointment time and walk-ins by arrival time, merged
+  into one order; equal times go by queue number.
+- Queue numbers start at 1 per doctor and day, and are never reused, even after an undo.
+- Checked-in and completed appointments keep their slot and cannot be rescheduled, cancelled, or
+  marked as no-show. Walk-ins never take a slot.
+
+Every endpoint, field, and response is described in
+[specs/007-patient-queues/contracts/queues.openapi.yaml](specs/007-patient-queues/contracts/queues.openapi.yaml).
+
 ## Daily use
 
 ```sh

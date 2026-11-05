@@ -69,21 +69,25 @@ curl -s -w '  %{http_code}\n' -X POST $B/doctors/me/queue/finish -H "Authorizati
 curl -s $B/appointments/$A1 -H "Authorization: Bearer $RECEPTION"
 ```
 
-Expected: own list with the patient as `{id, full_name, sex, date_of_birth}`; the first call returns
-`A1`'s entry as `with_doctor`; the second call → `422` (`visit_in_progress`); finish → `200`,
-`seen`; `A1` shows `status: completed`. `call-next` as `$RECEPTION` → `403`.
+Expected: own list with the patient as `{id, full_name, sex, date_of_birth}`. Q2 can book only
+upcoming slots, so the walk-in arrived before `A1`'s and `A2`'s times and is first in queue order: the
+first call returns the walk-in as `with_doctor`; the second call → `422` (`visit_in_progress`); finish
+→ `200`, `seen`; `A1` is still `checked_in` (a walk-in has no appointment). `call-next` as
+`$RECEPTION` → `403`. Call next again → `A1`'s entry; finish → `A1` shows `status: completed`.
 
 ## Q6 — Leave and undo (US5)
 
 ```sh
-curl -s -w '  %{http_code}\n' -X POST $B/queue/<walk-in entry id>/leave -H "Authorization: Bearer $RECEPTION"
+curl -s -w '  %{http_code}\n' -X POST $B/queue/walk-ins -H "Authorization: Bearer $RECEPTION" -H "$J" -d "{\"patient_id\":$P3,\"doctor_id\":$DOC}"
+curl -s -w '  %{http_code}\n' -X POST $B/queue/<new walk-in entry id>/leave -H "Authorization: Bearer $RECEPTION"
 curl -s -w '  %{http_code}\n' -X DELETE $B/queue/<A2 entry id> -H "Authorization: Bearer $RECEPTION"
 curl -s $B/appointments/$A2 -H "Authorization: Bearer $RECEPTION"
 curl -s -w '  %{http_code}\n' -X POST $B/doctors/me/queue/call-next -H "Authorization: Bearer $DOCTOR"
 ```
 
-Expected: leave `200`, `left`; undo `204`; `A2` is `scheduled` again; call next → `422`
-(`nobody_waiting`). Checking `A2` in again gives queue number 4 (numbers are not reused).
+Expected: the walk-in of a patient already seen is accepted with number 4; leave `200`, `left`; undo
+`204`; `A2` is `scheduled` again; call next → `422` (`nobody_waiting`). Checking `A2` in again gives
+queue number 5 (numbers are not reused).
 
 ## Q7 — Tests and style
 
