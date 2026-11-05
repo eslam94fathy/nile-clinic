@@ -1,0 +1,406 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Patient Queues
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 007. All responses are JSON, and field names and structure
+    are identical in every locale; only `message` texts change with Accept-Language (en, ar;
+    fallback en). Statuses are fixed English identifiers. Every queue is for the clinic's today
+    (Africa/Cairo wall clock); there is no date parameter. `arrived_at`, `called_at`,
+    `finished_at`, and `left_at` are ISO 8601 UTC instants; appointment `start`/`end` are clinic
+    wall-clock times. Every endpoint requires `Authorization: Bearer <token>` (feature 002).
+    Reception endpoints are for active administrators and receptionists; `/doctors/me/queue…` is
+    for active doctors. Feature 006's appointment `status` gains `checked_in` and `completed`;
+    such appointments keep their slot and cannot be rescheduled, cancelled, or marked no-show.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /appointments/{appointment}/check-in:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    post:
+      operationId: checkInAppointment
+      summary: Check in the patient of today's scheduled appointment (FR-001–FR-005) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '201': { $ref: '#/components/responses/EntryCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No appointment with this id (feature 006 message).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: '`not_checkable` on `appointment`: not scheduled (cancelled, no-show, already checked in, completed) or not dated today.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /queue/walk-ins:
+    post:
+      operationId: addWalkIn
+      summary: Add a registered patient without an appointment to a doctor's list today (FR-006) — administrators, receptionists
+      description: A walk-in takes no slot; the doctor's bookable slots are unchanged.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WalkInInput' }
+            example: { patient_id: 12, doctor_id: 3 }
+      responses:
+        '201': { $ref: '#/components/responses/EntryCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: Validation failed, including unknown patient, unknown or inactive doctor, and `already_in_queue` on `patient_id`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /queue:
+    get:
+      operationId: listClinicQueue
+      summary: Today's entries of every doctor, by doctor then queue order (FR-007) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/StatusFilter'
+        - { in: query, name: page, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: per_page, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 15 } }
+      responses:
+        '200':
+          description: One page, ordered by doctor id, then queue order (order time, then queue number).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/QueueEntry' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/{doctor}/queue:
+    parameters:
+      - { in: path, name: doctor, required: true, schema: { type: integer, minimum: 1 } }
+    get:
+      operationId: listDoctorQueue
+      summary: One doctor's whole list for today, in queue order (FR-007) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Every entry of the doctor today; empty when nobody checked in.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/QueueEntry' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No doctor with this id (feature 004 message).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+
+  /queue/{entry}/leave:
+    parameters:
+      - $ref: '#/components/parameters/EntryId'
+    post:
+      operationId: markLeft
+      summary: Mark a waiting patient as left (FR-014) — administrators, receptionists
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/EntryOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/EntryNotFound' }
+        '422':
+          description: '`not_changeable` on `entry`: not waiting.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /queue/{entry}:
+    parameters:
+      - $ref: '#/components/parameters/EntryId'
+    delete:
+      operationId: undoCheckIn
+      summary: Undo a check-in; the appointment is scheduled again (FR-014) — administrators, receptionists
+      description: Only a waiting entry that came from an appointment. The queue number is not reused.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '204': { description: Removed; the appointment is scheduled again. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/EntryNotFound' }
+        '422':
+          description: '`not_changeable` on `entry`: not waiting, or a walk-in.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/queue:
+    get:
+      operationId: listOwnQueue
+      summary: The signed-in doctor's list for today, in queue order (FR-010) — doctors
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Every own entry today.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/OwnQueueEntry' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+
+  /doctors/me/queue/call-next:
+    post:
+      operationId: callNext
+      summary: Call the first waiting patient in queue order (FR-011) — doctors
+      description: >
+        Skips a waiting patient who is currently with another doctor. Refused while a patient is
+        with this doctor.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/OwnEntryOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: '`visit_in_progress` or `nobody_waiting` on `queue`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/queue/finish:
+    post:
+      operationId: finishVisit
+      summary: Finish the visit of the patient with the doctor; the appointment becomes completed (FR-012) — doctors
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/OwnEntryOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/DoctorNotFound' }
+        '422':
+          description: '`no_current_visit` on `queue`: nobody is with the doctor.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: The `token` value returned by sign-in (feature 002).
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      description: en or ar (regional variants map to the base language); anything else falls back to en.
+      schema: { type: string }
+    AppointmentId:
+      in: path
+      name: appointment
+      required: true
+      schema: { type: integer, minimum: 1 }
+    EntryId:
+      in: path
+      name: entry
+      required: true
+      schema: { type: integer, minimum: 1 }
+    StatusFilter:
+      in: query
+      name: status
+      required: false
+      schema: { $ref: '#/components/schemas/QueueStatus' }
+
+  schemas:
+    QueueStatus:
+      type: string
+      enum: [waiting, with_doctor, seen, left]
+    WalkInInput:
+      type: object
+      required: [patient_id, doctor_id]
+      properties:
+        patient_id: { type: integer, minimum: 1, description: The patient number (feature 003) }
+        doctor_id: { type: integer, minimum: 1, description: The doctor id (feature 004) }
+    AppointmentRef:
+      type: [object, 'null']
+      additionalProperties: false
+      required: [id, start, end]
+      description: The appointment the entry came from; null for a walk-in.
+      properties:
+        id: { type: integer }
+        start: { type: string, pattern: '^([01][0-9]|2[0-3]):[0-5][05]$' }
+        end: { type: string, pattern: '^(([01][0-9]|2[0-3]):[0-5][05]|24:00)$' }
+    DoctorRef:
+      type: object
+      additionalProperties: false
+      required: [id, name, title]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: string }
+    StaffPatientRef:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, phone]
+      description: Never national ID, address, or emergency contact.
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        phone: { type: string }
+    DoctorPatientRef:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, sex, date_of_birth]
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        sex: { type: string, enum: [male, female] }
+        date_of_birth: { type: string, format: date }
+    QueueEntry:
+      type: object
+      additionalProperties: false
+      required: [id, queue_number, status, walk_in, arrived_at, called_at, finished_at, left_at, appointment, doctor, patient]
+      properties:
+        id: { type: integer }
+        queue_number: { type: integer, minimum: 1 }
+        status: { $ref: '#/components/schemas/QueueStatus' }
+        walk_in: { type: boolean }
+        arrived_at: { type: string, format: date-time }
+        called_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+        left_at: { type: [string, 'null'], format: date-time }
+        appointment: { $ref: '#/components/schemas/AppointmentRef' }
+        doctor: { $ref: '#/components/schemas/DoctorRef' }
+        patient: { $ref: '#/components/schemas/StaffPatientRef' }
+    OwnQueueEntry:
+      type: object
+      additionalProperties: false
+      required: [id, queue_number, status, walk_in, arrived_at, called_at, finished_at, left_at, appointment, patient]
+      properties:
+        id: { type: integer }
+        queue_number: { type: integer, minimum: 1 }
+        status: { $ref: '#/components/schemas/QueueStatus' }
+        walk_in: { type: boolean }
+        arrived_at: { type: string, format: date-time }
+        called_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+        left_at: { type: [string, 'null'], format: date-time }
+        appointment: { $ref: '#/components/schemas/AppointmentRef' }
+        patient: { $ref: '#/components/schemas/DoctorPatientRef' }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    ConflictError:
+      type: object
+      additionalProperties: false
+      required: [message, reason]
+      properties:
+        message: { type: string }
+        reason:
+          type: string
+          enum: [already_checked_in, patient_with_another_doctor]
+          description: Database backstops (research R3); normally the locks make these unreachable.
+
+  responses:
+    EntryCreated:
+      description: The new queue entry, waiting.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/QueueEntry' }
+    EntryOk:
+      description: The queue entry.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/QueueEntry' }
+    OwnEntryOk:
+      description: The doctor's queue entry.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/OwnQueueEntry' }
+    Conflict:
+      description: A concurrent change won (research R3).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ConflictError' }
+    Unauthenticated:
+      description: Missing, invalid, or expired token, or a deactivated account (feature 002).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Signed in, but this role may not do this.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    EntryNotFound:
+      description: No queue entry with this id.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    DoctorNotFound:
+      description: The signed-in doctor has no doctor profile yet (feature 004).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
