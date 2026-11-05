@@ -141,7 +141,7 @@ breakdown match by hand.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T011 [P] [US1] Write `tests/Feature/Reports/MoneyCollectedReportTest.php` (US1-1…5, FR-007, FR-008)
+- [X] T011 [P] [US1] Write `tests/Feature/Reports/MoneyCollectedReportTest.php` (US1-1…5, FR-007, FR-008)
   - Scope: two charges for two doctors; payments and refunds with chosen `created_at`, methods, and staff:
     - totals of `received`, `refunded`, and `net`; `by_method` in the order cash, card, wallet, with `staff` under each by name; `by_day` oldest first; all as exact strings
     - every breakdown adds up to the totals
@@ -154,7 +154,7 @@ breakdown match by hand.
     - a deactivated staff member still appears
     - exact JSON structure per the contract's `MoneyCollected`, including `from` and `to`
 
-- [ ] T012 [P] [US1] Write `tests/Feature/Reports/ClinicDayBoundaryTest.php` (SC-004, FR-008, FR-022, R4)
+- [X] T012 [P] [US1] Write `tests/Feature/Reports/ClinicDayBoundaryTest.php` (SC-004, FR-008, FR-022, R4)
   - Scope: payments at these UTC instants, each day requested alone and checked in `by_day`:
     - ordinary day: `2026-11-04 21:59:00` → clinic `2026-11-04`; `2026-11-04 22:00:00` → `2026-11-05`
     - clocks forward: `2026-04-23 21:59:00` → `2026-04-23`; `2026-04-23 22:00:00` → `2026-04-24`
@@ -163,7 +163,7 @@ breakdown match by hand.
     - refunds at the same instants behave the same way
     - a period ending on a day clocks go forward the next morning (`to=2026-04-23`) excludes `2026-04-23 22:00:00`
 
-- [ ] T013 [P] [US1] Write `tests/Feature/Reports/ReportValidationTest.php` (FR-002, FR-003, R10)
+- [X] T013 [P] [US1] Write `tests/Feature/Reports/ReportValidationTest.php` (FR-002, FR-003, R10)
   - Scope: a `private const ENDPOINTS` array that starts with `/api/v1/reports/money-collected`, used by a data provider so that later stories add their paths:
     - missing `from` or `to`; `from=2026-02-30`; `from=05-11-2026`; `to` before `from` → `422` on the right field
     - a period of 367 days → `422` on `to` with the range message; exactly 366 days → `200`
@@ -171,14 +171,14 @@ breakdown match by hand.
     - a known doctor with no activity → `200` with zero totals
     - `per_page` of `0` or `101` → `422`, for paged endpoints
 
-- [ ] T014 [P] [US1] Write `tests/Feature/Reports/MoneyExactnessReportTest.php` (SC-003, FR-019, R6)
+- [X] T014 [P] [US1] Write `tests/Feature/Reports/MoneyExactnessReportTest.php` (SC-003, FR-019, R6)
   - Scope: bulk-insert with `DB::table(...)->insert` on one charge: 1,000 payments of `0.07` and 100 refunds of `0.03`, spread over several clinic days, the three methods, and two staff
     members. Assert `received` `'70.00'`, `refunded` `'3.00'`, and `net` `'67.00'`. Assert that the piastres of `by_method`, of `staff` within each method, and of `by_day` each add up exactly to
     those totals.
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Create `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `app/Modules/Reports/Repositories/QueryReportRepository.php` with the money methods (R2, R4, approved D2, D4)
+- [X] T015 [US1] Create `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `app/Modules/Reports/Repositories/QueryReportRepository.php` with the money methods (R2, R4, approved D2, D4)
   - Scope: `moneyReceivedByHour(string $start, string $end, ?int $doctorId): array` and `moneyRefundedByHour(...)`, each returning rows of `hour`, `method`, `staff_id`, `staff_name`, `amount`:
     - `DB::table('payments')` (or `refunds`), `join('users', ...)` on `received_by` (or `refunded_by`);
     - `where('created_at', '>=', $start)->where('created_at', '<', $end)`;
@@ -187,7 +187,7 @@ breakdown match by hand.
     Bind the contract in the provider's `register()`.
   - Depends: T005
 
-- [ ] T016 [US1] Create `app/Modules/Reports/Services/ReportService.php` with `moneyCollected` (R4, R6, FR-003, FR-007, FR-008)
+- [X] T016 [US1] Create `app/Modules/Reports/Services/ReportService.php` with `moneyCollected` (R4, R6, FR-003, FR-007, FR-008)
   - Scope: inject `ReportRepository` and `DoctorService`. `moneyCollected(string $from, string $to, ?int $doctorId): array`:
     - if `$doctorId` is set, `DoctorService::find` (404 when unknown);
     - a private `period($from, $to)`: start = `CarbonImmutable::parse("{$from} 00:00:00", ClinicClock::timezone())->utc()`; end is the same with the day after `to`, worked out on the date
@@ -198,7 +198,7 @@ breakdown match by hand.
     Read only: no transaction (R6). The service builds no query.
   - Depends: T003, T015
 
-- [ ] T017 [US1] Create `app/Modules/Reports/Http/Resources/MoneyCollectedResource.php`, `app/Modules/Reports/Http/Controllers/ReportController.php`, and the route in `app/Modules/Reports/routes/api.php`
+- [X] T017 [US1] Create `app/Modules/Reports/Http/Resources/MoneyCollectedResource.php`, `app/Modules/Reports/Http/Controllers/ReportController.php`, and the route in `app/Modules/Reports/routes/api.php`
   - Scope: the Resource wraps the service's array in the contract's `MoneyCollected` shape. Controller action `moneyCollected(ReportRequest $request)` → `MoneyCollectedResource::make($this->reports->moneyCollected($request->from(), $request->to(), $request->doctorId()))`, and nothing else.
     Route: `GET /reports/money-collected`, name `reports.money-collected`.
   - Verify: `docker compose exec app php artisan test --filter="MoneyCollectedReportTest|ClinicDayBoundaryTest|ReportValidationTest|MoneyExactnessReportTest"` → pass.
