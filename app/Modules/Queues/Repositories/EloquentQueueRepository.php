@@ -5,9 +5,13 @@ namespace App\Modules\Queues\Repositories;
 use App\Modules\Queues\Models\QueueDay;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class EloquentQueueRepository implements QueueRepository
 {
+    private const RELATIONS = ['patient', 'doctor.user', 'appointment'];
+
     public function lockDay(int $doctorId, string $date): QueueDay
     {
         $now = now();
@@ -48,6 +52,30 @@ class EloquentQueueRepository implements QueueRepository
 
     public function find(int $id): ?QueueEntry
     {
-        return QueueEntry::query()->with(['patient', 'doctor.user', 'appointment'])->find($id);
+        return QueueEntry::query()->with(self::RELATIONS)->find($id);
+    }
+
+    public function forDoctorDay(int $doctorId, string $date): Collection
+    {
+        return QueueEntry::query()
+            ->with(self::RELATIONS)
+            ->where('doctor_id', $doctorId)
+            ->where('date', $date)
+            ->orderBy('order_minute')
+            ->orderBy('queue_number')
+            ->get();
+    }
+
+    public function paginateDay(string $date, ?string $status, int $perPage): LengthAwarePaginator
+    {
+        return QueueEntry::query()
+            ->with(self::RELATIONS)
+            ->where('date', $date)
+            ->when($status !== null, fn ($query) => $query->where('status', $status))
+            ->orderBy('doctor_id')
+            ->orderBy('order_minute')
+            ->orderBy('queue_number')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 }

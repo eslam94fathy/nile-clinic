@@ -5,12 +5,16 @@ namespace App\Modules\Queues\Services;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
+use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Exceptions\QueueConflictException;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
 use App\Modules\Staff\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +30,32 @@ class QueueService
     public function __construct(
         private readonly QueueRepository $queue,
         private readonly AppointmentRepository $appointments,
+        private readonly DoctorService $doctors,
     ) {}
+
+    /**
+     * Today's entries of every doctor (FR-007).
+     *
+     * @return LengthAwarePaginator<int, QueueEntry>
+     */
+    public function list(?string $status, int $perPage): LengthAwarePaginator
+    {
+        return $this->queue->paginateDay(ClinicClock::today(), $status, $perPage);
+    }
+
+    /**
+     * One doctor's whole list for today (FR-007).
+     *
+     * @return Collection<int, QueueEntry>
+     *
+     * @throws DoctorNotFoundException
+     */
+    public function listForDoctor(int $doctorId): Collection
+    {
+        $this->doctors->find($doctorId);
+
+        return $this->queue->forDoctorDay($doctorId, ClinicClock::today());
+    }
 
     /**
      * Check in the patient of a scheduled appointment dated the clinic's today, at any time that

@@ -4,6 +4,8 @@ namespace App\Modules\Queues\Repositories\Contracts;
 
 use App\Modules\Queues\Models\QueueDay;
 use App\Modules\Queues\Models\QueueEntry;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface QueueRepository
 {
@@ -33,4 +35,20 @@ interface QueueRepository
      * With patient, doctor and its account, and appointment loaded.
      */
     public function find(int $id): ?QueueEntry;
+
+    /**
+     * Every entry of the doctor that date in queue order (order time, then queue number; research
+     * R4), with patient, doctor and its account, and appointment loaded.
+     *
+     * @return Collection<int, QueueEntry>
+     */
+    public function forDoctorDay(int $doctorId, string $date): Collection;
+
+    /**
+     * One page of that date's entries, ordered by doctor id, then queue order, with patient, doctor
+     * and its account, and appointment loaded (research R8). Optional status filter.
+     *
+     * @return LengthAwarePaginator<int, QueueEntry>
+     */
+    public function paginateDay(string $date, ?string $status, int $perPage): LengthAwarePaginator;
 }

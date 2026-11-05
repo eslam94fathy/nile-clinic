@@ -337,7 +337,7 @@ list contain exactly the expected entries in queue order.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T023 [US2] Write `tests/Feature/Queues/QueueListTest.php` (US2-1…5, FR-007–FR-009, R4)
+- [X] T023 [US2] Write `tests/Feature/Queues/QueueListTest.php` (US2-1…5, FR-007–FR-009, R4)
   - Scope: clock fixed; receptionist actor. Doctor A: appointments at 09:40, 09:00, 09:20 checked
     in through the API **in that order** (numbers 1, 2, 3). Doctor B: one appointment checked in.
     - `GET /doctors/{A}/queue` → `200`, three entries ordered 09:00, 09:20, 09:40 (numbers 2, 3,
@@ -355,13 +355,13 @@ list contain exactly the expected entries in queue order.
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Add `forDoctorDay` and `paginateDay` to `QueueRepository` / `EloquentQueueRepository` (R4, R8)
+- [X] T024 [US2] Add `forDoctorDay` and `paginateDay` to `QueueRepository` / `EloquentQueueRepository` (R4, R8)
   - Scope: `forDoctorDay(int $doctorId, string $date): Collection<int, QueueEntry>` — ordered
     `order_minute`, `queue_number`; relations `patient`, `doctor.user`, `appointment`.
     `paginateDay(string $date, ?string $status, int $perPage): LengthAwarePaginator` — ordered
     `doctor_id`, `order_minute`, `queue_number`; same relations; `withQueryString()`.
 
-- [ ] T025 [US2] Create `app/Modules/Queues/Http/Requests/ListQueueRequest.php` and add `list()` and `listForDoctor()` to `QueueService`
+- [X] T025 [US2] Create `app/Modules/Queues/Http/Requests/ListQueueRequest.php` and add `list()` and `listForDoctor()` to `QueueService`
   - Scope: request: `authorize()` → `can('viewAny', QueueEntry::class)`; rules `status` nullable
     `in:` `QueueStatus::values()`; `page` nullable integer min 1; `per_page` nullable integer 1–100;
     attributes from `queues::attributes`; `perPage()` default 15. Service (inject `DoctorService`):
@@ -369,7 +369,7 @@ list contain exactly the expected entries in queue order.
     `listForDoctor(int $doctorId)` → `DoctorService::find($doctorId)` (404 for unknown) then
     `forDoctorDay($doctorId, ClinicClock::today())`.
 
-- [ ] T026 [US2] Create `app/Modules/Queues/Http/Controllers/QueueController.php` with `index()` and `forDoctor()`, and the routes
+- [X] T026 [US2] Create `app/Modules/Queues/Http/Controllers/QueueController.php` with `index()` and `forDoctor()`, and the routes
   - Scope: `index(ListQueueRequest)` → `QueueEntryResource::collection(...)`; `forDoctor(int
     $doctor)` → `Gate::authorize('viewAny', QueueEntry::class)` then the collection. Routes:
     `GET /queue` `queues.index`; `GET /doctors/{doctor}/queue` `queues.doctor` with
