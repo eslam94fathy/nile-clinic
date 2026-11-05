@@ -5,6 +5,7 @@ namespace App\Modules\Payments\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Payments\Http\Requests\ListChargesRequest;
 use App\Modules\Payments\Http\Requests\RecordPaymentRequest;
+use App\Modules\Payments\Http\Requests\SetDiscountRequest;
 use App\Modules\Payments\Http\Resources\ChargeResource;
 use App\Modules\Payments\Http\Resources\ChargeSummaryResource;
 use App\Modules\Payments\Models\Charge;
@@ -40,5 +41,10 @@ class ChargeController extends Controller
         return ChargeResource::make($this->charges->pay($request->user(), $charge, $request->amount(), $request->paymentMethod()))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function discount(SetDiscountRequest $request, int $charge): ChargeResource
+    {
+        return ChargeResource::make($this->charges->discount($request->user(), $charge, $request->amount(), $request->reason()));
     }
 }

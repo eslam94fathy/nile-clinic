@@ -429,7 +429,7 @@ shows as paid.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T032 [US4] Write `tests/Feature/Payments/DiscountTest.php` (US4-1…4, FR-011)
+- [X] T032 [US4] Write `tests/Feature/Payments/DiscountTest.php` (US4-1…4, FR-011)
   - Scope: clock fixed; administrator; a `400.00` charge.
     - `150.00` with a reason → `200`, `fee: "400.00"`, `discount: "150.00"`, `amount_due: "250.00"`, `balance: "250.00"`, reason,
       `discounted_by`, `discounted_at`
@@ -442,11 +442,11 @@ shows as paid.
 
 ### Implementation for User Story 4
 
-- [ ] T033 [P] [US4] Create `app/Modules/Payments/Http/Requests/SetDiscountRequest.php`
+- [X] T033 [P] [US4] Create `app/Modules/Payments/Http/Requests/SetDiscountRequest.php`
   - Scope: `authorize()` → `can('discount', Charge::class)`; `amount` `required`, `numeric`, `decimal:0,2`, `min:0`,
     `max:100000`; `reason` `required`, `string`, `max:500`; attributes; typed accessors.
 
-- [ ] T034 [US4] Add `discount()` to `ChargeService`, `discount()` to `ChargeController`, and the route
+- [X] T034 [US4] Add `discount()` to `ChargeService`, `discount()` to `ChargeController`, and the route
   - Scope: service: transaction: `lockActive`; in piastres, amount above fee less paid → `['amount' => discount_too_large]`;
     `update` with `discount`, `discount_reason`, `discounted_by`, `discounted_at now()`, and `status` from `statusFor`. Route:
     `PUT /charges/{charge}/discount` `payments.charges.discount`.

@@ -123,6 +123,37 @@ class ChargeService
     }
 
     /**
+     * Set or replace the discount, up to the fee less what is paid (FR-011). Zero removes it. The fee
+     * itself never changes (FR-005).
+     *
+     * @throws ChargeNotFoundException
+     * @throws ValidationException when cancelled, or the discount is too large
+     */
+    public function discount(User $actor, int $id, string $amount, string $reason): Charge
+    {
+        DB::transaction(function () use ($actor, $id, $amount, $reason) {
+            $charge = $this->lockActive($id);
+            $fee = Money::toPiastres($charge->fee);
+            $paid = Money::toPiastres($charge->amount_paid);
+            $discount = Money::toPiastres($amount);
+
+            if ($discount > $fee - $paid) {
+                throw $this->refusal('amount', 'discount_too_large');
+            }
+
+            $this->charges->update($charge, [
+                'discount' => $amount,
+                'discount_reason' => $reason,
+                'discounted_by' => $actor->id,
+                'discounted_at' => now(),
+                'status' => $this->statusFor($fee - $discount, $paid),
+            ]);
+        }, attempts: 3);
+
+        return $this->find($id);
+    }
+
+    /**
      * @throws ChargeNotFoundException
      * @throws ValidationException when cancelled
      */

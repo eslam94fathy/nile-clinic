@@ -26,5 +26,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::whereNumber('charge')->group(function () {
         Route::get('/charges/{charge}', [ChargeController::class, 'show'])->name('payments.charges.show');
         Route::post('/charges/{charge}/payments', [ChargeController::class, 'pay'])->name('payments.charges.pay');
+        Route::put('/charges/{charge}/discount', [ChargeController::class, 'discount'])->name('payments.charges.discount');
     });
 });
