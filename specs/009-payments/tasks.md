@@ -68,7 +68,7 @@ exceptions, and policies.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write `tests/Unit/Payments/MoneyTest.php` — failing first (SC-004, R2)
+- [X] T002 Write `tests/Unit/Payments/MoneyTest.php` — failing first (SC-004, R2)
   - Scope: `toPiastres`: `'150.00'` → 15000; `'150.5'` → 15050; `'150'` → 15000; `150` → 15000; `150.25` →
     15025; `'0.07'` → 7; `'.5'` → 50; `'5.'` → 500; `'100000'` → 10000000. `fromPiastres`: 15000 →
     `'150.00'`; 7 → `'0.07'`; 0 → `'0.00'`; 5 → `'0.05'`. `due('400.00', '150.00')` → `'250.00'`;
@@ -76,7 +76,7 @@ exceptions, and policies.
     `'0.30'`.
   - Verify: `docker compose exec app php artisan test --filter=MoneyTest` → fails
 
-- [ ] T003 Create `app/Modules/Payments/Support/Money.php` (R2, approved D1)
+- [X] T003 Create `app/Modules/Payments/Support/Money.php` (R2, approved D1)
   - Scope: `final class` with static methods, no state:
     - `toPiastres(string|int|float $amount): int` — `(string) $amount`, split on `.`, fractional part padded
       to two digits; integer arithmetic only, never a float multiply.
@@ -87,7 +87,7 @@ exceptions, and policies.
   - Accept: T002 passes.
   - Depends: T002
 
-- [ ] T004 Create the migrations `database/migrations/<timestamp>_create_doctor_fees_table.php`, `<timestamp>_create_charges_table.php`, `<timestamp>_create_payments_table.php`, `<timestamp>_create_refunds_table.php` (data-model.md, approved D2, D4)
+- [X] T004 Create the migrations `database/migrations/<timestamp>_create_doctor_fees_table.php`, `<timestamp>_create_charges_table.php`, `<timestamp>_create_payments_table.php`, `<timestamp>_create_refunds_table.php` (data-model.md, approved D2, D4)
   - Scope: four `make:migration` calls, in this order; each with a one-line comment pointing to
     `specs/009-payments/data-model.md`. `CHECK`s use `DB::statement('ALTER TABLE … ADD CONSTRAINT …')` after
     `Schema::create`. Exactly:
@@ -121,13 +121,13 @@ exceptions, and policies.
       `timestamp('created_at')->nullable()`; check `refunds_amount_check (amount > 0)`.
   - Verify: `docker compose exec app php artisan migrate` → all four `DONE`.
 
-- [ ] T005 [P] Create `app/Modules/Payments/Enums/ChargeStatus.php` and `app/Modules/Payments/Enums/PaymentMethod.php`
+- [X] T005 [P] Create `app/Modules/Payments/Enums/ChargeStatus.php` and `app/Modules/Payments/Enums/PaymentMethod.php`
   - Scope: `ChargeStatus`: `Unpaid = 'unpaid'`, `PartiallyPaid = 'partially_paid'`, `Paid = 'paid'`,
     `Cancelled = 'cancelled'`. `PaymentMethod`: `Cash = 'cash'`, `Card = 'card'`, `Wallet = 'wallet'`. Each has
     `static values(): list<string>`. `ChargeStatus` docblock: the status follows from the figures, except
     `cancelled`, which is final (research R3).
 
-- [ ] T006 Create the models in `app/Modules/Payments/Models/`: `DoctorFee.php`, `Charge.php`, `Payment.php`, `Refund.php`
+- [X] T006 Create the models in `app/Modules/Payments/Models/`: `DoctorFee.php`, `Charge.php`, `Payment.php`, `Refund.php`
   - Scope (persistence mapping only, as `Queues\Models\QueueEntry`), each with `HasFactory`:
     - `DoctorFee`: fillable `doctor_id`, `amount`, `set_by`; cast `amount` → `decimal:2`; `doctor()`, `setBy()`.
     - `Charge`: fillable every column except `id`, `active_flag`, and the timestamps; casts `date` → `date`,
@@ -140,7 +140,7 @@ exceptions, and policies.
       same casts; `charge()`, `refundedBy()`.
   - Depends: T004, T005
 
-- [ ] T007 [P] Create factories in `database/factories/`: `DoctorFeeFactory.php`, `ChargeFactory.php`, `PaymentFactory.php`, `RefundFactory.php` (synthetic only)
+- [X] T007 [P] Create factories in `database/factories/`: `DoctorFeeFactory.php`, `ChargeFactory.php`, `PaymentFactory.php`, `RefundFactory.php` (synthetic only)
   - Scope: `ChargeFactory` defaults to an `unpaid` charge of `300.00` for a new `QueueEntry::factory()->seen()`,
     copying `doctor_id`, `patient_id`, and `date` from the entry (as `EncounterFactory`), `charged_by` a
     receptionist. States: `forEntry(QueueEntry $e)`; `fee(string $amount)`; `paid()` (`amount_paid` = fee, status
@@ -148,7 +148,7 @@ exceptions, and policies.
     `50.00`, `cash`, reason `Synthetic refund`. Factories never update a charge's figures; a docblock says so.
   - Depends: T006
 
-- [ ] T008 Write `tests/Feature/Payments/PaymentsPersistenceTest.php` (R3, R4, Constitution XI)
+- [X] T008 Write `tests/Feature/Payments/PaymentsPersistenceTest.php` (R3, R4, Constitution XI)
   - Scope: `RefreshDatabase`:
     - directly with `DB::table('charges')->update`: paid above the fee, discount plus paid above the fee, and
       negative paid → `QueryException`; a fee of 0 → `QueryException`
@@ -163,14 +163,14 @@ exceptions, and policies.
   - Verify: `docker compose exec app php artisan test --filter=PaymentsPersistenceTest` → pass
   - Depends: T007
 
-- [ ] T009 Create the module skeleton: `app/Modules/Payments/Providers/PaymentsServiceProvider.php`, `app/Modules/Payments/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T009 Create the module skeleton: `app/Modules/Payments/Providers/PaymentsServiceProvider.php`, `app/Modules/Payments/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: provider mirrors `EncountersServiceProvider`, loading routes and the translations namespace
     `payments` (bindings and policies are added as they are created). Routes file: header comment plus an empty
     `Route::middleware('auth:sanctum')->group(...)`. Add `PaymentsServiceProvider::class` after
     `EncountersServiceProvider::class`.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
 
-- [ ] T010 [P] Create the translations `app/Modules/Payments/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T010 [P] Create the translations `app/Modules/Payments/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('payments::messages.<key>')`), en / ar:
     - `charge_not_found`: "No charge was found." / "لم يتم العثور على المطالبة."
     - `visit_not_found`: "No visit was found." / "لم يتم العثور على الزيارة."
@@ -188,11 +188,11 @@ exceptions, and policies.
       "حالة المطالبة"; `status` "status" / "الحالة"; `visit` "visit" / "الزيارة"; `charge` "charge" / "المطالبة".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T011 [P] Create `app/Modules/Payments/Exceptions/ChargeNotFoundException.php` and `VisitNotFoundException.php`
+- [X] T011 [P] Create `app/Modules/Payments/Exceptions/ChargeNotFoundException.php` and `VisitNotFoundException.php`
   - Scope: exactly like `Encounters\Exceptions\VisitNotFoundException`: 404 `{message}` with
     `payments::messages.charge_not_found` and `visit_not_found`; each with an empty `report()`.
 
-- [ ] T012 Write `tests/Feature/Payments/PaymentsPolicyTest.php`, then create `app/Modules/Payments/Policies/DoctorFeePolicy.php` and `ChargePolicy.php` (R9)
+- [X] T012 Write `tests/Feature/Payments/PaymentsPolicyTest.php`, then create `app/Modules/Payments/Policies/DoctorFeePolicy.php` and `ChargePolicy.php` (R9)
   - Scope: class-level abilities only. `DoctorFeePolicy`: `viewAny` → active administrator or receptionist; `set` →
     active administrator. `ChargePolicy`: `viewAny`, `create`, `pay`, `cancel` → active administrator or receptionist;
     `discount`, `refund` → active administrator. Test: every role (active and inactive) × every ability, as
@@ -200,7 +200,7 @@ exceptions, and policies.
   - Verify: `--filter=PaymentsPolicyTest` → fails before the policies exist, passes after.
   - Depends: T006, T009
 
-- [ ] T013 Run the Queues, Encounters, and Doctors suites
+- [X] T013 Run the Queues, Encounters, and Doctors suites
   - Verify: `docker compose exec app php artisan test tests/Feature/Queues tests/Feature/Encounters tests/Feature/Doctors tests/Feature/Localization` → all pass unchanged.
   - Depends: T009
 
