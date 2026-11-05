@@ -13,4 +13,5 @@ return [
     'nobody_waiting' => 'لا يوجد أحد في الانتظار.',
     'no_current_visit' => 'لا يوجد مريض مع الطبيب.',
     'patient_with_another_doctor' => 'هذا المريض مع طبيب آخر.',
+    'has_active_charge' => 'لهذه الزيارة مطالبة نشطة. ألغِ المطالبة أولًا.',
 ];

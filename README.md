@@ -194,6 +194,27 @@ Every endpoint, field, and response is described in
 After pulling this feature, run `docker compose build app` and `docker compose up -d app`: the image
 gained a PHP setting that keeps call arguments out of stack traces.
 
+## Payments
+
+This records money handled at the clinic; it moves none, and no card details are stored. Doctors have no
+access. Administrators set a doctor's consultation fee at `PUT /api/v1/doctors/{doctor}/fee`, and
+receptionists read fees at `GET /api/v1/fees` and `GET /api/v1/doctors/{doctor}/fee`. Reception sees a date's
+visits and what is owed at `GET /api/v1/visits?date=…`, charges a visit at `POST /api/v1/visits/{visit}/charge`,
+records money at `POST /api/v1/charges/{charge}/payments` (`cash`, `card`, or `wallet`), finds charges at
+`GET /api/v1/charges`, and cancels one with no money held at `POST /api/v1/charges/{charge}/cancel`. Only
+administrators discount at `PUT /api/v1/charges/{charge}/discount` and refund at
+`POST /api/v1/charges/{charge}/refunds`.
+
+- A charge covers the doctor's fee at that moment and keeps it, whatever happens to the fee later.
+- A visit has at most one active charge. Paying never affects the queue or medical records.
+- Payments and refunds cannot be changed or deleted. A charge takes several payments, up to what is owed.
+- A check-in cannot be undone while its visit has an active charge; cancel the charge first.
+- Amounts are in Egyptian pounds, returned as strings such as `"150.00"`, and accepted as a string or number
+  with at most two decimals.
+
+Every endpoint, field, and response is described in
+[specs/009-payments/contracts/payments.openapi.yaml](specs/009-payments/contracts/payments.openapi.yaml).
+
 ## Daily use
 
 ```sh

@@ -1,0 +1,492 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Payments
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 009. All responses are JSON, and field names and structure are
+    identical in every locale; only `message` texts change with Accept-Language (en, ar; fallback en).
+    Statuses and methods are fixed English identifiers. Money is in Egyptian pounds: returned as a string
+    with two decimals, accepted as a JSON number or string with at most two decimals. `date` is the
+    clinic's date (Africa/Cairo); `*_at` values are ISO 8601 UTC instants. Every endpoint requires
+    `Authorization: Bearer <token>` (feature 002) and is for active administrators and receptionists,
+    except where a summary says administrators only. Doctors get 403 on every endpoint. Feature 007's
+    `DELETE /queue/{entry}` also returns 422 `has_active_charge` while the visit has an active charge.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /fees:
+    get:
+      operationId: listFees
+      summary: Every doctor with their current fee, by account name (FR-001)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page. `amount` is null for a doctor with no fee.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/DoctorFee' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/{doctor}/fee:
+    parameters:
+      - { in: path, name: doctor, required: true, schema: { type: integer } }
+    get:
+      operationId: getFee
+      summary: One doctor's current fee (FR-001)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/FeeOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: setFee
+      summary: Set or change a doctor's fee (FR-001, FR-002) — administrators only
+      description: Applies to later charges; existing charges keep the amount they were charged at.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { $ref: '#/components/schemas/AmountInput' }
+            example: { amount: '350.00' }
+      responses:
+        '200': { $ref: '#/components/responses/FeeOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /visits:
+    get:
+      operationId: listVisitCharges
+      summary: A date's visits with their charge status and balance (FR-016)
+      description: Left visits appear only if they have an active charge. `none` means no active charge.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - { in: query, name: date, required: true, schema: { type: string, format: date } }
+        - { in: query, name: doctor_id, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: charge_status, required: false, schema: { type: string, enum: [none, unpaid, partially_paid, paid] } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page, by doctor, then queue order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/VisitCharge' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /visits/{visit}/charge:
+    parameters:
+      - { in: path, name: visit, required: true, description: 'The queue entry id (feature 007).', schema: { type: integer } }
+    post:
+      operationId: chargeVisit
+      summary: Charge a visit at the doctor's current fee (FR-003–FR-006)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '201': { $ref: '#/components/responses/ChargeCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: '`visit_left`, `already_charged`, or `no_fee` on `visit`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /charges:
+    get:
+      operationId: listCharges
+      summary: Charges for a date range, newest first (FR-017)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - { in: query, name: from, required: true, schema: { type: string, format: date } }
+        - { in: query, name: to, required: true, description: 'At most 92 days including both ends.', schema: { type: string, format: date } }
+        - { in: query, name: patient_id, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: doctor_id, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: status, required: false, schema: { $ref: '#/components/schemas/ChargeStatus' } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page. No reasons, payments, or refunds.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ChargeSummary' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /charges/{charge}:
+    parameters:
+      - $ref: '#/components/parameters/ChargeId'
+    get:
+      operationId: showCharge
+      summary: One charge with every payment and refund (FR-018)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/ChargeOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /charges/{charge}/payments:
+    parameters:
+      - $ref: '#/components/parameters/ChargeId'
+    post:
+      operationId: recordPayment
+      summary: Record money received (FR-008–FR-010)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, method]
+              properties:
+                amount: { $ref: '#/components/schemas/AmountInput' }
+                method: { $ref: '#/components/schemas/PaymentMethod' }
+            example: { amount: '150.00', method: cash }
+      responses:
+        '201': { $ref: '#/components/responses/ChargeCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, `above_balance` on `amount`, or `charge_cancelled` on `charge`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /charges/{charge}/refunds:
+    parameters:
+      - $ref: '#/components/parameters/ChargeId'
+    post:
+      operationId: recordRefund
+      summary: Record money returned (FR-015) — administrators only
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, method, reason]
+              properties:
+                amount: { $ref: '#/components/schemas/AmountInput' }
+                method: { $ref: '#/components/schemas/PaymentMethod' }
+                reason: { type: string, maxLength: 500, description: 'Do not enter medical details.' }
+            example: { amount: '50.00', method: cash, reason: Synthetic overpayment }
+      responses:
+        '201': { $ref: '#/components/responses/ChargeCreated' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, `above_paid` on `amount`, or `charge_cancelled` on `charge`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /charges/{charge}/discount:
+    parameters:
+      - $ref: '#/components/parameters/ChargeId'
+    put:
+      operationId: setDiscount
+      summary: Set or replace a charge's discount (FR-011) — administrators only
+      description: The original fee stays visible. Sending 0 removes a discount.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, reason]
+              properties:
+                amount: { oneOf: [{ type: number, minimum: 0, maximum: 100000 }, { type: string }], description: 'At most two decimals.' }
+                reason: { type: string, maxLength: 500, description: 'Do not enter medical details.' }
+            example: { amount: '100.00', reason: Synthetic hardship discount }
+      responses:
+        '200': { $ref: '#/components/responses/ChargeOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, `discount_too_large` on `amount`, or `charge_cancelled` on `charge`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /charges/{charge}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/ChargeId'
+    post:
+      operationId: cancelCharge
+      summary: Cancel a charge with no money held (FR-013)
+      description: It stays on record, and the visit can be charged again.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 500, description: 'Do not enter medical details.' }
+            example: { reason: Synthetic mistaken charge }
+      responses:
+        '200': { $ref: '#/components/responses/ChargeOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, `money_held`, or `charge_cancelled` on `charge`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      schema: { type: string, enum: [en, ar], default: en }
+    ChargeId:
+      in: path
+      name: charge
+      required: true
+      schema: { type: integer }
+    Page:
+      in: query
+      name: page
+      required: false
+      schema: { type: integer, minimum: 1 }
+    PerPage:
+      in: query
+      name: per_page
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+
+  responses:
+    FeeOk:
+      description: The doctor and their current fee.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/DoctorFee' }
+    ChargeOk:
+      description: The full charge.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/Charge' }
+    ChargeCreated:
+      description: The full charge after the change.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/Charge' }
+    Unauthenticated:
+      description: Missing or invalid token, or a deactivated account.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: The role may not do this.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    NotFound:
+      description: No such doctor, visit, or charge.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+
+  schemas:
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+    Money:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      example: '350.00'
+    AmountInput:
+      description: Above 0 and at most 100000, with at most two decimals.
+      oneOf:
+        - { type: number, exclusiveMinimum: 0, maximum: 100000 }
+        - { type: string }
+    ChargeStatus:
+      type: string
+      enum: [unpaid, partially_paid, paid, cancelled]
+    PaymentMethod:
+      type: string
+      enum: [cash, card, wallet]
+    StaffRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    DoctorRef:
+      type: object
+      required: [id, name, title]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: string }
+    PatientRef:
+      type: object
+      required: [id, full_name, phone]
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        phone: { type: string }
+    DoctorFee:
+      type: object
+      required: [doctor, amount, set_at, set_by]
+      properties:
+        doctor: { $ref: '#/components/schemas/DoctorRef' }
+        amount: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
+        set_at: { type: [string, 'null'], format: date-time }
+        set_by: { oneOf: [{ $ref: '#/components/schemas/StaffRef' }, { type: 'null' }] }
+    VisitCharge:
+      type: object
+      required: [id, date, status, walk_in, doctor, patient, charge_status, charge_id, balance]
+      properties:
+        id: { type: integer, description: The queue entry id. }
+        date: { type: string, format: date }
+        status: { type: string, enum: [waiting, with_doctor, seen, left] }
+        walk_in: { type: boolean }
+        doctor: { $ref: '#/components/schemas/DoctorRef' }
+        patient: { $ref: '#/components/schemas/PatientRef' }
+        charge_status: { type: string, enum: [none, unpaid, partially_paid, paid] }
+        charge_id: { type: [integer, 'null'] }
+        balance: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
+    ChargeSummary:
+      type: object
+      required: [id, visit_id, status, date, doctor, patient, fee, discount, amount_due, amount_paid, balance, charged_at]
+      properties:
+        id: { type: integer }
+        visit_id: { type: [integer, 'null'], description: Null only for a cancelled charge whose check-in was undone. }
+        status: { $ref: '#/components/schemas/ChargeStatus' }
+        date: { type: string, format: date }
+        doctor: { $ref: '#/components/schemas/DoctorRef' }
+        patient: { $ref: '#/components/schemas/PatientRef' }
+        fee: { $ref: '#/components/schemas/Money' }
+        discount: { $ref: '#/components/schemas/Money' }
+        amount_due: { $ref: '#/components/schemas/Money' }
+        amount_paid: { $ref: '#/components/schemas/Money' }
+        balance: { $ref: '#/components/schemas/Money' }
+        charged_at: { type: string, format: date-time }
+    Payment:
+      type: object
+      required: [id, amount, method, received_by, received_at]
+      properties:
+        id: { type: integer }
+        amount: { $ref: '#/components/schemas/Money' }
+        method: { $ref: '#/components/schemas/PaymentMethod' }
+        received_by: { $ref: '#/components/schemas/StaffRef' }
+        received_at: { type: string, format: date-time }
+    Refund:
+      type: object
+      required: [id, amount, method, reason, refunded_by, refunded_at]
+      properties:
+        id: { type: integer }
+        amount: { $ref: '#/components/schemas/Money' }
+        method: { $ref: '#/components/schemas/PaymentMethod' }
+        reason: { type: string }
+        refunded_by: { $ref: '#/components/schemas/StaffRef' }
+        refunded_at: { type: string, format: date-time }
+    Charge:
+      allOf:
+        - $ref: '#/components/schemas/ChargeSummary'
+        - type: object
+          required: [charged_by, discount_reason, discounted_by, discounted_at, cancel_reason, cancelled_by, cancelled_at, payments, refunds]
+          properties:
+            charged_by: { $ref: '#/components/schemas/StaffRef' }
+            discount_reason: { type: [string, 'null'] }
+            discounted_by: { oneOf: [{ $ref: '#/components/schemas/StaffRef' }, { type: 'null' }] }
+            discounted_at: { type: [string, 'null'], format: date-time }
+            cancel_reason: { type: [string, 'null'] }
+            cancelled_by: { oneOf: [{ $ref: '#/components/schemas/StaffRef' }, { type: 'null' }] }
+            cancelled_at: { type: [string, 'null'], format: date-time }
+            payments: { type: array, items: { $ref: '#/components/schemas/Payment' } }
+            refunds: { type: array, items: { $ref: '#/components/schemas/Refund' } }

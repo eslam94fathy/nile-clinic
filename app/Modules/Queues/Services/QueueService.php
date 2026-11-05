@@ -14,6 +14,7 @@ use App\Modules\Queues\Exceptions\QueueConflictException;
 use App\Modules\Queues\Exceptions\QueueEntryNotFoundException;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
+use App\Modules\Queues\Repositories\Contracts\VisitChargeRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
 use App\Modules\Staff\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -36,6 +37,7 @@ class QueueService
         private readonly DoctorService $doctors,
         private readonly DoctorRepository $doctorRecords,
         private readonly PatientRepository $patients,
+        private readonly VisitChargeRepository $visitCharges,
     ) {}
 
     /**
@@ -183,7 +185,7 @@ class QueueService
      * again. The queue day's last number is unchanged, so the number is not reused (FR-003, FR-014).
      *
      * @throws QueueEntryNotFoundException
-     * @throws ValidationException when not waiting, or a walk-in
+     * @throws ValidationException when not waiting, a walk-in, or it has an active charge (feature 009)
      */
     public function undo(int $id): void
     {
@@ -191,6 +193,10 @@ class QueueService
 
         DB::transaction(function () use ($id, $current) {
             $entry = $this->lockWaiting($id, $current);
+
+            if ($this->visitCharges->hasActiveCharge($entry->id)) {
+                throw ValidationException::withMessages(['entry' => __('queues::messages.has_active_charge')]);
+            }
 
             if ($entry->appointment_id === null) {
                 throw $this->notChangeable();
