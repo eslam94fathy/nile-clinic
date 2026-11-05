@@ -12,6 +12,7 @@
  */
 
 use App\Modules\Queues\Exceptions\QueueConflictException;
+use App\Modules\Queues\Services\DoctorQueueService;
 use App\Modules\Queues\Services\QueueService;
 use App\Modules\Staff\Models\User;
 use Illuminate\Contracts\Console\Kernel;
@@ -34,6 +35,7 @@ $actor = User::query()->findOrFail((int) $actorId);
 
 $run = match ($action) {
     'check-in' => fn () => $app->make(QueueService::class)->checkIn($actor, (int) $targetId),
+    'call-next' => fn () => $app->make(DoctorQueueService::class)->callNext($actor),
     default => throw new InvalidArgumentException("Unknown action: {$action}"),
 };
 

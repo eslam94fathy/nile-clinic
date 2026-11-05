@@ -51,4 +51,25 @@ interface QueueRepository
      * @return LengthAwarePaginator<int, QueueEntry>
      */
     public function paginateDay(string $date, ?string $status, int $perPage): LengthAwarePaginator;
+
+    /**
+     * The doctor's entry that is with the doctor that date, locked. Call only with the queue day
+     * locked.
+     */
+    public function withDoctor(int $doctorId, string $date): ?QueueEntry;
+
+    /**
+     * The doctor's waiting entries that date in queue order, locked. Call only with the queue day
+     * locked.
+     *
+     * @return Collection<int, QueueEntry>
+     */
+    public function waitingInOrder(int $doctorId, string $date): Collection;
+
+    /**
+     * Whether the patient is with any doctor that date. A plain read: call only with the queue day
+     * and the patient row locked; the unique index on (patient, date, with doctor) is the backstop
+     * (research R5).
+     */
+    public function patientWithDoctor(int $patientId, string $date): bool;
 }

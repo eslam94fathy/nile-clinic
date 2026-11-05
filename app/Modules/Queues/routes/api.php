@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Queues\Http\Controllers\CheckInController;
+use App\Modules\Queues\Http\Controllers\OwnQueueController;
 use App\Modules\Queues\Http\Controllers\QueueController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/queue', [QueueController::class, 'index'])->name('queues.index');
+
+    // Doctors act on their own list and never send an entry id (research R1).
+    Route::get('/doctors/me/queue', [OwnQueueController::class, 'index'])->name('queues.me.index');
+    Route::post('/doctors/me/queue/call-next', [OwnQueueController::class, 'callNext'])->name('queues.me.call-next');
+    Route::post('/doctors/me/queue/finish', [OwnQueueController::class, 'finish'])->name('queues.me.finish');
 
     Route::whereNumber('doctor')->group(function () {
         Route::get('/doctors/{doctor}/queue', [QueueController::class, 'forDoctor'])->name('queues.doctor');

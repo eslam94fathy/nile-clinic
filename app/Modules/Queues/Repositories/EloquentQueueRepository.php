@@ -2,6 +2,7 @@
 
 namespace App\Modules\Queues\Repositories;
 
+use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueDay;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
@@ -77,5 +78,36 @@ class EloquentQueueRepository implements QueueRepository
             ->orderBy('queue_number')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    public function withDoctor(int $doctorId, string $date): ?QueueEntry
+    {
+        return QueueEntry::query()
+            ->where('doctor_id', $doctorId)
+            ->where('date', $date)
+            ->where('status', QueueStatus::WithDoctor)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    public function waitingInOrder(int $doctorId, string $date): Collection
+    {
+        return QueueEntry::query()
+            ->where('doctor_id', $doctorId)
+            ->where('date', $date)
+            ->where('status', QueueStatus::Waiting)
+            ->orderBy('order_minute')
+            ->orderBy('queue_number')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    public function patientWithDoctor(int $patientId, string $date): bool
+    {
+        return QueueEntry::query()
+            ->where('patient_id', $patientId)
+            ->where('date', $date)
+            ->where('status', QueueStatus::WithDoctor)
+            ->exists();
     }
 }

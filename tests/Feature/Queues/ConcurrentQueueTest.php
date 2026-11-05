@@ -5,6 +5,7 @@ namespace Tests\Feature\Queues;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Doctors\Models\Doctor;
+use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueDay;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -74,6 +75,30 @@ class ConcurrentQueueTest extends TestCase
         }
 
         $this->assertSame(1, QueueEntry::query()->count());
+    }
+
+    public function test_simultaneous_calls_of_one_doctor_call_one_patient(): void
+    {
+        $doctor = Doctor::factory()->create();
+        QueueDay::query()->create(['doctor_id' => $doctor->id, 'date' => ClinicClock::today(), 'last_number' => 4]);
+
+        // Number 2 is first in queue order, so the numbers alone cannot pick the right patient.
+        $first = null;
+
+        foreach ([1 => 600, 2 => 540, 3 => 560, 4 => 580] as $number => $minute) {
+            $entry = QueueEntry::factory()->number($number)->create(['doctor_id' => $doctor->id, 'order_minute' => $minute]);
+            $first = $number === 2 ? $entry : $first;
+        }
+
+        $results = $this->runAtOnce(array_fill(0, 2, ['call-next', $doctor->user_id, 0]));
+
+        $this->assertCount(1, array_filter($results, fn (array $r) => $r['result'] === 'ok'));
+
+        $refused = array_values(array_filter($results, fn (array $r) => $r['result'] === 'refused'));
+        $this->assertCount(1, $refused);
+        $this->assertSame(__('queues::messages.visit_in_progress'), $refused[0]['errors']['queue'][0]);
+
+        $this->assertSame($first->id, QueueEntry::query()->where('status', QueueStatus::WithDoctor)->sole()->id);
     }
 
     /**

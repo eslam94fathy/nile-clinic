@@ -390,7 +390,7 @@ doctor), finish (seen; appointment completed), call next (the second is with the
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T027 [US3] Write `tests/Feature/Queues/DoctorQueueTest.php` (US3-1…7, FR-010–FR-013, R5)
+- [X] T027 [US3] Write `tests/Feature/Queues/DoctorQueueTest.php` (US3-1…7, FR-010–FR-013, R5)
   - Scope: clock fixed. Doctor D with appointments at 09:20 (patient P1) and 09:00 (P2), checked in
     through the API by a receptionist in that order; then act as `$doctor->user`.
     - own list → `200`, P2 then P1, exactly the `OwnQueueEntry` keys, patient `{id, full_name, sex,
@@ -410,18 +410,18 @@ doctor), finish (seen; appointment completed), call next (the second is with the
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Add `withDoctor`, `waitingInOrder`, and `patientWithDoctor` to `QueueRepository` / `EloquentQueueRepository`
+- [X] T028 [US3] Add `withDoctor`, `waitingInOrder`, and `patientWithDoctor` to `QueueRepository` / `EloquentQueueRepository`
   - Scope (all locking reads, `lockForUpdate()`; docblock: "call only with the queue day locked"):
     `withDoctor(int $doctorId, string $date): ?QueueEntry` — the doctor's `with_doctor` entry;
     `waitingInOrder(int $doctorId, string $date): Collection` — `waiting` entries ordered
     `order_minute`, `queue_number`; `patientWithDoctor(int $patientId, string $date): bool` — any
     `with_doctor` entry of the patient that date (plain `exists()` after the patient row lock).
 
-- [ ] T029 [P] [US3] Create `app/Modules/Queues/Http/Resources/OwnQueueEntryResource.php`
+- [X] T029 [P] [US3] Create `app/Modules/Queues/Http/Resources/OwnQueueEntryResource.php`
   - Scope: the `QueueEntryResource` fields without `doctor`, with `patient` `{id, full_name, sex,
     date_of_birth}` (contract `OwnQueueEntry`).
 
-- [ ] T030 [US3] Create `app/Modules/Queues/Services/DoctorQueueService.php` (R5)
+- [X] T030 [US3] Create `app/Modules/Queues/Services/DoctorQueueService.php` (R5)
   - Scope: inject `QueueRepository`, `AppointmentRepository`, `PatientRepository`, `DoctorService`.
     Each method resolves `$doctorId = DoctorService::findOwn($user)->id` (404 without a profile).
     - `listOwn(User $user)` → `forDoctorDay($doctorId, today)`
@@ -438,7 +438,7 @@ doctor), finish (seen; appointment completed), call next (the second is with the
       `finished_at now()`. Return `find($id)`.
   - Depends: T028
 
-- [ ] T031 [US3] Create `app/Modules/Queues/Http/Controllers/OwnQueueController.php` and the routes
+- [X] T031 [US3] Create `app/Modules/Queues/Http/Controllers/OwnQueueController.php` and the routes
   - Scope: `index`, `callNext`, `finish`, each `Gate::authorize('viewOwn'|'updateOwn',
     QueueEntry::class)` first, returning `OwnQueueEntryResource` (collection for `index`). Routes:
     `GET /doctors/me/queue` `queues.me.index`; `POST /doctors/me/queue/call-next`
@@ -447,7 +447,7 @@ doctor), finish (seen; appointment completed), call next (the second is with the
     `/doctors/me…` routes.
   - Depends: T029, T030
 
-- [ ] T032 [US3] Extend `tests/Feature/Queues/ConcurrentQueueTest.php` with the call-next case and enable `call-next` in `tests/Support/queue-action.php`
+- [X] T032 [US3] Extend `tests/Feature/Queues/ConcurrentQueueTest.php` with the call-next case and enable `call-next` in `tests/Support/queue-action.php`
   - Scope: 4 factory `waiting` entries (numbers 1–4, today, one doctor) and a `QueueDay` row with
     `last_number` 4; 2 processes `call-next` for the doctor's user at the same `startAt` → exactly
     one `ok`, one `refused` with `queue` (`visit_in_progress`); exactly one `with_doctor` entry and
