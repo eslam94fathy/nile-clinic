@@ -4,6 +4,7 @@ namespace Tests\Feature\Staff;
 
 use App\Modules\Staff\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Staff\Concerns\InteractsWithStaffTokens;
@@ -130,6 +131,11 @@ class StaffManagementTest extends TestCase
         $this->assertSame(['Adam', 'Adam', 'Admin Zed', 'Bea'], array_column($response->json('data'), 'name'));
         $this->assertSame([$adamTwo->id, $adamOne->id], array_slice(array_column($response->json('data'), 'id'), 0, 2));
         $this->assertStringNotContainsString('password', $response->getContent());
+    }
+
+    public function test_list_order_has_an_index(): void
+    {
+        $this->assertTrue(Schema::hasIndex('users', 'users_name_index'));
     }
 
     public function test_list_filters_by_role_and_active_status(): void
