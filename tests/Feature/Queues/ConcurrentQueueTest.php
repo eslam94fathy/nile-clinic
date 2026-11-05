@@ -5,6 +5,7 @@ namespace Tests\Feature\Queues;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Doctors\Models\Doctor;
+use App\Modules\Patients\Models\Patient;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueDay;
 use App\Modules\Queues\Models\QueueEntry;
@@ -101,11 +102,24 @@ class ConcurrentQueueTest extends TestCase
         $this->assertSame($first->id, QueueEntry::query()->where('status', QueueStatus::WithDoctor)->sole()->id);
     }
 
+    public function test_simultaneous_walk_ins_of_one_patient_add_one_entry(): void
+    {
+        $doctor = Doctor::factory()->create();
+        $patient = Patient::factory()->create();
+        $receptionist = User::factory()->receptionist()->create();
+
+        $results = $this->runAtOnce(array_fill(0, self::PROCESSES, ['walk-in', $receptionist->id, $patient->id, $doctor->id]));
+
+        $this->assertCount(1, array_filter($results, fn (array $r) => $r['result'] === 'ok'));
+        $this->assertCount(self::PROCESSES - 1, array_filter($results, fn (array $r) => $r['result'] === 'refused'));
+        $this->assertSame(1, QueueEntry::query()->count());
+    }
+
     /**
-     * Start one process per [action, actorId, targetId], all acting at the same moment. Any process
-     * that hit an unexpected error fails the test with its message.
+     * Start one process per [action, actorId, targetId, doctorId?], all acting at the same moment.
+     * Any process that hit an unexpected error fails the test with its message.
      *
-     * @param  list<array{0: string, 1: int, 2: int}>  $actions
+     * @param  list<array{0: string, 1: int, 2: int, 3?: int}>  $actions
      * @return list<array<string, mixed>>
      */
     private function runAtOnce(array $actions): array
@@ -113,11 +127,11 @@ class ConcurrentQueueTest extends TestCase
         $startAt = sprintf('%.6F', microtime(true) + 1.5);
 
         $results = Process::pool(function (Pool $pool) use ($actions, $startAt) {
-            foreach ($actions as [$action, $actorId, $targetId]) {
+            foreach ($actions as $action) {
                 $pool->path(base_path())
                     ->env(['APP_ENV' => 'testing', 'DB_DATABASE' => 'clinic_testing'])
                     ->timeout(60)
-                    ->command([PHP_BINARY, 'tests/Support/queue-action.php', $action, (string) $actorId, (string) $targetId, $startAt]);
+                    ->command([PHP_BINARY, 'tests/Support/queue-action.php', $action[0], (string) $action[1], (string) $action[2], $startAt, (string) ($action[3] ?? 0)]);
             }
         })->start()->wait();
 

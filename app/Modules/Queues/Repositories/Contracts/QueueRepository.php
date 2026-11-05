@@ -72,4 +72,10 @@ interface QueueRepository
      * (research R5).
      */
     public function patientWithDoctor(int $patientId, string $date): bool;
+
+    /**
+     * Whether the patient has a waiting or with-doctor entry with this doctor that date. A plain
+     * read: call only with the queue day locked, before any other plain read in the transaction.
+     */
+    public function patientActive(int $doctorId, int $patientId, string $date): bool;
 }

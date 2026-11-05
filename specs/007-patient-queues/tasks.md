@@ -468,7 +468,7 @@ waiting with the next number, `walk_in: true`, and the doctor's slots are unchan
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T033 [US4] Write `tests/Feature/Queues/WalkInTest.php` (US4-1…3, FR-006, R6)
+- [X] T033 [US4] Write `tests/Feature/Queues/WalkInTest.php` (US4-1…3, FR-006, R6)
   - Scope: clock fixed at 09:50; doctor with `withPeriod('sunday', '09:00', '11:00')`;
     appointments at 09:40 and 10:00 checked in through the API (numbers 1, 2).
     - walk-in `{patient_id, doctor_id}` → `201`, number 3, `walk_in: true`, `appointment: null`,
@@ -486,22 +486,24 @@ waiting with the next number, `walk_in: true`, and the doctor's slots are unchan
 
 ### Implementation for User Story 4
 
-- [ ] T034 [US4] Add `patientActive` to `QueueRepository` / `EloquentQueueRepository`
+- [X] T034 [US4] Add `patientActive` to `QueueRepository` / `EloquentQueueRepository`
   - Scope: `patientActive(int $doctorId, int $patientId, string $date): bool` — a `waiting` or
     `with_doctor` entry of the patient with that doctor that date.
 
-- [ ] T035 [US4] Create `app/Modules/Queues/Http/Requests/AddWalkInRequest.php` and add `addWalkIn()` to `QueueService`
+- [X] T035 [US4] Create `app/Modules/Queues/Http/Requests/AddWalkInRequest.php` and add `addWalkIn()` to `QueueService`
   - Scope: request: `authorize()` → `can('create', QueueEntry::class)`; rules `patient_id`,
     `doctor_id` required integer min 1; attributes from `queues::attributes`. Service (inject
-    `PatientRepository`, `DoctorRepository`): transaction, `attempts: 3`: doctor
-    `findById` (plain; null → `ValidationException(['doctor_id' => doctor_not_found])`; inactive
-    → `doctor_inactive`); `lockDay`; `PatientRepository::lockById` (null → `patient_not_found` on
+    `PatientRepository`, `DoctorRepository`): doctor `findById` **before the transaction** (a plain
+    read inside it would fix the read view before the locks, so `patientActive` could miss a
+    committed entry: 8 simultaneous walk-ins made 8 entries; R3); null → `ValidationException(['doctor_id'
+    => doctor_not_found])`; inactive → `doctor_inactive`. Transaction, `attempts: 3`: `lockDay`;
+    `PatientRepository::lockById` (null → `patient_not_found` on
     `patient_id`); `patientActive` → `already_in_queue`; create the entry with `appointment_id`
     null, `order_minute` = `ClinicClock::now()` hour × 60 + minute, the next number, `waiting`,
     `arrived_at`, `checked_in_by`. Return `find($id)`.
   - Depends: T034
 
-- [ ] T036 [US4] Add `walkIn()` to `QueueController` and the route
+- [X] T036 [US4] Add `walkIn()` to `QueueController` and the route
   - Scope: `walkIn(AddWalkInRequest)` → `QueueEntryResource` with status `201`. Route:
     `POST /queue/walk-ins` `queues.walk-ins`.
   - Accept: T033 passes.

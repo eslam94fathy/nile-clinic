@@ -6,7 +6,9 @@ use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
+use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Doctors\Services\DoctorService;
+use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Exceptions\QueueConflictException;
 use App\Modules\Queues\Models\QueueEntry;
@@ -31,6 +33,8 @@ class QueueService
         private readonly QueueRepository $queue,
         private readonly AppointmentRepository $appointments,
         private readonly DoctorService $doctors,
+        private readonly DoctorRepository $doctorRecords,
+        private readonly PatientRepository $patients,
     ) {}
 
     /**
@@ -97,6 +101,55 @@ class QueueService
         } catch (UniqueConstraintViolationException) {
             throw new QueueConflictException('already_checked_in');
         }
+
+        return $this->queue->find($entry->id);
+    }
+
+    /**
+     * Add a registered patient without an appointment to an active doctor's list today; no slot is
+     * taken (FR-006, research R6). The doctor is read before the transaction: a plain read inside
+     * it would fix the read view before the locks, and patientActive would miss an entry committed
+     * by the previous lock holder (research R3).
+     *
+     * @throws ValidationException unknown patient, unknown or inactive doctor, or already in the list
+     */
+    public function addWalkIn(User $actor, int $patientId, int $doctorId): QueueEntry
+    {
+        $doctor = $this->doctorRecords->findById($doctorId) ?? throw ValidationException::withMessages([
+            'doctor_id' => __('queues::messages.doctor_not_found'),
+        ]);
+
+        if (! $doctor->isActive()) {
+            throw ValidationException::withMessages(['doctor_id' => __('queues::messages.doctor_inactive')]);
+        }
+
+        $today = ClinicClock::today();
+
+        $entry = DB::transaction(function () use ($actor, $patientId, $doctorId, $today) {
+            $day = $this->queue->lockDay($doctorId, $today);
+
+            $this->patients->lockById($patientId) ?? throw ValidationException::withMessages([
+                'patient_id' => __('queues::messages.patient_not_found'),
+            ]);
+
+            if ($this->queue->patientActive($doctorId, $patientId, $today)) {
+                throw ValidationException::withMessages(['patient_id' => __('queues::messages.already_in_queue')]);
+            }
+
+            $now = ClinicClock::now();
+
+            return $this->queue->create([
+                'doctor_id' => $doctorId,
+                'patient_id' => $patientId,
+                'appointment_id' => null,
+                'date' => $today,
+                'queue_number' => $this->queue->takeNumber($day),
+                'order_minute' => $now->hour * 60 + $now->minute,
+                'status' => QueueStatus::Waiting,
+                'arrived_at' => now(),
+                'checked_in_by' => $actor->id,
+            ]);
+        }, attempts: 3);
 
         return $this->queue->find($entry->id);
     }

@@ -4,9 +4,10 @@
  * Child process for ConcurrentQueueTest (feature 007, research R9): boots the application, waits
  * for a shared start time, runs one queue action, and prints one JSON line.
  *
- * Usage: php tests/Support/queue-action.php action actorId targetId startAt
+ * Usage: php tests/Support/queue-action.php action actorId targetId startAt [doctorId]
  *   check-in   the target is the appointment id
  *   call-next  the actor is the doctor's user; the target is unused
+ *   walk-in    the target is the patient id; doctorId is required
  *
  * Refuses (exit 2) to run against any database but clinic_testing.
  */
@@ -30,12 +31,14 @@ if (DB::connection()->getDatabaseName() !== 'clinic_testing') {
 }
 
 [, $action, $actorId, $targetId, $startAt] = $argv;
+$doctorId = $argv[5] ?? 0;
 
 $actor = User::query()->findOrFail((int) $actorId);
 
 $run = match ($action) {
     'check-in' => fn () => $app->make(QueueService::class)->checkIn($actor, (int) $targetId),
     'call-next' => fn () => $app->make(DoctorQueueService::class)->callNext($actor),
+    'walk-in' => fn () => $app->make(QueueService::class)->addWalkIn($actor, (int) $targetId, (int) $doctorId),
     default => throw new InvalidArgumentException("Unknown action: {$action}"),
 };
 
