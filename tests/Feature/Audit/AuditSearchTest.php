@@ -301,6 +301,13 @@ class AuditSearchTest extends TestCase
             ->assertJsonPath('data.0.subject', null);
     }
 
+    public function test_a_search_with_no_filters_shows_an_empty_object_not_a_list(): void
+    {
+        $this->search();
+
+        $this->assertStringContainsString('"filters":{}', $this->search(['action' => 'audit.searched'])->getContent());
+    }
+
     public function test_a_search_does_not_list_itself(): void
     {
         $this->search(['action' => 'audit.searched'])->assertJsonPath('data', []);

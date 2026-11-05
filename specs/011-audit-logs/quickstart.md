@@ -2,7 +2,7 @@
 
 **Feature**: 011-audit-logs | **Date**: 2026-11-05
 
-Run from the repository root with the development stack up (see `README.md`). Commands are POSIX-shell syntax (Git Bash/WSL/macOS/Linux). Endpoint details:
+Run from the repository root with the development stack up (see `README.md`). Set `B` from the port the stack really publishes (`docker compose port web 80`), since another service may hold `APP_PORT`. Commands are POSIX-shell syntax (Git Bash/WSL/macOS/Linux). Endpoint details:
 [contracts/audit.openapi.yaml](contracts/audit.openapi.yaml); actions and rules: [data-model.md](data-model.md). All data below is synthetic.
 
 ## Q1 — Migrate
@@ -35,7 +35,7 @@ audit "subject_type=charge&subject_id=$C1&action=discount.set"
 audit "subject_type=patient&subject_id=$P1&action=patient.updated"
 ```
 
-Expected: `200`. The discount entry names the administrator, with `discount` from and to, and has `discount_reason` in `fields` but no `PLANTED-REASON`. The patient shows **one** entry, not two, since the second update changed nothing; `phone` is in `fields` and the number appears nowhere.
+Expected: `200`. The discount entry names the administrator, with `discount` from and to, and has `discount_reason` in `fields` but no `PLANTED-REASON`. The patient shows **one** `patient.updated`, not two, since the second update changed nothing; `phone` is in `fields` and the number appears nowhere. The second update still returned the whole record, so it adds one `patient.opened`.
 
 ## Q4 — Refused and failed changes
 

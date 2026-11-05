@@ -480,19 +480,19 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - `git diff --stat --diff-filter=MD 476e76a -- tests/` prints nothing: no earlier test was changed or deleted (SC-006)
   - Depends: T045, T046, T047, T048
 
-- [ ] T050 Measure SC-002 and SC-007 on `clinic_testing` only, and keep the figures for `specs/011-audit-logs/verification.md`
+- [X] T050 Measure SC-002 and SC-007 on `clinic_testing` only, and keep the figures for `specs/011-audit-logs/verification.md`
   - Scope, as feature 010's T036:
     - **SC-002**: in a transaction rolled back afterwards, bulk-insert 5,000,000 synthetic entries, spread over 2 years, 2,000 patients, and 100 staff. Call `AuditSearchService::search`, three runs each: by patient, by record, by `staff_id`, with no filter, with `outcome=refused` alone (rare, and not indexed), and with a date range alone (target under 2 s each).
     - **SC-007**: time 100 patient updates with `AuditTrail` recording, against the same updates with `AuditEntryRepository` bound to a wrapper whose `append` does nothing and whose `search` passes through (target: no more than 100 ms added).
     - Refuse any database but `clinic_testing`; confirm 0 rows after the rollback. A miss is reported, not hidden.
   - Depends: T049
 
-- [ ] T051 Run quickstart Q1–Q9 from `specs/011-audit-logs/quickstart.md` on the development stack
+- [X] T051 Run quickstart Q1–Q9 from `specs/011-audit-logs/quickstart.md` on the development stack
   - Scope: synthetic data only. Record what was run.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T049
 
-- [ ] T052 Record the results in `specs/011-audit-logs/verification.md`
+- [X] T052 Record the results in `specs/011-audit-logs/verification.md`
   - Scope: per Q-step and SC-002/SC-007: date, command, observed output summary, pass/fail; failures reported as failures (Constitution VIII). The Postman collection update is a separate follow-up.
   - Depends: T050, T051
 

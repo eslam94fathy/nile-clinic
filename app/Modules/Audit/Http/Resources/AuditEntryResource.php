@@ -40,7 +40,7 @@ class AuditEntryResource extends JsonResource
                 'fields' => $this->details['fields'],
                 'values' => (object) ($this->details['values'] ?? []),
             ] : null,
-            'filters' => $this->details['filters'] ?? null,
+            'filters' => isset($this->details['filters']) ? (object) $this->details['filters'] : null,
         ];
     }
 }
