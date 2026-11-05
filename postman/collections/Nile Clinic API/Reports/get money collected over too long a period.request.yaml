@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  A period is at most 366 days, including both ends. This one is 367.
+method: GET
+url: '{{base_url}}/reports/money-collected?from=2026-01-01&to=2027-01-02'
+order: 3000
+queryParams:
+  - key: 'from'
+    value: '2026-01-01'
+  - key: 'to'
+    value: '2027-01-02'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 on to', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('to');
+      });
+examples: './.resources/get money collected over too long a period.resources/examples'

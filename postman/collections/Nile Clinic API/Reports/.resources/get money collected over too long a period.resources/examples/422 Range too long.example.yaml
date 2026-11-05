@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/money-collected?from=2026-01-01&to=2027-01-02'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The period cannot be longer than 366 days.","errors":{"to":["The period cannot be longer than 366 days."]}}
+order: 1000

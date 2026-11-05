@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/money-collected?from=2026-11-05&to=2026-11-05&doctor_id=27'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"from":"2026-11-05","to":"2026-11-05","totals":{"received":"300.00","refunded":"300.00","net":"0.00"},"by_method":[{"method":"cash","received":"100.10","refunded":"300.00","net":"-199.90","staff":[{"id":66,"name":"Cecelia Howe","received":"100.10","refunded":"300.00","net":"-199.90"}]},{"method":"card","received":"199.90","refunded":"0.00","net":"199.90","staff":[{"id":66,"name":"Cecelia Howe","received":"199.90","refunded":"0.00","net":"199.90"}]}],"by_day":[{"date":"2026-11-05","received":"300.00","refunded":"300.00","net":"0.00"}]}}
+order: 1000

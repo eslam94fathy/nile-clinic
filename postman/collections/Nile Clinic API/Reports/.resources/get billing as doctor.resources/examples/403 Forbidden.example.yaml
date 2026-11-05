@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/billing?from=2026-11-05&to=2026-11-05'
+  method: GET
+response:
+  statusCode: 403
+  statusText: Forbidden
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"You are not allowed to perform this action."}
+order: 1000

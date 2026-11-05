@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"doctor":{"id":27,"name":"Postman Doctor","title":"Senior Consultant"},"active_charges":1,"fees":"400.00","discounts":"400.00","amount_due":"0.00","amount_paid":"0.00","balance":"0.00","cancelled_charges":2,"uncharged_seen_visits":2}],"links":{"first":"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","last":"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","prev":null,"next":null},"meta":{"current_page":1,"from":1,"last_page":1,"links":[{"url":null,"label":"&laquo; Previous","page":null,"active":false},{"url":"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","label":"1","page":1,"active":true},{"url":null,"label":"Next &raquo;","page":null,"active":false}],"path":"http://localhost:8080/api/v1/reports/billing","per_page":15,"to":1,"total":1},"totals":{"active_charges":1,"fees":"400.00","discounts":"400.00","amount_due":"0.00","amount_paid":"0.00","balance":"0.00","cancelled_charges":2,"uncharged_seen_visits":2}}
+order: 1000

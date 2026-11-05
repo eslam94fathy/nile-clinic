@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Without `doctor_id`, `totals` also has `new_patients`, counted on the clinic day each was registered.
+method: GET
+url: '{{base_url}}/reports/activity?from={{encounter_date}}&to={{encounter_date}}'
+order: 8000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with new patients', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().totals.new_patients).to.be.a('number');
+      });
+examples: './.resources/get activity for all doctors.resources/examples'

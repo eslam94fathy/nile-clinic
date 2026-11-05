@@ -1,0 +1,12 @@
+$kind: collection
+name: Reports
+description: |-
+  Read-only summaries over a period of up to 366 days (feature 010). For administrators only; receptionists and
+  doctors get 403 on every report. No report identifies a patient or contains medical content. Money is in Egyptian
+  pounds, returned as strings such as `"150.00"`, and `net` can be negative. Money collected counts on the clinic day
+  it was recorded; billing and activity show records as they stand now.
+
+  Runs after Payments (uses `encounter_date`, `doctor_id`, and `new_doctor_email`). The administrator's `token` is used
+  throughout, so the receptionist's refusal is covered by the automated tests rather than this folder. Contract:
+  `specs/010-reports/contracts/reports.openapi.yaml`.
+order: 8400

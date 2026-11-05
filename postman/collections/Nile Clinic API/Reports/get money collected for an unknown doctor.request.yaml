@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  An unknown doctor is 404 on every report. A known doctor with no activity gives zero totals.
+method: GET
+url: '{{base_url}}/reports/money-collected?from={{encounter_date}}&to={{encounter_date}}&doctor_id=999999999'
+order: 4000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '999999999'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('404 for an unknown doctor', () => pm.response.to.have.status(404));
+examples: './.resources/get money collected for an unknown doctor.resources/examples'
