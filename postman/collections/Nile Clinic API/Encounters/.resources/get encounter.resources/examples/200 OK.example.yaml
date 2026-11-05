@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":3,"visit_id":11,"status":"draft","date":"2026-11-05","doctor":{"id":12,"name":"Meta Weber","title":"Resident"},"patient":{"id":16,"full_name":"\u0623\u062f\u0647\u0645 \u0639\u0628\u062f \u0627\u0644\u0645\u062c\u064a\u062f","sex":"female","date_of_birth":"2009-06-22"},"chief_complaint":"Postman synthetic complaint","examination_findings":null,"diagnosis":null,"treatment_plan":null,"prescriptions":[{"medication":"Postman synthetic medication","dosage":null,"frequency":null,"duration":null,"instructions":null}],"addenda":[],"started_at":"2026-11-05T12:02:03.000000Z","last_saved_at":"2026-11-05T12:02:04.000000Z","finalized_at":null}}
+order: 1000

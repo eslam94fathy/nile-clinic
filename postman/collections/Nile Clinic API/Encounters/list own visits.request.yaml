@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  The doctor's visits that are with the doctor or seen, by date, then queue order, for at most 92
+  days. Optional `record_status` (`none`, `draft`, `finalized`) finds visits still missing a finalized
+  record. Never any clinical content.
+method: GET
+url: '{{base_url}}/doctors/me/visits?from={{encounter_date}}&to={{encounter_date}}'
+order: 13000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'record_status'
+    value: 'finalized'
+    disabled: true
+  - key: 'patient_id'
+    value: '{{patient_id}}'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the record status and no clinical content', () => {
+        pm.response.to.have.status(200);
+        const visit = pm.response.json().data.find((v) => v.id === Number(pm.collectionVariables.get('visit_id')));
+        pm.expect(visit.record_status).to.eql('finalized');
+        pm.expect(visit.encounter_id).to.eql(Number(pm.collectionVariables.get('encounter_id')));
+        pm.expect(pm.response.text()).to.not.include('Postman synthetic');
+      });
+examples: './.resources/list own visits.resources/examples'

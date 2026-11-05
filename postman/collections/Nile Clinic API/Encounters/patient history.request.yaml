@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  A patient's finalized records, newest first. With the patient on the doctor's list today as waiting,
+  with them, or seen: every doctor's. Otherwise only the doctor's own, and none is the same 404 as an
+  unknown patient. Never any clinical content.
+method: GET
+url: '{{base_url}}/doctors/me/patients/:patient/encounters'
+order: 14000
+pathVariables:
+  - key: 'patient'
+    value: '{{patient_id}}'
+    description: 'The patient number'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 date and doctor only', () => {
+        pm.response.to.have.status(200);
+        const item = pm.response.json().data[0];
+        pm.expect(item.id).to.eql(Number(pm.collectionVariables.get('encounter_id')));
+        pm.expect(item).to.have.keys('id', 'date', 'doctor');
+        pm.expect(item.doctor).to.have.keys('id', 'name', 'specialties');
+        pm.expect(pm.response.text()).to.not.include('Postman synthetic');
+      });
+examples: './.resources/patient history.resources/examples'

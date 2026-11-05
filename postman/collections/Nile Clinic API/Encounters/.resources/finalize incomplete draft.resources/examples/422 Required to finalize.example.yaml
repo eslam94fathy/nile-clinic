@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3/finalize'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The diagnosis is required to finalize this record. (and 3 more errors)","errors":{"diagnosis":["The diagnosis is required to finalize this record."],"prescriptions.0.dosage":["The dosage is required to finalize this record."],"prescriptions.0.frequency":["The frequency is required to finalize this record."],"prescriptions.0.duration":["The duration is required to finalize this record."]}}
+order: 1000

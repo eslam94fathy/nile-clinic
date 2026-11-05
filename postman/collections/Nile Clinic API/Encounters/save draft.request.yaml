@@ -1,0 +1,46 @@
+$kind: http-request
+description: |-
+  Replace all of a draft's content; the author only. Every key must be sent, with null or an empty
+  array for what is still empty, so a forgotten field gets 422 rather than erasing content. Text fields
+  up to 10,000 characters; up to 20 prescription lines, each needing a `medication`, with fields up to
+  500 characters. Clinical text is stored as written, in any language. Synthetic text only.
+method: PUT
+url: '{{base_url}}/doctors/me/encounters/:encounter'
+order: 6000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "chief_complaint": "Postman synthetic complaint",
+      "examination_findings": null,
+      "diagnosis": null,
+      "treatment_plan": null,
+      "prescriptions": [
+        {
+          "medication": "Postman synthetic medication"
+        }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 still a draft, with unset line fields null', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('draft');
+        pm.expect(data.chief_complaint).to.eql('Postman synthetic complaint');
+        pm.expect(data.prescriptions[0]).to.eql({ medication: 'Postman synthetic medication', dosage: null, frequency: null, duration: null, instructions: null });
+      });
+examples: './.resources/save draft.resources/examples'

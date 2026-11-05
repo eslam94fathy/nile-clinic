@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/visits/11/encounter'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This visit already has a medical record.","errors":{"visit":["This visit already has a medical record."]}}
+order: 1000

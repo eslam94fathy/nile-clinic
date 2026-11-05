@@ -1,0 +1,19 @@
+$kind: collection
+name: Encounters
+description: |-
+  Medical records of visits (feature 008). Doctors only: administrators and receptionists get 403.
+  One record per visit, for booked patients and walk-ins alike. A draft is visible only to its
+  author; a finalized record cannot be changed, only corrected with addenda. Clinical content is
+  returned only when one record is opened, never in a list. Anything a doctor may not read is the
+  same 404 as something that does not exist.
+
+  This folder signs in as the doctor from "Doctors/create doctor account" and sends `doctor_token`
+  by default; the requests that act as the administrator set their own auth. Runs after Appointments
+  (uses `patient_id`, `doctor_id`, `new_doctor_email`). Records are never deleted. Use synthetic text
+  only. Contract: `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+order: 8200

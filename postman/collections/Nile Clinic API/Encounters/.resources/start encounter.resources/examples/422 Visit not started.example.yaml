@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/visits/11/encounter'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"A record can start only when the patient is with the doctor or has been seen.","errors":{"visit":["A record can start only when the patient is with the doctor or has been seen."]}}
+order: 2000

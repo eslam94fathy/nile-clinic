@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  A visit has at most one record, also under simultaneous requests: 422 `already_started` on `visit`.
+method: POST
+url: '{{base_url}}/doctors/me/visits/:visit/encounter'
+order: 5000
+pathVariables:
+  - key: 'visit'
+    value: '{{visit_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 already started', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('visit');
+      });
+examples: './.resources/start encounter again.resources/examples'

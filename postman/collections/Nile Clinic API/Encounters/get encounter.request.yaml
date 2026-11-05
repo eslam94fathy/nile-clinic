@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Open one record, the only place clinical content is returned. A doctor reads their own at any
+  time, and another doctor's finalized records only while the patient is on their list today as waiting,
+  with them, or seen. Anything else is the same 404 as an unknown id.
+method: GET
+url: '{{base_url}}/doctors/me/encounters/:encounter'
+order: 7000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with the clinical content', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.chief_complaint).to.eql('Postman synthetic complaint');
+      });
+examples: './.resources/get encounter.resources/examples'

@@ -1,0 +1,44 @@
+$kind: http-request
+description: |-
+  A finalized record cannot be overwritten or finalized again: 422 `not_editable` on `encounter`.
+method: PUT
+url: '{{base_url}}/doctors/me/encounters/:encounter'
+order: 11000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "chief_complaint": "Postman changed complaint",
+      "examination_findings": "Postman synthetic findings",
+      "diagnosis": "Postman synthetic diagnosis",
+      "treatment_plan": "Postman synthetic plan",
+      "prescriptions": [
+        {
+          "medication": "Postman synthetic medication",
+          "dosage": "1 tablet",
+          "frequency": "Twice a day",
+          "duration": "5 days",
+          "instructions": "After meals"
+        }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 not editable', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('encounter');
+      });
+examples: './.resources/save finalized encounter.resources/examples'

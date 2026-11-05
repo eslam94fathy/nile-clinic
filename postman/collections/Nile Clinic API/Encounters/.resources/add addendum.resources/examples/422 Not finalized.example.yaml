@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3/addenda'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"Only a finalized medical record can have addenda.","errors":{"encounter":["Only a finalized medical record can have addenda."]}}
+order: 2000

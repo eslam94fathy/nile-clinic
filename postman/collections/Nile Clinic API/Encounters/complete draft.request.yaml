@@ -1,0 +1,46 @@
+$kind: http-request
+description: |-
+  Fill in everything finalizing needs. Instructions stay optional.
+method: PUT
+url: '{{base_url}}/doctors/me/encounters/:encounter'
+order: 9000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "chief_complaint": "Postman synthetic complaint",
+      "examination_findings": "Postman synthetic findings",
+      "diagnosis": "Postman synthetic diagnosis",
+      "treatment_plan": "Postman synthetic plan",
+      "prescriptions": [
+        {
+          "medication": "Postman synthetic medication",
+          "dosage": "1 tablet",
+          "frequency": "Twice a day",
+          "duration": "5 days",
+          "instructions": "After meals"
+        }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 complete draft', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('draft');
+        pm.expect(data.diagnosis).to.eql('Postman synthetic diagnosis');
+      });
+examples: './.resources/complete draft.resources/examples'

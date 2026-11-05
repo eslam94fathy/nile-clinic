@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in.
+method: POST
+url: '{{base_url}}/auth/sign-out'
+order: 17000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('204 signed out', () => {
+        pm.response.to.have.status(204);
+        pm.collectionVariables.set('doctor_token', '');
+      });
+examples: './.resources/sign out as doctor.resources/examples'

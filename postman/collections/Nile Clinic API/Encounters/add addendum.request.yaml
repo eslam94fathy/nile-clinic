@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  Correct a finalized record; the author only. `text` is required, up to 10,000 characters. The
+  original content stays unchanged, and an addendum cannot be changed or deleted. A draft is 422
+  `not_finalized`; another doctor who may read the record gets 403.
+method: POST
+url: '{{base_url}}/doctors/me/encounters/:encounter/addenda'
+order: 12000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "text": "Postman synthetic correction"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 addendum', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data).to.have.keys('id', 'text', 'created_at');
+        pm.expect(data.text).to.eql('Postman synthetic correction');
+      });
+examples: './.resources/add addendum.resources/examples'

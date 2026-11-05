@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3'
+  method: PUT
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"A finalized medical record cannot be changed.","errors":{"encounter":["A finalized medical record cannot be changed."]}}
+order: 1000
