@@ -6,6 +6,7 @@ use App\Modules\Encounters\Providers\EncountersServiceProvider;
 use App\Modules\Patients\Providers\PatientsServiceProvider;
 use App\Modules\Payments\Providers\PaymentsServiceProvider;
 use App\Modules\Queues\Providers\QueuesServiceProvider;
+use App\Modules\Reports\Providers\ReportsServiceProvider;
 use App\Modules\Scheduling\Providers\SchedulingServiceProvider;
 use App\Modules\Staff\Providers\StaffServiceProvider;
 use App\Modules\System\Providers\SystemServiceProvider;
@@ -22,4 +23,5 @@ return [
     QueuesServiceProvider::class,
     EncountersServiceProvider::class,
     PaymentsServiceProvider::class,
+    ReportsServiceProvider::class,
 ];

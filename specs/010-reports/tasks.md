@@ -69,44 +69,44 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Add negative cases to `tests/Unit/Payments/MoneyTest.php` — failing first (R5)
+- [X] T002 Add negative cases to `tests/Unit/Payments/MoneyTest.php` — failing first (R5)
   - Scope: a new method `test_from_piastres_keeps_the_sign`: -150 → `'-1.50'`; -50 → `'-0.50'`; -5 → `'-0.05'`; -15000 → `'-150.00'`. Existing cases stay
     exactly as they are.
   - Verify: `docker compose exec app php artisan test --filter=MoneyTest` → the new method fails (today: `-1.-50`).
 
-- [ ] T003 Make `fromPiastres` handle a sign in `app/Modules/Payments/Support/Money.php` (R5, approved D5)
+- [X] T003 Make `fromPiastres` handle a sign in `app/Modules/Payments/Support/Money.php` (R5, approved D5)
   - Scope: format the absolute value with `sprintf('%s%d.%02d', $piastres < 0 ? '-' : '', intdiv(abs($piastres), 100), abs($piastres) % 100)`. Replace the
     docblock's "Amounts are never negative" with: stored amounts are never negative, but a report's net can be. `toPiastres` does not change.
   - Verify: `docker compose exec app php artisan test tests/Unit/Payments tests/Feature/Payments` → all pass, with no existing test changed.
   - Depends: T002
 
-- [ ] T004 [P] Write `tests/Feature/Reports/ReportIndexesTest.php`, then create `database/migrations/<timestamp>_add_report_indexes.php` (R3, approved D3)
+- [X] T004 [P] Write `tests/Feature/Reports/ReportIndexesTest.php`, then create `database/migrations/<timestamp>_add_report_indexes.php` (R3, approved D3)
   - Scope: `make:migration add_report_indexes`, with a one-line comment pointing to `specs/010-reports/data-model.md`. Exactly:
     `index('created_at', 'payments_created_at_index')` on `payments`, `index('created_at', 'refunds_created_at_index')` on `refunds`, and
     `index('created_at', 'patients_created_at_index')` on `patients`. `down` drops the three. Test: `Schema::hasIndex` for each name.
   - Verify: `--filter=ReportIndexesTest` fails first; `docker compose exec app php artisan migrate` → `DONE`; then passes.
 
-- [ ] T005 Create the module skeleton: `app/Modules/Reports/Providers/ReportsServiceProvider.php`, `app/Modules/Reports/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T005 Create the module skeleton: `app/Modules/Reports/Providers/ReportsServiceProvider.php`, `app/Modules/Reports/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: provider mirrors `PaymentsServiceProvider`, loading routes and the translations namespace `reports` (the binding and gate are added as they are created).
     Routes file: header comment plus an empty `Route::middleware('auth:sanctum')->group(...)`. Add `ReportsServiceProvider::class` after
     `PaymentsServiceProvider::class`.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
 
-- [ ] T006 [P] Create the translations `app/Modules/Reports/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T006 [P] Create the translations `app/Modules/Reports/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('reports::messages.<key>')`), en / ar:
     - `range_too_long`: "The period cannot be longer than :days days." / "لا يمكن أن تتجاوز الفترة :days يومًا."
     - attributes en / ar: `from` "from date" / "تاريخ البداية"; `to` "to date" / "تاريخ النهاية"; `doctor_id` "doctor" / "الطبيب".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
   - Depends: T005
 
-- [ ] T007 Write `tests/Feature/Reports/ReportsPolicyTest.php`, then create `app/Modules/Reports/Policies/ReportPolicy.php` (R9, FR-001)
+- [X] T007 Write `tests/Feature/Reports/ReportsPolicyTest.php`, then create `app/Modules/Reports/Policies/ReportPolicy.php` (R9, FR-001)
   - Scope: `view(User $actor): bool` → `$actor->is_active && $actor->role === Role::Administrator`. In the provider's `boot()`:
     `Gate::define('view-reports', [ReportPolicy::class, 'view'])`. Test: every role, active and inactive, with `Gate::forUser($actor)->allows('view-reports')`, as
     `PaymentsPolicyTest`; only the active administrator is allowed.
   - Verify: `--filter=ReportsPolicyTest` → fails before the policy exists, passes after.
   - Depends: T005
 
-- [ ] T008 Create `app/Modules/Reports/Http/Requests/ReportRequest.php` (R10, FR-002, FR-003)
+- [X] T008 Create `app/Modules/Reports/Http/Requests/ReportRequest.php` (R10, FR-002, FR-003)
   - Scope: `authorize()` → `$this->user()->can('view-reports')`. Rules, as `ListChargesRequest`:
     - `from`: `required`, `date_format:Y-m-d`; `to`: `required`, `date_format:Y-m-d`, `after_or_equal:from`;
     - `doctor_id`: `nullable`, `integer`, `min:1`; `page`: `nullable`, `integer`, `min:1`; `per_page`: `nullable`, `integer`, `min:1`, `max:100`.
@@ -116,7 +116,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Accept: covered by T013.
   - Depends: T006, T007
 
-- [ ] T009 [P] Write `tests/Unit/Reports/ReportMathTest.php`, then create `app/Modules/Reports/Support/ReportMath.php` (R8)
+- [X] T009 [P] Write `tests/Unit/Reports/ReportMathTest.php`, then create `app/Modules/Reports/Support/ReportMath.php` (R8)
   - Scope: `final class` with static methods, integers only until the final division:
     - `averageMinutes(int $seconds, int $count): ?int` — `null` if `$count` is 0, else `intdiv(2 * $seconds + 60 * $count, 120 * $count)`. Cases: (90, 1) → 2; (89, 1) → 1; (300, 2) → 3;
       (0, 3) → 0; (500, 0) → `null`.
@@ -124,7 +124,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
       (1, 2, 0) → 33.3; (2, 1, 0) → 66.7; (0, 2, 3) → 0.0; (5, 0, 0) → 100.0; (0, 0, 0) → `null`.
   - Verify: `--filter=ReportMathTest` → fails first, then passes.
 
-- [ ] T010 Run the Payments, Queues, and localization suites against `tests/Feature/Payments`, `tests/Feature/Queues`, and `tests/Feature/Localization`
+- [X] T010 Run the Payments, Queues, and localization suites against `tests/Feature/Payments`, `tests/Feature/Queues`, and `tests/Feature/Localization`
   - Verify: `docker compose exec app php artisan test tests/Feature/Payments tests/Feature/Queues tests/Feature/Localization` → all pass unchanged.
   - Depends: T003, T004, T005
 

@@ -5,7 +5,8 @@ namespace App\Modules\Payments\Support;
 /**
  * Exact money (research R2). Amounts are stored as DECIMAL and returned as strings; all arithmetic is
  * on whole piastres, because floats drift (0.1 + 0.2 != 0.3). Validation has already limited amounts
- * to two decimals, so nothing here validates. Amounts are never negative.
+ * to two decimals, so nothing here validates. Stored amounts are never negative, but a report's net
+ * can be, so fromPiastres keeps the sign (feature 010, research R5).
  */
 final class Money
 {
@@ -22,7 +23,7 @@ final class Money
 
     public static function fromPiastres(int $piastres): string
     {
-        return sprintf('%d.%02d', intdiv($piastres, 100), $piastres % 100);
+        return sprintf('%s%d.%02d', $piastres < 0 ? '-' : '', intdiv(abs($piastres), 100), abs($piastres) % 100);
     }
 
     /**
