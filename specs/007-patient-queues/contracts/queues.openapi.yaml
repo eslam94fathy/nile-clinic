@@ -153,7 +153,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/EntryNotFound' }
         '422':
-          description: '`not_changeable` on `entry`: not waiting, or a walk-in.'
+          description: '`not_changeable` on `entry`: not waiting, or a walk-in. `has_active_charge` on `entry`: the visit has an active charge (added by feature 009).'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ValidationError' }

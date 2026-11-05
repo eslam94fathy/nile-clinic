@@ -540,43 +540,43 @@ then cancel the charge and confirm the visit can be charged again.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T043 [P] Write `tests/Feature/Payments/PaymentsAuthorizationTest.php` (SC-005)
+- [X] T043 [P] Write `tests/Feature/Payments/PaymentsAuthorizationTest.php` (SC-005)
   - Scope: data providers over all eleven endpoints with valid input (clock fixed): doctor × every endpoint → `403`
     (`auth.forbidden`) and nothing changed; receptionist × fee set, discount, refund → `403`; receptionist × the other eight → success
     code; administrator × all → success code; no token × every endpoint → `401`; a receptionist with a real token then deactivated →
     `401` (`InteractsWithStaffTokens::usingToken()`); a doctor with an invalid body or unknown id → `403`, not `422` or `404`.
 
-- [ ] T044 [P] Write `tests/Feature/Payments/PaymentsMessagesTest.php` (FR-025, SC-007)
+- [X] T044 [P] Write `tests/Feature/Payments/PaymentsMessagesTest.php` (FR-025, SC-007)
   - Scope: for `en` and `ar`: every key in `payments::messages` triggered through the API, `queues::messages.has_active_charge`, a
     translated attribute name in a `required` message, `403` → `auth.forbidden`; JSON keys identical across locales; `status`, `method`,
     and money strings identical across locales.
 
-- [ ] T045 [P] Update `specs/007-patient-queues/contracts/queues.openapi.yaml`, `docs/roadmap.md`, and `README.md`
+- [X] T045 [P] Update `specs/007-patient-queues/contracts/queues.openapi.yaml`, `docs/roadmap.md`, and `README.md`
   - Scope: 007 contract: `DELETE /queue/{entry}` 422 gains `has_active_charge` on `entry`, with a one-line note "added by feature 009".
     Roadmap: 009 `Done` with the spec link and depends on `006, 007`; 010 `Next`. README: a short "Payments" section after "Medical
     encounters": fees, charging a visit, payments, discounts and refunds for administrators, cancelling, the undo rule; money is returned as
     strings; this records money and processes no cards; link the contract.
   - Verify: `postman spec lint specs/009-payments/contracts/payments.openapi.yaml --issueType=syntax` and the same for the 007 contract → no issues.
 
-- [ ] T046 Run Pint and the full suite
+- [X] T046 Run Pint and the full suite
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline
     - `docker compose exec app php artisan test --group=concurrency` → pass
   - Depends: T043, T044, T045
 
-- [ ] T047 Measure SC-006 on `clinic_testing` only
+- [X] T047 Measure SC-006 on `clinic_testing` only
   - Scope: as feature 008's SC-005: in a transaction rolled back afterwards, 500 factory doctors, 2,000 patients, and 500,000 queue entries and
     charges bulk-inserted; `paginateVisits` for one date, and `paginate` for a 92-day range with and without filters, three runs each. Refuse any
     database but `clinic_testing`. Target: under 2 s. A miss is reported, not hidden.
   - Depends: T046
 
-- [ ] T048 Run quickstart Q1–Q8 from `specs/009-payments/quickstart.md` on the development stack
+- [X] T048 Run quickstart Q1–Q8 from `specs/009-payments/quickstart.md` on the development stack
   - Scope: synthetic data only. Record what was run.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T046
 
-- [ ] T049 Record the results in `specs/009-payments/verification.md`
+- [X] T049 Record the results in `specs/009-payments/verification.md`
   - Scope: per Q-step and SC-006: date, command, observed output summary, pass/fail; failures reported as failures (Constitution VIII). Postman
     collection update is a separate follow-up.
   - Depends: T047, T048
