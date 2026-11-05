@@ -21,8 +21,9 @@ Model: `App\Modules\Staff\Models\User` (uses Sanctum `HasApiTokens`).
 | `updated_at` | `timestamp` | yes | | |
 
 Indexes: `PRIMARY (id)`, `UNIQUE users_email_unique (email)`,
-`INDEX users_role_is_active_index (role, is_active)`. The composite index serves the staff list
-filters (FR-017) and the active-administrator count (FR-021).
+`INDEX users_role_is_active_index (role, is_active)`, `INDEX users_name_index (name)`. The composite
+index serves the staff list filters (FR-017) and the active-administrator count (FR-021). The name
+index serves the staff list's order (name, then id, which InnoDB appends to the index).
 
 There is no `remember_token` or `email_verified_at`: the API has no sessions and sends no email
 (clarification Q3).
