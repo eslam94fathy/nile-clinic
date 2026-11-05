@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  Setup: moves the walk-in to `with_doctor`. A record can start only with the doctor or after the visit is seen.
+method: POST
+url: '{{base_url}}/doctors/me/queue/call-next'
+order: 3000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the walk-in is with the doctor', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('visit_id')));
+        pm.expect(data.status).to.eql('with_doctor');
+      });
+examples: './.resources/call next patient.resources/examples'

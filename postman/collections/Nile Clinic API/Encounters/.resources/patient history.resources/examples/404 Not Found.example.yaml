@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/patients/999999/encounters'
+  method: GET
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"No medical records were found for this patient."}
+order: 2000

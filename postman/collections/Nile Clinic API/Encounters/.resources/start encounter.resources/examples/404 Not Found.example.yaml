@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/visits/999999/encounter'
+  method: POST
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"No visit was found."}
+order: 3000

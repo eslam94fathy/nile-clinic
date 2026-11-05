@@ -7,11 +7,12 @@ description: |-
   `specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,
   `specs/003-patient-records/contracts/patients.openapi.yaml`,
   `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,
-  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`, and
-  `specs/006-appointments/contracts/appointments.openapi.yaml`.
+  `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,
+  `specs/006-appointments/contracts/appointments.openapi.yaml`, and
+  `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.
 
   **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →
-  Doctors → Scheduling → Appointments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
+  Doctors → Scheduling → Appointments → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
   `admin_email` / `admin_password` to an administrator created with `php artisan
   staff:create-admin`. All data must be synthetic.
 
@@ -65,3 +66,15 @@ variables:
   - key: appointment_id
     value: ''
     description: 'Set by "Appointments/book appointment".'
+  - key: visit_id
+    value: ''
+    description: 'Queue entry id, set by "Encounters/add walk-in".'
+  - key: doctor_token
+    value: ''
+    description: 'Set by "Encounters/sign in as doctor"; cleared by "Encounters/sign out as doctor".'
+  - key: encounter_id
+    value: ''
+    description: 'Set by "Encounters/start encounter".'
+  - key: encounter_date
+    value: ''
+    description: 'The visit date, set by "Encounters/start encounter".'

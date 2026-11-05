@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3'
+  method: PUT
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The examination findings field must be present. (and 3 more errors)","errors":{"examination_findings":["The examination findings field must be present."],"diagnosis":["The diagnosis field must be present."],"treatment_plan":["The treatment plan field must be present."],"prescriptions":["The prescriptions field must be present."]}}
+order: 2000

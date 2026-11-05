@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/encounters/3/addenda'
+  method: POST
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":3,"text":"Postman synthetic correction","created_at":"2026-11-05T12:02:05.000000Z"}}
+order: 1000

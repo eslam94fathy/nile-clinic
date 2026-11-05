@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Setup: signs in the doctor made by "Doctors/create doctor account" and stores the token in
+  `doctor_token`, which this folder sends by default. The administrator's `token` is kept.
+method: POST
+url: '{{base_url}}/auth/sign-in'
+order: 2000
+auth:
+  type: noauth
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{new_doctor_email}}",
+      "password": "postman-doctor-pass-1"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with a doctor token', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.user.role).to.eql('doctor');
+        pm.collectionVariables.set('doctor_token', data.token);
+      });
+examples: './.resources/sign in as doctor.resources/examples'

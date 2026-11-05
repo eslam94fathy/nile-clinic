@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Start the visit's record as an empty draft. Allowed while the visit is `with_doctor` or `seen`,
+  on any later day too. Another doctor's or an unknown visit is 404; a `waiting` or `left` visit is 422
+  `visit_not_started`. The id is stored in `encounter_id`.
+method: POST
+url: '{{base_url}}/doctors/me/visits/:visit/encounter'
+order: 4000
+pathVariables:
+  - key: 'visit'
+    value: '{{visit_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 empty draft with the patient summary only', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('draft');
+        pm.expect(data.visit_id).to.eql(Number(pm.collectionVariables.get('visit_id')));
+        pm.expect(data.chief_complaint).to.be.null;
+        pm.expect(data.prescriptions).to.eql([]);
+        pm.expect(data.addenda).to.eql([]);
+        pm.expect(data.patient).to.have.keys('id', 'full_name', 'sex', 'date_of_birth');
+        pm.collectionVariables.set('encounter_id', String(data.id));
+        pm.collectionVariables.set('encounter_date', data.date);
+      });
+examples: './.resources/start encounter.resources/examples'

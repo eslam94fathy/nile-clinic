@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Finalizing needs a chief complaint and a diagnosis, and each line's dosage, frequency, and
+  duration: 422 `required_to_finalize` naming each missing field. The record stays a draft.
+method: POST
+url: '{{base_url}}/doctors/me/encounters/:encounter/finalize'
+order: 8000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 naming each missing field', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.keys('diagnosis', 'prescriptions.0.dosage', 'prescriptions.0.frequency', 'prescriptions.0.duration');
+      });
+examples: './.resources/finalize incomplete draft.resources/examples'

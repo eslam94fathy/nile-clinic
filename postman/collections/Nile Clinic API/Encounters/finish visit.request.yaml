@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Clean-up: ends the visit, so the doctor can call the next patient. Finishing never requires a record.
+method: POST
+url: '{{base_url}}/doctors/me/queue/finish'
+order: 16000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 seen', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.status).to.eql('seen');
+      });
+examples: './.resources/finish visit.resources/examples'

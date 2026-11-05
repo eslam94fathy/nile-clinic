@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Administrators and receptionists get 403 on every record action, before any lookup.
+method: GET
+url: '{{base_url}}/doctors/me/encounters/:encounter'
+order: 15000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for an administrator', () => pm.response.to.have.status(403));
+examples: './.resources/get encounter as administrator.resources/examples'

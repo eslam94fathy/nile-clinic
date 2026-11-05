@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`, and\n`specs/006-appointments/contracts/appointments.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`, and\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -5414,6 +5414,1952 @@
       ]
     },
     {
+      "name": "Encounters",
+      "description": "Medical records of visits (feature 008). Doctors only: administrators and receptionists get 403.\nOne record per visit, for booked patients and walk-ins alike. A draft is visible only to its\nauthor; a finalized record cannot be changed, only corrected with addenda. Clinical content is\nreturned only when one record is opened, never in a list. Anything a doctor may not read is the\nsame 404 as something that does not exist.\n\nThis folder signs in as the doctor from \"Doctors/create doctor account\" and sends `doctor_token`\nby default; the requests that act as the administrator set their own auth. Runs after Appointments\n(uses `patient_id`, `doctor_id`, `new_doctor_email`). Records are never deleted. Use synthetic text\nonly. Contract: `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.",
+      "item": [
+        {
+          "name": "add walk-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting walk-in', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ status: 'waiting', walk_in: true });",
+                  "  pm.collectionVariables.set('visit_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patient_id}},\n  \"doctor_id\": {{doctor_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/queue/walk-ins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                "walk-ins"
+              ]
+            },
+            "description": "Setup, as the administrator: a record starts from a visit, so this puts `patient_id` on\n`doctor_id`'s list for today. The entry id is stored in `visit_id`. Feature 007's queue endpoints are\nnot otherwise in this collection."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/walk-ins",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "walk-ins"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":11,\"queue_number\":1,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:02:03.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"phone\":\"01791435174\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "sign in as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a doctor token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.user.role).to.eql('doctor');",
+                  "  pm.collectionVariables.set('doctor_token', data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup: signs in the doctor made by \"Doctors/create doctor account\" and stores the token in\n`doctor_token`, which this folder sends by default. The administrator's `token` is kept."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"token\": \"1|<plain-text token, shown once>\", \"token_type\": \"Bearer\", \"user\": {\"id\": 9, \"name\": \"Synthetic Doctor\", \"email\": \"doctor@clinic.test\", \"role\": \"doctor\", \"is_active\": true}}}"
+            }
+          ]
+        },
+        {
+          "name": "call next patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the walk-in is with the doctor', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('visit_id')));",
+                  "  pm.expect(data.status).to.eql('with_doctor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/call-next",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "call-next"
+              ]
+            },
+            "description": "Setup: moves the walk-in to `with_doctor`. A record can start only with the doctor or after the visit is seen."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/call-next",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "call-next"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":11,\"queue_number\":1,\"status\":\"with_doctor\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:02:03.000000Z\",\"called_at\":\"2026-11-05T12:02:03.000000Z\",\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "start encounter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 empty draft with the patient summary only', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('draft');",
+                  "  pm.expect(data.visit_id).to.eql(Number(pm.collectionVariables.get('visit_id')));",
+                  "  pm.expect(data.chief_complaint).to.be.null;",
+                  "  pm.expect(data.prescriptions).to.eql([]);",
+                  "  pm.expect(data.addenda).to.eql([]);",
+                  "  pm.expect(data.patient).to.have.keys('id', 'full_name', 'sex', 'date_of_birth');",
+                  "  pm.collectionVariables.set('encounter_id', String(data.id));",
+                  "  pm.collectionVariables.set('encounter_date', data.date);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/visits/:visit/encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "visits",
+                ":visit",
+                "encounter"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{visit_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Start the visit's record as an empty draft. Allowed while the visit is `with_doctor` or `seen`,\non any later day too. Another doctor's or an unknown visit is 404; a `waiting` or `left` visit is 422\n`visit_not_started`. The id is stored in `encounter_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits/11/encounter",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits",
+                    "11",
+                    "encounter"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"visit_id\":11,\"status\":\"draft\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"},\"chief_complaint\":null,\"examination_findings\":null,\"diagnosis\":null,\"treatment_plan\":null,\"prescriptions\":[],\"addenda\":[],\"started_at\":\"2026-11-05T12:02:03.000000Z\",\"last_saved_at\":\"2026-11-05T12:02:03.000000Z\",\"finalized_at\":null}}"
+            },
+            {
+              "name": "422 Visit not started",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits/11/encounter",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits",
+                    "11",
+                    "encounter"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"A record can start only when the patient is with the doctor or has been seen.\",\"errors\":{\"visit\":[\"A record can start only when the patient is with the doctor or has been seen.\"]}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits/999999/encounter",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits",
+                    "999999",
+                    "encounter"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No visit was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "start encounter again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 already started', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('visit');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/visits/:visit/encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "visits",
+                ":visit",
+                "encounter"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{visit_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "A visit has at most one record, also under simultaneous requests: 422 `already_started` on `visit`."
+          },
+          "response": [
+            {
+              "name": "422 Already started",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits/11/encounter",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits",
+                    "11",
+                    "encounter"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This visit already has a medical record.\",\"errors\":{\"visit\":[\"This visit already has a medical record.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "save draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 still a draft, with unset line fields null', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('draft');",
+                  "  pm.expect(data.chief_complaint).to.eql('Postman synthetic complaint');",
+                  "  pm.expect(data.prescriptions[0]).to.eql({ medication: 'Postman synthetic medication', dosage: null, frequency: null, duration: null, instructions: null });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chief_complaint\": \"Postman synthetic complaint\",\n  \"examination_findings\": null,\n  \"diagnosis\": null,\n  \"treatment_plan\": null,\n  \"prescriptions\": [\n    {\n      \"medication\": \"Postman synthetic medication\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Replace all of a draft's content; the author only. Every key must be sent, with null or an empty\narray for what is still empty, so a forgotten field gets 422 rather than erasing content. Text fields\nup to 10,000 characters; up to 20 prescription lines, each needing a `medication`, with fields up to\n500 characters. Clinical text is stored as written, in any language. Synthetic text only."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"visit_id\":11,\"status\":\"draft\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"},\"chief_complaint\":\"Postman synthetic complaint\",\"examination_findings\":null,\"diagnosis\":null,\"treatment_plan\":null,\"prescriptions\":[{\"medication\":\"Postman synthetic medication\",\"dosage\":null,\"frequency\":null,\"duration\":null,\"instructions\":null}],\"addenda\":[],\"started_at\":\"2026-11-05T12:02:03.000000Z\",\"last_saved_at\":\"2026-11-05T12:02:04.000000Z\",\"finalized_at\":null}}"
+            },
+            {
+              "name": "422 Missing field",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The examination findings field must be present. (and 3 more errors)\",\"errors\":{\"examination_findings\":[\"The examination findings field must be present.\"],\"diagnosis\":[\"The diagnosis field must be present.\"],\"treatment_plan\":[\"The treatment plan field must be present.\"],\"prescriptions\":[\"The prescriptions field must be present.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get encounter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the clinical content', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.chief_complaint).to.eql('Postman synthetic complaint');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Open one record, the only place clinical content is returned. A doctor reads their own at any\ntime, and another doctor's finalized records only while the patient is on their list today as waiting,\nwith them, or seen. Anything else is the same 404 as an unknown id."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"visit_id\":11,\"status\":\"draft\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"},\"chief_complaint\":\"Postman synthetic complaint\",\"examination_findings\":null,\"diagnosis\":null,\"treatment_plan\":null,\"prescriptions\":[{\"medication\":\"Postman synthetic medication\",\"dosage\":null,\"frequency\":null,\"duration\":null,\"instructions\":null}],\"addenda\":[],\"started_at\":\"2026-11-05T12:02:03.000000Z\",\"last_saved_at\":\"2026-11-05T12:02:04.000000Z\",\"finalized_at\":null}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No medical record was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "finalize incomplete draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 naming each missing field', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.keys('diagnosis', 'prescriptions.0.dosage', 'prescriptions.0.frequency', 'prescriptions.0.duration');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter/finalize",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter",
+                "finalize"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Finalizing needs a chief complaint and a diagnosis, and each line's dosage, frequency, and\nduration: 422 `required_to_finalize` naming each missing field. The record stays a draft."
+          },
+          "response": [
+            {
+              "name": "422 Required to finalize",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3/finalize",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3",
+                    "finalize"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The diagnosis is required to finalize this record. (and 3 more errors)\",\"errors\":{\"diagnosis\":[\"The diagnosis is required to finalize this record.\"],\"prescriptions.0.dosage\":[\"The dosage is required to finalize this record.\"],\"prescriptions.0.frequency\":[\"The frequency is required to finalize this record.\"],\"prescriptions.0.duration\":[\"The duration is required to finalize this record.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "complete draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 complete draft', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('draft');",
+                  "  pm.expect(data.diagnosis).to.eql('Postman synthetic diagnosis');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chief_complaint\": \"Postman synthetic complaint\",\n  \"examination_findings\": \"Postman synthetic findings\",\n  \"diagnosis\": \"Postman synthetic diagnosis\",\n  \"treatment_plan\": \"Postman synthetic plan\",\n  \"prescriptions\": [\n    {\n      \"medication\": \"Postman synthetic medication\",\n      \"dosage\": \"1 tablet\",\n      \"frequency\": \"Twice a day\",\n      \"duration\": \"5 days\",\n      \"instructions\": \"After meals\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Fill in everything finalizing needs. Instructions stay optional."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"visit_id\":11,\"status\":\"draft\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"},\"chief_complaint\":\"Postman synthetic complaint\",\"examination_findings\":\"Postman synthetic findings\",\"diagnosis\":\"Postman synthetic diagnosis\",\"treatment_plan\":\"Postman synthetic plan\",\"prescriptions\":[{\"medication\":\"Postman synthetic medication\",\"dosage\":\"1 tablet\",\"frequency\":\"Twice a day\",\"duration\":\"5 days\",\"instructions\":\"After meals\"}],\"addenda\":[],\"started_at\":\"2026-11-05T12:02:03.000000Z\",\"last_saved_at\":\"2026-11-05T12:02:04.000000Z\",\"finalized_at\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "finalize encounter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 finalized with the time', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('finalized');",
+                  "  pm.expect(data.finalized_at).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter/finalize",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter",
+                "finalize"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Lock a complete draft; the author only. The visit is not changed: finalizing a record and finishing\na visit are separate actions."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3/finalize",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3",
+                    "finalize"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"visit_id\":11,\"status\":\"finalized\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"title\":\"Resident\"},\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"},\"chief_complaint\":\"Postman synthetic complaint\",\"examination_findings\":\"Postman synthetic findings\",\"diagnosis\":\"Postman synthetic diagnosis\",\"treatment_plan\":\"Postman synthetic plan\",\"prescriptions\":[{\"medication\":\"Postman synthetic medication\",\"dosage\":\"1 tablet\",\"frequency\":\"Twice a day\",\"duration\":\"5 days\",\"instructions\":\"After meals\"}],\"addenda\":[],\"started_at\":\"2026-11-05T12:02:03.000000Z\",\"last_saved_at\":\"2026-11-05T12:02:05.000000Z\",\"finalized_at\":\"2026-11-05T12:02:05.000000Z\"}}"
+            }
+          ]
+        },
+        {
+          "name": "save finalized encounter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 not editable', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('encounter');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chief_complaint\": \"Postman changed complaint\",\n  \"examination_findings\": \"Postman synthetic findings\",\n  \"diagnosis\": \"Postman synthetic diagnosis\",\n  \"treatment_plan\": \"Postman synthetic plan\",\n  \"prescriptions\": [\n    {\n      \"medication\": \"Postman synthetic medication\",\n      \"dosage\": \"1 tablet\",\n      \"frequency\": \"Twice a day\",\n      \"duration\": \"5 days\",\n      \"instructions\": \"After meals\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "A finalized record cannot be overwritten or finalized again: 422 `not_editable` on `encounter`."
+          },
+          "response": [
+            {
+              "name": "422 Not editable",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"A finalized medical record cannot be changed.\",\"errors\":{\"encounter\":[\"A finalized medical record cannot be changed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "add addendum",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 addendum', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.keys('id', 'text', 'created_at');",
+                  "  pm.expect(data.text).to.eql('Postman synthetic correction');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Postman synthetic correction\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter/addenda",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter",
+                "addenda"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Correct a finalized record; the author only. `text` is required, up to 10,000 characters. The\noriginal content stays unchanged, and an addendum cannot be changed or deleted. A draft is 422\n`not_finalized`; another doctor who may read the record gets 403."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3/addenda",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3",
+                    "addenda"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":3,\"text\":\"Postman synthetic correction\",\"created_at\":\"2026-11-05T12:02:05.000000Z\"}}"
+            },
+            {
+              "name": "422 Not finalized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3/addenda",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3",
+                    "addenda"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Only a finalized medical record can have addenda.\",\"errors\":{\"encounter\":[\"Only a finalized medical record can have addenda.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list own visits",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the record status and no clinical content', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const visit = pm.response.json().data.find((v) => v.id === Number(pm.collectionVariables.get('visit_id')));",
+                  "  pm.expect(visit.record_status).to.eql('finalized');",
+                  "  pm.expect(visit.encounter_id).to.eql(Number(pm.collectionVariables.get('encounter_id')));",
+                  "  pm.expect(pm.response.text()).to.not.include('Postman synthetic');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/visits?from={{encounter_date}}&to={{encounter_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "visits"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "record_status",
+                  "value": "finalized",
+                  "disabled": true
+                },
+                {
+                  "key": "patient_id",
+                  "value": "{{patient_id}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The doctor's visits that are with the doctor or seen, by date, then queue order, for at most 92\ndays. Optional `record_status` (`none`, `draft`, `finalized`) finds visits still missing a finalized\nrecord. Never any clinical content."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits?from=2026-11-05&to=2026-11-05",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":11,\"date\":\"2026-11-05\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:02:03.000000Z\",\"called_at\":\"2026-11-05T12:02:03.000000Z\",\"finished_at\":null,\"record_status\":\"finalized\",\"encounter_id\":3,\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"}}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/visits?from=2026-11-05&to=2026-11-05&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/visits?from=2026-11-05&to=2026-11-05&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/visits?from=2026-11-05&to=2026-11-05&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/visits\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            },
+            {
+              "name": "422 Range too long",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/visits?from=2026-01-01&to=2026-12-31",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "visits"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The date range can be at most 92 days.\",\"errors\":{\"to\":[\"The date range can be at most 92 days.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "patient history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 date and doctor only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const item = pm.response.json().data[0];",
+                  "  pm.expect(item.id).to.eql(Number(pm.collectionVariables.get('encounter_id')));",
+                  "  pm.expect(item).to.have.keys('id', 'date', 'doctor');",
+                  "  pm.expect(item.doctor).to.have.keys('id', 'name', 'specialties');",
+                  "  pm.expect(pm.response.text()).to.not.include('Postman synthetic');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/patients/:patient/encounters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "patients",
+                ":patient",
+                "encounters"
+              ],
+              "variable": [
+                {
+                  "key": "patient",
+                  "value": "{{patient_id}}",
+                  "description": "The patient number"
+                }
+              ]
+            },
+            "description": "A patient's finalized records, newest first. With the patient on the doctor's list today as waiting,\nwith them, or seen: every doctor's. Otherwise only the doctor's own, and none is the same 404 as an\nunknown patient. Never any clinical content."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/patients/16/encounters",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "patients",
+                    "16",
+                    "encounters"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":3,\"date\":\"2026-11-05\",\"doctor\":{\"id\":12,\"name\":\"Meta Weber\",\"specialties\":[]}}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/patients\\/16\\/encounters?page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/patients\\/16\\/encounters?page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/patients\\/16\\/encounters?page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/doctors\\/me\\/patients\\/16\\/encounters\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/patients/999999/encounters",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "patients",
+                    "999999",
+                    "encounters"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No medical records were found for this patient.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get encounter as administrator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for an administrator', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/encounters/:encounter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "encounters",
+                ":encounter"
+              ],
+              "variable": [
+                {
+                  "key": "encounter",
+                  "value": "{{encounter_id}}",
+                  "description": "The medical record id"
+                }
+              ]
+            },
+            "description": "Administrators and receptionists get 403 on every record action, before any lookup."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/encounters/3",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "encounters",
+                    "3"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "finish visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 seen', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.status).to.eql('seen');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/finish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "finish"
+              ]
+            },
+            "description": "Clean-up: ends the visit, so the doctor can call the next patient. Finishing never requires a record."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/finish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "finish"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":11,\"queue_number\":1,\"status\":\"seen\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:02:03.000000Z\",\"called_at\":\"2026-11-05T12:02:03.000000Z\",\"finished_at\":\"2026-11-05T12:02:06.000000Z\",\"left_at\":null,\"appointment\":null,\"patient\":{\"id\":16,\"full_name\":\"\\u0623\\u062f\\u0647\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u0645\\u062c\\u064a\\u062f\",\"sex\":\"female\",\"date_of_birth\":\"2009-06-22\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "sign out as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 signed out', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  pm.collectionVariables.set('doctor_token', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/sign-out",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": "Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-out",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-out"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{doctor_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
       "name": "clear weekly schedule",
       "event": [
         {
@@ -5619,6 +7565,26 @@
       "key": "appointment_id",
       "value": "",
       "description": "Set by \"Appointments/book appointment\"."
+    },
+    {
+      "key": "visit_id",
+      "value": "",
+      "description": "Queue entry id, set by \"Encounters/add walk-in\"."
+    },
+    {
+      "key": "doctor_token",
+      "value": "",
+      "description": "Set by \"Encounters/sign in as doctor\"; cleared by \"Encounters/sign out as doctor\"."
+    },
+    {
+      "key": "encounter_id",
+      "value": "",
+      "description": "Set by \"Encounters/start encounter\"."
+    },
+    {
+      "key": "encounter_date",
+      "value": "",
+      "description": "The visit date, set by \"Encounters/start encounter\"."
     }
   ]
 }

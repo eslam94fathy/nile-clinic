@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Lock a complete draft; the author only. The visit is not changed: finalizing a record and finishing
+  a visit are separate actions.
+method: POST
+url: '{{base_url}}/doctors/me/encounters/:encounter/finalize'
+order: 10000
+pathVariables:
+  - key: 'encounter'
+    value: '{{encounter_id}}'
+    description: 'The medical record id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 finalized with the time', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('finalized');
+        pm.expect(data.finalized_at).to.be.a('string');
+      });
+examples: './.resources/finalize encounter.resources/examples'
