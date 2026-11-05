@@ -1,0 +1,407 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Medical Encounters
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 008. All responses are JSON, and field names and structure are
+    identical in every locale; only `message` texts change with Accept-Language (en, ar; fallback
+    en). Statuses are fixed English identifiers. Clinical text is returned as written and is never
+    translated. `date` is the clinic's date (Africa/Cairo); `*_at` values are ISO 8601 UTC instants.
+    Every endpoint requires `Authorization: Bearer <token>` (feature 002) and is for active doctors;
+    administrators and receptionists get 403 before any lookup. Clinical content is returned only
+    when one encounter is opened, never in a list. Anything a doctor may not read is reported as
+    404, identically to something that does not exist.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /doctors/me/visits:
+    get:
+      operationId: listOwnVisits
+      summary: The doctor's visits that are with the doctor or seen, with their record status (FR-016)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - { in: query, name: from, required: true, schema: { type: string, format: date } }
+        - { in: query, name: to, required: true, description: 'At most 92 days including both ends.', schema: { type: string, format: date } }
+        - { in: query, name: patient_id, required: false, schema: { type: integer, minimum: 1 } }
+        - { in: query, name: record_status, required: false, schema: { $ref: '#/components/schemas/RecordStatus' } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page, ordered by date, then queue order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Visit' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /doctors/me/visits/{visit}/encounter:
+    parameters:
+      - { in: path, name: visit, required: true, description: 'The queue entry id (feature 007).', schema: { type: integer } }
+    post:
+      operationId: startEncounter
+      summary: Start the record of one of the doctor's visits (FR-001, FR-002)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '201':
+          description: A new draft with empty content.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Encounter' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: '`visit_not_started` (waiting or left) or `already_started` on `visit`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/encounters/{encounter}:
+    parameters:
+      - $ref: '#/components/parameters/EncounterId'
+    get:
+      operationId: showEncounter
+      summary: Open one record with its clinical content and addenda (FR-012)
+      description: >
+        Allowed for the doctor's own records, and for another doctor's finalized record when its
+        patient is on this doctor's list today as waiting, with the doctor, or seen.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/EncounterOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: saveEncounter
+      summary: Replace a draft's clinical content; the author only (FR-006, FR-008)
+      description: Every key must be sent. Use null or an empty array for what is still empty.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EncounterInput' }
+            example:
+              chief_complaint: Synthetic complaint text
+              examination_findings: null
+              diagnosis: null
+              treatment_plan: null
+              prescriptions:
+                - { medication: Synthetic medication, dosage: null, frequency: null, duration: null, instructions: null }
+      responses:
+        '200': { $ref: '#/components/responses/EncounterOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, or `not_editable` on `encounter` for a finalized record.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/encounters/{encounter}/finalize:
+    parameters:
+      - $ref: '#/components/parameters/EncounterId'
+    post:
+      operationId: finalizeEncounter
+      summary: Lock a complete draft; the author only (FR-007, FR-008)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200': { $ref: '#/components/responses/EncounterOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: >
+            `required_to_finalize` on each missing field (`chief_complaint`, `diagnosis`,
+            `prescriptions.N.dosage`, `prescriptions.N.frequency`, `prescriptions.N.duration`), or
+            `not_editable` on `encounter` when already finalized.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/encounters/{encounter}/addenda:
+    parameters:
+      - $ref: '#/components/parameters/EncounterId'
+    post:
+      operationId: addEncounterAddendum
+      summary: Add a correction to a finalized record; the author only (FR-011)
+      description: An addendum cannot be changed or deleted. Correct it by adding another.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 10000 }
+            example: { text: Synthetic correction text }
+      responses:
+        '201':
+          description: The addendum was added.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Addendum' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Validation failed, or `not_finalized` on `encounter` for a draft.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /doctors/me/patients/{patient}/encounters:
+    parameters:
+      - { in: path, name: patient, required: true, schema: { type: integer } }
+    get:
+      operationId: listPatientEncounters
+      summary: A patient's finalized records the doctor may read, newest first (FR-017)
+      description: >
+        A patient on the doctor's list today as waiting, with the doctor, or seen: all their finalized
+        records, from any doctor. Any other patient: only this doctor's own finalized records, and 404
+        when there are none.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page. Never any clinical content.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, links, meta]
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/EncounterHistoryItem' } }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      schema: { type: string, enum: [en, ar], default: en }
+    EncounterId:
+      in: path
+      name: encounter
+      required: true
+      schema: { type: integer }
+    Page:
+      in: query
+      name: page
+      required: false
+      schema: { type: integer, minimum: 1 }
+    PerPage:
+      in: query
+      name: per_page
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+
+  responses:
+    EncounterOk:
+      description: The full record.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: { $ref: '#/components/schemas/Encounter' }
+    Unauthenticated:
+      description: Missing or invalid token, or a deactivated account.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Not a doctor, or a doctor changing a record of another doctor that they may read.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    NotFound:
+      description: Does not exist, may not be read, or the doctor has no profile.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation failed. Messages never repeat submitted text.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+
+  schemas:
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+    RecordStatus:
+      type: string
+      enum: [none, draft, finalized]
+    PatientSummary:
+      type: object
+      required: [id, full_name, sex, date_of_birth]
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        sex: { type: string }
+        date_of_birth: { type: string, format: date }
+    Visit:
+      type: object
+      required: [id, date, walk_in, arrived_at, called_at, finished_at, record_status, encounter_id, patient]
+      properties:
+        id: { type: integer, description: The queue entry id. }
+        date: { type: string, format: date }
+        walk_in: { type: boolean }
+        arrived_at: { type: string, format: date-time }
+        called_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+        record_status: { $ref: '#/components/schemas/RecordStatus' }
+        encounter_id: { type: [integer, 'null'] }
+        patient: { $ref: '#/components/schemas/PatientSummary' }
+    EncounterHistoryItem:
+      type: object
+      required: [id, date, doctor]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        doctor:
+          type: object
+          required: [id, name, specialties]
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            specialties:
+              type: array
+              items:
+                type: object
+                required: [id, name_en, name_ar, is_active]
+                properties:
+                  id: { type: integer }
+                  name_en: { type: string }
+                  name_ar: { type: string }
+                  is_active: { type: boolean }
+    PrescriptionLine:
+      type: object
+      required: [medication]
+      properties:
+        medication: { type: string, maxLength: 500 }
+        dosage: { type: [string, 'null'], maxLength: 500 }
+        frequency: { type: [string, 'null'], maxLength: 500 }
+        duration: { type: [string, 'null'], maxLength: 500 }
+        instructions: { type: [string, 'null'], maxLength: 500 }
+    EncounterInput:
+      type: object
+      required: [chief_complaint, examination_findings, diagnosis, treatment_plan, prescriptions]
+      properties:
+        chief_complaint: { type: [string, 'null'], maxLength: 10000 }
+        examination_findings: { type: [string, 'null'], maxLength: 10000 }
+        diagnosis: { type: [string, 'null'], maxLength: 10000 }
+        treatment_plan: { type: [string, 'null'], maxLength: 10000 }
+        prescriptions:
+          type: array
+          maxItems: 20
+          items: { $ref: '#/components/schemas/PrescriptionLine' }
+    Addendum:
+      type: object
+      required: [id, text, created_at]
+      properties:
+        id: { type: integer }
+        text: { type: string }
+        created_at: { type: string, format: date-time }
+    Encounter:
+      type: object
+      required:
+        - id
+        - visit_id
+        - status
+        - date
+        - doctor
+        - patient
+        - chief_complaint
+        - examination_findings
+        - diagnosis
+        - treatment_plan
+        - prescriptions
+        - addenda
+        - started_at
+        - last_saved_at
+        - finalized_at
+      properties:
+        id: { type: integer }
+        visit_id: { type: integer }
+        status: { type: string, enum: [draft, finalized] }
+        date: { type: string, format: date }
+        doctor:
+          type: object
+          required: [id, name, title]
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            title: { type: string }
+        patient: { $ref: '#/components/schemas/PatientSummary' }
+        chief_complaint: { type: [string, 'null'] }
+        examination_findings: { type: [string, 'null'] }
+        diagnosis: { type: [string, 'null'] }
+        treatment_plan: { type: [string, 'null'] }
+        prescriptions:
+          type: array
+          items: { $ref: '#/components/schemas/PrescriptionLine' }
+        addenda:
+          type: array
+          description: Oldest first.
+          items: { $ref: '#/components/schemas/Addendum' }
+        started_at: { type: string, format: date-time }
+        last_saved_at: { type: string, format: date-time }
+        finalized_at: { type: [string, 'null'], format: date-time }

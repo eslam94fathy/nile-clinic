@@ -80,6 +80,12 @@ interface QueueRepository
     public function patientActive(int $doctorId, int $patientId, string $date): bool;
 
     /**
+     * Whether the patient is on this doctor's list that date as waiting, with the doctor, or seen. A
+     * plain read for the medical records access rule (feature 008, research R4).
+     */
+    public function patientOnList(int $doctorId, int $patientId, string $date): bool;
+
+    /**
      * The entry locked `FOR UPDATE` until the caller's transaction ends, or null. No relations are
      * loaded.
      */
