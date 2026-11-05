@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  The trail is for administrators only: 403, before validation. Nobody, including an administrator, can change or delete an entry: no such route exists.
+method: GET
+url: '{{base_url}}/audit-entries?patient_id={{patient_id}}'
+order: 15000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+queryParams:
+  - key: 'patient_id'
+    value: '{{patient_id}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for a doctor', () => pm.response.to.have.status(403));
+examples: './.resources/search as doctor.resources/examples'

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":355,"occurred_at":"2026-11-05T20:35:30.000000Z","action":"audit.searched","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":null,"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":{"action":"auth.sign_in","outcome":"refused","staff_id":87}},{"id":354,"occurred_at":"2026-11-05T20:35:30.000000Z","action":"auth.sign_in","outcome":"refused","actor":{"type":"staff","id":87,"name":"Postman Doctor","role":"doctor"},"subject":{"type":"staff_member","id":87},"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":null},{"id":353,"occurred_at":"2026-11-05T20:35:29.000000Z","action":"audit.searched","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":null,"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":{"staff_id":86}}],"links":{"first":null,"last":null,"prev":null,"next":"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9"},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":5,"next_cursor":"eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9","prev_cursor":null}}
+order: 1000

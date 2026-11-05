@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?subject_type=encounter&subject_id=18&action=encounter.opened&outcome=refused'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":359,"occurred_at":"2026-11-05T20:35:32.000000Z","action":"encounter.opened","outcome":"refused","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"encounter","id":18},"patient_id":51,"network_address":"172.22.0.1","changes":null,"filters":null},{"id":330,"occurred_at":"2026-11-05T20:35:18.000000Z","action":"encounter.opened","outcome":"refused","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"encounter","id":18},"patient_id":51,"network_address":"172.22.0.1","changes":null,"filters":null}],"links":{"first":null,"last":null,"prev":null,"next":null},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":15,"next_cursor":null,"prev_cursor":null}}
+order: 1000

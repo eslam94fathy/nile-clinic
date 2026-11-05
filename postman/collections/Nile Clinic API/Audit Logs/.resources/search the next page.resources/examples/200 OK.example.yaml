@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUxLCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":350,"occurred_at":"2026-11-05T20:35:29.000000Z","action":"auth.sign_out","outcome":"succeeded","actor":{"type":"staff","id":87,"name":"Postman Doctor","role":"doctor"},"subject":{"type":"staff_member","id":87},"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":null},{"id":349,"occurred_at":"2026-11-05T20:35:28.000000Z","action":"auth.sign_in","outcome":"succeeded","actor":{"type":"staff","id":87,"name":"Postman Doctor","role":"doctor"},"subject":{"type":"staff_member","id":87},"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":null},{"id":348,"occurred_at":"2026-11-05T20:35:26.000000Z","action":"auth.sign_out","outcome":"succeeded","actor":{"type":"staff","id":87,"name":"Postman Doctor","role":"doctor"},"subject":{"type":"staff_member","id":87},"patient_id":null,"network_address":"172.22.0.1","changes":null,"filters":null}],"links":{"first":null,"last":null,"prev":"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzUwLCJfcG9pbnRzVG9OZXh0SXRlbXMiOmZhbHNlfQ","next":"http://localhost:8080/api/v1/audit-entries?from=2026-11-05&to=2026-11-05&per_page=5&cursor=eyJpZCI6MzQ2LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9"},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":5,"next_cursor":"eyJpZCI6MzQ2LCJfcG9pbnRzVG9OZXh0SXRlbXMiOnRydWV9","prev_cursor":"eyJpZCI6MzUwLCJfcG9pbnRzVG9OZXh0SXRlbXMiOmZhbHNlfQ"}}
+order: 1000

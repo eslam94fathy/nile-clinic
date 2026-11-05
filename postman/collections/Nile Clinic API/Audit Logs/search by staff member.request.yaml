@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  What a staff member did, and what was done to their account. The name is their current one, and the role is the one held at the time.
+method: GET
+url: '{{base_url}}/audit-entries?staff_id={{staff_member_id}}&per_page=100'
+order: 3000
+queryParams:
+  - key: 'staff_id'
+    value: '{{staff_member_id}}'
+  - key: 'per_page'
+    value: '100'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with what was done to this account, naming who did it', () => {
+        pm.response.to.have.status(200);
+        const staff = Number(pm.collectionVariables.get('staff_member_id'));
+        const created = pm.response.json().data.find((entry) => entry.action === 'staff.created');
+        pm.expect(created.subject).to.eql({ type: 'staff_member', id: staff });
+        pm.expect(created.actor.role).to.eql('administrator');
+        pm.expect(created.changes.fields).to.include('password');
+        pm.expect(created.changes.values).to.not.have.property('password');
+      });
+examples: './.resources/search by staff member.resources/examples'

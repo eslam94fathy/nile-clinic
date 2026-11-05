@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  `subject_type` and `subject_id` go together.
+method: GET
+url: '{{base_url}}/audit-entries?subject_id=1'
+order: 10000
+queryParams:
+  - key: 'subject_id'
+    value: '1'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 on subject_type', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('subject_type');
+      });
+examples: './.resources/search with a record id alone.resources/examples'

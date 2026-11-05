@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Who changed one record. `subject_type` and `subject_id` go together. Entries hold field names, plus before and after values only for
+  statuses, money, roles, appointment times, and doctor assignments. Entries outlive a record that is later removed.
+method: GET
+url: '{{base_url}}/audit-entries?subject_type=charge&subject_id={{charge_id}}&per_page=100'
+order: 2000
+queryParams:
+  - key: 'subject_type'
+    value: 'charge'
+  - key: 'subject_id'
+    value: '{{charge_id}}'
+  - key: 'per_page'
+    value: '100'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with this charge only, and its before and after values', () => {
+        pm.response.to.have.status(200);
+        const { data } = pm.response.json();
+        const charge = Number(pm.collectionVariables.get('charge_id'));
+        pm.expect(data.every((entry) => entry.subject.type === 'charge' && entry.subject.id === charge)).to.eql(true);
+        const created = data.find((entry) => entry.action === 'charge.created');
+        pm.expect(created.changes.values.fee.from).to.eql(null);
+        pm.expect(created.outcome).to.eql('succeeded');
+        pm.expect(created.actor.type).to.eql('staff');
+      });
+examples: './.resources/search by record.resources/examples'

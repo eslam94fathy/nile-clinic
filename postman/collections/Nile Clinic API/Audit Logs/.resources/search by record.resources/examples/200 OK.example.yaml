@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/audit-entries?subject_type=charge&subject_id=35&per_page=100'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":339,"occurred_at":"2026-11-05T20:35:22.000000Z","action":"charge.cancelled","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"charge","id":35},"patient_id":51,"network_address":"172.22.0.1","changes":{"fields":["status","cancel_reason"],"values":{"status":{"to":"cancelled","from":"unpaid"}}},"filters":null},{"id":338,"occurred_at":"2026-11-05T20:35:22.000000Z","action":"refund.recorded","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"charge","id":35},"patient_id":51,"network_address":"172.22.0.1","changes":{"fields":["status","amount_paid"],"values":{"status":{"to":"unpaid","from":"paid"},"amount_paid":{"to":"0.00","from":"300.00"}}},"filters":null},{"id":336,"occurred_at":"2026-11-05T20:35:20.000000Z","action":"payment.recorded","outcome":"succeeded","actor":{"type":"staff","id":79,"name":"Naomi Rempel","role":"administrator"},"subject":{"type":"charge","id":35},"patient_id":51,"network_address":"172.22.0.1","changes":{"fields":["status","amount_paid"],"values":{"status":{"to":"paid","from":"partially_paid"},"amount_paid":{"to":"300.00","from":"100.10"}}},"filters":null}],"links":{"first":null,"last":null,"prev":null,"next":null},"meta":{"path":"http://localhost:8080/api/v1/audit-entries","per_page":100,"next_cursor":null,"prev_cursor":null}}
+order: 1000

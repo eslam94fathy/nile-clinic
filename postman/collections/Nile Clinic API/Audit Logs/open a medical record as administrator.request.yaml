@@ -1,0 +1,17 @@
+$kind: http-request
+description: |-
+  Setup: administrators may not read medical records, so this attempt is refused, and recorded for the next request.
+method: GET
+url: '{{base_url}}/doctors/me/encounters/{{encounter_id}}'
+order: 12000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for an administrator', () => pm.response.to.have.status(403));
+examples: './.resources/open a medical record as administrator.resources/examples'

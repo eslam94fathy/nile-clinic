@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  The same filters with the cursor. The page continues where the last one ended, with nothing repeated, although that search added an entry.
+method: GET
+url: '{{base_url}}/audit-entries?from={{encounter_date}}&to={{encounter_date}}&per_page=5&cursor={{audit_cursor}}'
+order: 7000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'per_page'
+    value: '5'
+  - key: 'cursor'
+    value: '{{audit_cursor}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200, continuing after the last page', () => {
+        pm.response.to.have.status(200);
+        const { data } = pm.response.json();
+        pm.expect(data.length).to.be.above(0);
+        pm.expect(data[0].id).to.be.below(Number(pm.collectionVariables.get('audit_last_id')));
+        pm.collectionVariables.set('audit_cursor', '');
+        pm.collectionVariables.set('audit_last_id', '');
+      });
+examples: './.resources/search the next page.resources/examples'

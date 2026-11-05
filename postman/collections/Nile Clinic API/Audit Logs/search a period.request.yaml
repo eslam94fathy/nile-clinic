@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Clinic days, both included, of any length. Results use a cursor rather than page numbers, because each search adds an entry and would shift
+  numbered pages. There is no total. Stores `meta.next_cursor` in `audit_cursor`.
+method: GET
+url: '{{base_url}}/audit-entries?from={{encounter_date}}&to={{encounter_date}}&per_page=5'
+order: 6000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'per_page'
+    value: '5'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with a page and a cursor to the next one', () => {
+        pm.response.to.have.status(200);
+        const { data, meta } = pm.response.json();
+        pm.expect(data).to.have.lengthOf(5);
+        pm.expect(meta.next_cursor).to.be.a('string');
+        pm.collectionVariables.set('audit_cursor', meta.next_cursor);
+        pm.collectionVariables.set('audit_last_id', data[data.length - 1].id);
+      });
+examples: './.resources/search a period.resources/examples'
