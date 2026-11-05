@@ -175,8 +175,8 @@ translations, exceptions, and the policy.
 
 - [X] T011 Create `app/Modules/Queues/Repositories/Contracts/QueueRepository.php` and `app/Modules/Queues/Repositories/EloquentQueueRepository.php` with the methods check-in needs
   - Scope (more methods are added in later stories), each with a docblock:
-    - `lockDay(int $doctorId, string $date): QueueDay` — `insertOrIgnore` the row (`last_number`
-      0, timestamps), then `where(...)->lockForUpdate()->firstOrFail()`, as
+    - `lockDay(int $doctorId, string $date): QueueDay` — `upsert` the row with a no-op update (`last_number`
+      0, timestamps; not `insertOrIgnore`, see R3), then `where(...)->lockForUpdate()->firstOrFail()`, unlike
       `EloquentDoctorScheduleRepository::lockOrCreateForDoctor` (R3)
     - `takeNumber(QueueDay $day): int` — increments `last_number`, saves, returns the new number
     - `create(array $attributes): QueueEntry`
@@ -245,7 +245,7 @@ today with the next queue number; the appointment becomes `checked_in`.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T017 [US1] Write `tests/Feature/Queues/CheckInTest.php` (US1-1…7, FR-001–FR-005)
+- [X] T017 [US1] Write `tests/Feature/Queues/CheckInTest.php` (US1-1…7, FR-001–FR-005)
   - Scope: clock fixed (Sunday 08:00); receptionist actor unless stated; factory appointments
     dated `2026-11-01`.
     - check in a 09:20 appointment → `201`; `data` matches the contract's `QueueEntry`:
@@ -267,7 +267,7 @@ today with the next queue number; the appointment becomes `checked_in`.
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Create `app/Modules/Queues/Services/QueueService.php` with `checkIn()` (R3, R6)
+- [X] T018 [US1] Create `app/Modules/Queues/Services/QueueService.php` with `checkIn()` (R3, R6)
   - Scope: inject `QueueRepository`, `AppointmentRepository`.
     `public function checkIn(User $actor, int $appointmentId): QueueEntry`:
     1. `$appointment = $this->appointments->find($appointmentId, ClinicClock::now()) ?? throw new
@@ -284,14 +284,14 @@ today with the next queue number; the appointment becomes `checked_in`.
     `QueueConflictException('already_checked_in')`. Return `$this->queue->find($entry->id)`.
   - Depends: T011, T014
 
-- [ ] T019 [P] [US1] Create `app/Modules/Queues/Http/Resources/QueueEntryResource.php` (R8)
+- [X] T019 [P] [US1] Create `app/Modules/Queues/Http/Resources/QueueEntryResource.php` (R8)
   - Scope: `id`, `queue_number`, `status` (`->value`), `walk_in` (`appointment_id === null`),
     `arrived_at`, `called_at`, `finished_at`, `left_at` (ISO 8601 or null), `appointment` `{id,
     start, end}` via `ClockTime::fromMinutes` or null, `doctor` `{id, name: doctor->user->name,
     title}`, `patient` `{id, full_name, phone}` — never the note, national ID, address, emergency
     contact (FR-009).
 
-- [ ] T020 [US1] Create `app/Modules/Queues/Http/Controllers/CheckInController.php` and the route
+- [X] T020 [US1] Create `app/Modules/Queues/Http/Controllers/CheckInController.php` and the route
   - Scope: `__invoke(Request $request, int $appointment)` → `Gate::authorize('create',
     QueueEntry::class)` first, then `QueueEntryResource::make($this->queue->checkIn(...))
     ->response()->setStatusCode(201)`. Route in `routes/api.php` inside
@@ -300,7 +300,7 @@ today with the next queue number; the appointment becomes `checked_in`.
   - Accept: T017 passes; `route:list --path=check-in` shows the route.
   - Depends: T018, T019
 
-- [ ] T021 [US1] Create `tests/Support/queue-action.php` (child process for the concurrency tests, R9)
+- [X] T021 [US1] Create `tests/Support/queue-action.php` (child process for the concurrency tests, R9)
   - Scope: plain PHP script like `tests/Support/book-appointment.php` (same bootstrap and **exit 2
     unless** `DB::connection()->getDatabaseName() === 'clinic_testing'`). Arguments: `action
     actorId targetId startAtMicrotime`, where `action` is `check-in` (target = appointment id,
@@ -311,7 +311,7 @@ today with the next queue number; the appointment becomes `checked_in`.
     `{"result":"conflict","reason":"..."}`, or `{"result":"error","class":"...","message":"..."}`;
     exit 0.
 
-- [ ] T022 [US1] Write `tests/Feature/Queues/ConcurrentQueueTest.php` `#[Group('concurrency')]` — check-in case (SC-002, R9)
+- [X] T022 [US1] Write `tests/Feature/Queues/ConcurrentQueueTest.php` `#[Group('concurrency')]` — check-in case (SC-002, R9)
   - Scope: `use DatabaseTruncation`, truncate again in `tearDown()` (as
     `ConcurrentBookingTest`). No `travelTo`. One doctor, 8 patients, 8 factory appointments on
     `ClinicClock::today()` at `09:00`, `09:20`, … (any times), a receptionist. `Process::pool`

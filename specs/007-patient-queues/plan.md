@@ -77,7 +77,7 @@ all-or-nothing changes (FR-016); clinic wall-clock "today" (FR-018); synthetic d
                               │   Form Request or Gate → QueueEntryPolicy (class-level)
                               ▼
    QueueService / DoctorQueueService ─ DB::transaction(attempts: 3)
-     1 lock queue day        ─▶ QueueRepository::lockDay(doctorId, today)   (insertOrIgnore + FOR UPDATE)
+     1 lock queue day        ─▶ QueueRepository::lockDay(doctorId, today)   (no-op upsert + FOR UPDATE)
      2 lock appointment      ─▶ AppointmentRepository::lockById            (check-in, undo, finish)
      3 lock patient          ─▶ PatientRepository::lockById                (call next, walk-in)
      4 check + write         ─▶ QueueRepository, AppointmentRepository::update

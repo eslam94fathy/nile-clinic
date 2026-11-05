@@ -65,8 +65,11 @@ in the plan's Decisions table.
 
 - **Decision**: A small table `queue_days` (`doctor_id`, `date`, `last_number`, unique per doctor
   and date). Every change to a doctor's queue on a day (check-in, walk-in, call next, finish, leave,
-  undo) first makes sure the row exists (`insertOrIgnore`) and locks it `FOR UPDATE`, as feature 005
-  does for the schedule row (005 R4). Then, inside the same transaction:
+  undo) first makes sure the row exists (a no-op `INSERT … ON DUPLICATE KEY UPDATE`) and locks it
+  `FOR UPDATE`. Feature 005's `insertOrIgnore` (005 R4) does not work here: on a duplicate it keeps a
+  shared lock, so simultaneous first changes of a day all wait to upgrade and deadlock, more than
+  `attempts: 3` absorbs (observed in `ConcurrentQueueTest` on 2026-11-05, 5 of 5 runs failed; none in
+  10 runs after the change). Then, inside the same transaction:
   - new entries take `last_number + 1`, and the row is updated — numbers are unique, without gaps,
     and never reused even after an undo deletes the entry (spec FR-003);
   - "call next" and "finish" read the doctor's entries knowing no other change for that doctor and

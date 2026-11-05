@@ -12,13 +12,16 @@ class EloquentQueueRepository implements QueueRepository
     {
         $now = now();
 
-        QueueDay::query()->insertOrIgnore([
+        // Not insertOrIgnore: on a duplicate it keeps a shared lock, so simultaneous first changes
+        // of a day all wait to upgrade to FOR UPDATE and deadlock. A no-op ON DUPLICATE KEY UPDATE
+        // takes the exclusive lock at once (research R3).
+        QueueDay::query()->upsert([[
             'doctor_id' => $doctorId,
             'date' => $date,
             'last_number' => 0,
             'created_at' => $now,
             'updated_at' => $now,
-        ]);
+        ]], ['doctor_id', 'date'], ['doctor_id']);
 
         return QueueDay::query()->where('doctor_id', $doctorId)->where('date', $date)->lockForUpdate()->firstOrFail();
     }
