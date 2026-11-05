@@ -155,6 +155,8 @@ fail to save and confirm that the change or the opening does not go ahead.
   A failed sign-in to a deactivated account is recorded like any other.
 - **Actions that repeat**: Setting the same discount again is still recorded, because it records a new staff member and
   reason. Only an update that leaves every field as it was creates no entry.
+- **Patient updates that change nothing**: These create no update entry, but they return the whole record, so they count as
+  opening it. Otherwise sending one known field would read the rest of a patient's details without a trace.
 - **Listings**: Lists and searches, such as the patient search, today's queue, and the charges list, are not recorded,
   nor is opening a single charge. Text typed into a search is never recorded.
 - **Patient changes**: An entry shows that a patient's phone number changed, but not the old or new number. A discount
@@ -200,7 +202,8 @@ fail to save and confirm that the change or the opening does not go ahead.
   - **Money (009)**: setting a fee, charging a visit, recording a payment or a refund, setting a discount, and cancelling a
     charge.
 - **FR-004**: These openings MUST be recorded when the record is returned: opening one patient's details, opening one medical
-  record, and viewing a patient's medical history. Listings, searches, and opening a charge MUST NOT be recorded.
+  record, and viewing a patient's medical history. Listings, searches, and opening a charge MUST NOT be recorded. An update to a
+  patient that changes nothing still returns the whole record, so it MUST be recorded as an opening.
 - **FR-005**: These refused attempts MUST be recorded: a failed sign-in, and a staff member being refused when opening a medical
   record or patient's medical history that exists. Recording an attempt MUST NOT change the response that feature 002 or 008 requires.
 - **FR-006**: An entry for a change MUST list the names of the fields changed. It MUST also hold before and after values for

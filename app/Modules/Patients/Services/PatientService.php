@@ -83,6 +83,12 @@ class PatientService
 
             $this->audit->recordChanges(AuditAction::PatientUpdated, $patient, AuditSubject::Patient, patientId: $patient->id);
 
+            // Nothing changed, but the caller still gets the whole record, so this is an opening (FR-004).
+            // Otherwise sending one known field would read the rest of the details without a trace.
+            if (! $patient->wasChanged()) {
+                $this->audit->record(AuditAction::PatientOpened, AuditSubject::Patient, $patient->id, $patient->id);
+            }
+
             return $patient;
         }));
     }

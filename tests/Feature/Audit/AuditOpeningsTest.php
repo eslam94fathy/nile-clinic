@@ -17,6 +17,7 @@ use App\Modules\Staff\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Audit\Concerns\InteractsWithAuditEntries;
 use Tests\TestCase;
 
@@ -183,5 +184,65 @@ class AuditOpeningsTest extends TestCase
 
         $subjects = AuditEntry::query()->where('patient_id', $patient->id)->pluck('subject_type')->unique();
         $this->assertTrue($subjects->contains(AuditSubject::Patient) && $subjects->contains(AuditSubject::Encounter));
+    }
+
+    /**
+     * An update that changes nothing still returns the whole record, so it must leave a trace, or sending
+     * one known field would read the rest of a patient's details unseen. An empty body is refused (003).
+     *
+     * @return array<string, array{array<string, string>}>
+     */
+    public static function updatesThatChangeNothing(): array
+    {
+        return [
+            'the current phone' => [['phone' => '01000000077']],
+            'the current name' => [['full_name' => 'Synthetic Current Name']],
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $body
+     */
+    #[DataProvider('updatesThatChangeNothing')]
+    public function test_an_update_that_changes_nothing_is_recorded_as_an_opening(array $body): void
+    {
+        $patient = Patient::factory()->create(['full_name' => 'Synthetic Current Name', 'phone' => '01000000077']);
+        $receptionist = User::factory()->receptionist()->create();
+        Sanctum::actingAs($receptionist);
+
+        $this->patchJson("/api/v1/patients/{$patient->id}", $body)
+            ->assertOk()
+            ->assertJsonPath('data.phone', '01000000077');
+
+        $this->assertOneEntry(AuditAction::PatientOpened, [
+            'outcome' => AuditOutcome::Succeeded,
+            'actor_id' => $receptionist->id,
+            'subject_type' => AuditSubject::Patient,
+            'subject_id' => $patient->id,
+            'patient_id' => $patient->id,
+        ]);
+        $this->assertNoEntries(AuditAction::PatientUpdated);
+    }
+
+    public function test_an_update_that_changes_nothing_returns_no_details_when_the_entry_fails(): void
+    {
+        $patient = Patient::factory()->create(['full_name' => 'Planted Patient Name', 'phone' => '01000000077']);
+        Sanctum::actingAs(User::factory()->receptionist()->create());
+        $this->failAuditWrites();
+
+        $response = $this->patchJson("/api/v1/patients/{$patient->id}", ['phone' => '01000000077'])->assertStatus(500);
+
+        $this->assertStringNotContainsString('Planted Patient Name', $response->getContent());
+    }
+
+    public function test_an_update_that_changes_something_is_one_update_and_no_opening(): void
+    {
+        $patient = Patient::factory()->create();
+        Sanctum::actingAs(User::factory()->receptionist()->create());
+
+        $this->patchJson("/api/v1/patients/{$patient->id}", ['phone' => '01000000002'])->assertOk();
+
+        $this->assertOneEntry(AuditAction::PatientUpdated);
+        $this->assertNoEntries(AuditAction::PatientOpened);
     }
 }

@@ -346,7 +346,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: `--filter=AuditRefusedOpeningsTest` → fails.
 
 - [X] T035 [US2] Add `open` to `app/Modules/Patients/Services/PatientService.php` and use it in `app/Modules/Patients/Http/Controllers/PatientController.php` (R8)
-  - Scope: `open(int $id): Patient`: `find`, then `record(PatientOpened, Patient, $id, $id)`. `PatientController::show` calls `open` in place of `find`. **`find` is unchanged**, as `update` and other modules call it. Authorization stays first.
+  - Scope: `open(int $id): Patient`: `find`, then `record(PatientOpened, Patient, $id, $id)`. `PatientController::show` calls `open` in place of `find`. **`find` is unchanged**, as `update` and other modules call it. Authorization stays first. `update` also records `patient.opened` when nothing changed, as it still returns the whole record (research R8).
   - Verify: the patient tests of T033 pass; `docker compose exec app php artisan test tests/Feature/Patients` → pass unchanged.
   - Depends: T033
 

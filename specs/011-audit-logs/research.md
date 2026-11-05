@@ -114,6 +114,7 @@ Clarifications). Items marked *(approved — Dn)* were approved by the user on 2
   a page is about to be returned. The shared `find` methods stay unchanged, because other modules and write paths call them.
 - **Rationale**: Only the `show` routes count as an opening (FR-004). No transaction is needed: an entry is the only write, and if it fails the record is not returned
   (FR-007, US4 scenario 3).
+- **Updates that change nothing**: `PatientService::update` returns the whole record even when nothing changed, so re-sending one known field reads the rest, and it records `patient.opened`. An empty body is already refused by feature 003. Found by a security review after implementation. `EncounterService::save` is not affected: it replaces all five fields, so a no-op returns only text the author just sent, and only the author may write to that draft, which cannot have addenda.
 - **History**: Recorded on every page requested, and when a doctor's list is empty but the request succeeds (`200`). Subject is the patient.
 - **Trade-off, timing**: A refused doctor's request does one more insert when a record exists, which in principle could reveal existence through timing, despite 008 FR-013.
   It is one small insert against network noise, and the request already needed lookups. Accepted and noted in the plan's risks.
