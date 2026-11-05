@@ -269,7 +269,7 @@ charge shows as paid.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T019 [P] [US2] Write `tests/Feature/Payments/ChargeVisitTest.php` (US2-1…4, FR-003–FR-006)
+- [X] T019 [P] [US2] Write `tests/Feature/Payments/ChargeVisitTest.php` (US2-1…4, FR-003–FR-006)
   - Scope: clock fixed; receptionist actor; doctor with a `350.00` fee.
     - charge a `seen` visit → `201`, `data` exactly the contract's `Charge`: `status: unpaid`, `fee: "350.00"`,
       `discount: "0.00"`, `amount_due: "350.00"`, `amount_paid: "0.00"`, `balance: "350.00"`, `visit_id`, `date`,
@@ -285,7 +285,7 @@ charge shows as paid.
     - doctor actor → `403`, nothing created
   - Verify: `--filter=ChargeVisitTest` → fails
 
-- [ ] T020 [P] [US2] Write `tests/Feature/Payments/RecordPaymentTest.php` (US2-5, 6, FR-008–FR-010)
+- [X] T020 [P] [US2] Write `tests/Feature/Payments/RecordPaymentTest.php` (US2-5, 6, FR-008–FR-010)
   - Scope: clock fixed; a `300.00` charge.
     - pay `100.10` `cash` → `201`, `partially_paid`, `amount_paid: "100.10"`, `balance: "199.90"`, one payment exactly
       `{id, amount, method, received_by {id, name}, received_at}`
@@ -298,7 +298,7 @@ charge shows as paid.
     - administrator → `201`; doctor → `403` on both `POST` and `GET`
   - Verify: `--filter=RecordPaymentTest` → fails
 
-- [ ] T021 [P] [US2] Write `tests/Feature/Payments/MoneyExactnessTest.php` (SC-004, R3)
+- [X] T021 [P] [US2] Write `tests/Feature/Payments/MoneyExactnessTest.php` (SC-004, R3)
   - Scope: a `7.00` fee and 100 payments of `0.07`: `paid`, `balance: "0.00"`, `amount_paid: "7.00"`; a helper asserts after
     every payment that `charges.amount_paid` equals the database sum of payments less refunds, comparing as strings.
     Also `0.10` + `0.20` on a `0.30` fee ends `paid`.
@@ -306,13 +306,13 @@ charge shows as paid.
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Create `app/Modules/Payments/Repositories/Contracts/ChargeRepository.php` and `app/Modules/Payments/Repositories/EloquentChargeRepository.php`, and bind them in the provider
+- [X] T022 [US2] Create `app/Modules/Payments/Repositories/Contracts/ChargeRepository.php` and `app/Modules/Payments/Repositories/EloquentChargeRepository.php`, and bind them in the provider
   - Scope (more methods are added in later stories), each with a docblock: `find(int $id): ?Charge` with `doctor.user`,
     `patient`, `chargedBy`, `discountedBy`, `cancelledBy`, `payments.receivedBy`, `refunds.refundedBy`; `lockById(int $id):
     ?Charge`; `create(array)`; `update(Charge, array)`; `activeExistsForVisit(int $queueEntryId): bool`; `addPayment(Charge,
     string $amount, PaymentMethod $method, int $userId): Payment`. No method updates or deletes a payment (FR-012).
 
-- [ ] T023 [US2] Create `app/Modules/Payments/Services/ChargeService.php` with `charge()`, `find()`, and `pay()` (R3, R5, R6)
+- [X] T023 [US2] Create `app/Modules/Payments/Services/ChargeService.php` with `charge()`, `find()`, and `pay()` (R3, R5, R6)
   - Scope: inject `ChargeRepository`, `DoctorFeeRepository`, `QueueRepository`.
     - `charge(User $actor, int $visitId): Charge` — transaction, `attempts: 3`, with `QueueRepository::lockById` as the
       first read: null → `VisitNotFoundException`; `left` → `['visit' => visit_left]`; `activeExistsForVisit` →
@@ -328,14 +328,14 @@ charge shows as paid.
     Docblock: no decision is made from a plain read.
   - Depends: T011, T015, T022
 
-- [ ] T024 [P] [US2] Create `app/Modules/Payments/Http/Requests/RecordPaymentRequest.php` and `app/Modules/Payments/Http/Resources/ChargeSummaryResource.php`, `ChargeResource.php`, `PaymentResource.php`, `RefundResource.php`
+- [X] T024 [P] [US2] Create `app/Modules/Payments/Http/Requests/RecordPaymentRequest.php` and `app/Modules/Payments/Http/Resources/ChargeSummaryResource.php`, `ChargeResource.php`, `PaymentResource.php`, `RefundResource.php`
   - Scope: request: `authorize()` → `can('pay', Charge::class)`; `amount` `required`, `numeric`, `decimal:0,2`, `gt:0`,
     `max:100000`; `method` `required`, `Rule::in(PaymentMethod::values())`; attributes from `payments::attributes`; typed
     accessors `amount(): string`, `method(): PaymentMethod`. Resources: exactly the contract's schemas; `amount_due` and
     `balance` from `Money`; `visit_id` is `queue_entry_id`; `charged_at` is `created_at`; patient `{id, full_name, phone}` only.
     `ChargeResource` extends `ChargeSummaryResource`.
 
-- [ ] T025 [US2] Create `app/Modules/Payments/Http/Controllers/VisitChargeController.php` with `store()`, `app/Modules/Payments/Http/Controllers/ChargeController.php` with `show()` and `pay()`, and the routes
+- [X] T025 [US2] Create `app/Modules/Payments/Http/Controllers/VisitChargeController.php` with `store()`, `app/Modules/Payments/Http/Controllers/ChargeController.php` with `show()` and `pay()`, and the routes
   - Scope: `store(Request, int $visit)` → `Gate::authorize('create', Charge::class)` first, `201`. `show(int $charge)` →
     `Gate::authorize('viewAny', Charge::class)` first. `pay(RecordPaymentRequest, int $charge)` → `201`. Routes:
     `POST /visits/{visit}/charge` `payments.charge`; `GET /charges/{charge}` `payments.charges.show`; `POST
@@ -343,7 +343,7 @@ charge shows as paid.
   - Accept: T019, T020, T021 pass.
   - Depends: T023, T024
 
-- [ ] T026 [US2] Create `tests/Support/payment-action.php` and `tests/Feature/Payments/ConcurrentPaymentTest.php` `#[Group('concurrency')]` with the charge and payment cases (SC-002, R3)
+- [X] T026 [US2] Create `tests/Support/payment-action.php` and `tests/Feature/Payments/ConcurrentPaymentTest.php` `#[Group('concurrency')]` with the charge and payment cases (SC-002, R3)
   - Scope: the script is like `tests/Support/encounter-action.php`, with the same bootstrap and **exit 2 unless**
     `DB::connection()->getDatabaseName() === 'clinic_testing'`. Arguments: `action actorId targetId startAt [amount]`, where
     `action` is `charge` (target = visit) or `pay` (target = charge; `cash`). `refund` and `undo` are added in T042. Prints
