@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  A cancelled charge stays on record after its visit is removed: `visit_id` is null, and it keeps its patient, doctor, and date.
+method: GET
+url: '{{base_url}}/charges/:charge'
+order: 28000
+pathVariables:
+  - key: 'charge'
+    value: '{{undo_charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 kept with no visit', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ status: 'cancelled' });
+        pm.expect(pm.response.json().data.visit_id).to.be.null;
+        pm.expect(pm.response.json().data.patient.id).to.eql(Number(pm.collectionVariables.get('patient_id')));
+      });
+examples: './.resources/get cancelled charge.resources/examples'

@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Setup for the next two requests: the fee rises to `400.00`.
+method: PUT
+url: '{{base_url}}/doctors/:doctor/fee'
+order: 12000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "400.00"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 new fee', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ amount: '400.00' });
+      });
+examples: './.resources/change doctor fee.resources/examples'

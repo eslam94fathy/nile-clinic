@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  With the charge cancelled, the undo works and the appointment is scheduled again.
+method: DELETE
+url: '{{base_url}}/queue/:entry'
+order: 27000
+pathVariables:
+  - key: 'entry'
+    value: '{{charged_entry_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('204 No Content', () => pm.response.to.have.status(204));
+examples: './.resources/undo check-in after cancelling.resources/examples'

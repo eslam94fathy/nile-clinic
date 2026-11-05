@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  More than two decimals, zero, negative, or above 100000 is 422 on `amount`, and nothing changes.
+method: PUT
+url: '{{base_url}}/doctors/:doctor/fee'
+order: 2000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "1.999"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 on amount', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('amount');
+      });
+examples: './.resources/set a bad fee.resources/examples'

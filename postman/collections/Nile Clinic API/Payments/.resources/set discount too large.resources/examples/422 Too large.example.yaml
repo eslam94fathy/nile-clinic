@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/charges/6/discount'
+  method: PUT
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The discount is more than the fee less what has been paid.","errors":{"amount":["The discount is more than the fee less what has been paid."]}}
+order: 1000

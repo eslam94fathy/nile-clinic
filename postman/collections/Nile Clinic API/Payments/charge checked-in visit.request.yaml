@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Setup: a waiting visit can be charged. The id is stored in `undo_charge_id`.
+method: POST
+url: '{{base_url}}/visits/:visit/charge'
+order: 24000
+pathVariables:
+  - key: 'visit'
+    value: '{{charged_entry_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 unpaid', () => {
+        pm.response.to.have.status(201);
+        pm.collectionVariables.set('undo_charge_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/charge checked-in visit.resources/examples'

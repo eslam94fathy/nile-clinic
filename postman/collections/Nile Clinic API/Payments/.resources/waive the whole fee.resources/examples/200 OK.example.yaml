@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/charges/6/discount'
+  method: PUT
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":6,"visit_id":31,"status":"paid","date":"2026-11-05","doctor":{"id":22,"name":"Pearline Goyette II","title":"Consultant"},"patient":{"id":29,"full_name":"Darryl Stokes","phone":"01986104476"},"fee":"400.00","discount":"400.00","amount_due":"0.00","amount_paid":"0.00","balance":"0.00","charged_at":"2026-11-05T14:43:36.000000Z","charged_by":{"id":55,"name":"Rogelio Beahan"},"discount_reason":"Postman synthetic waiver","discounted_by":{"id":54,"name":"Fae Maggio"},"discounted_at":"2026-11-05T14:43:37.000000Z","cancel_reason":null,"cancelled_by":null,"cancelled_at":null,"payments":[],"refunds":[]}}
+order: 1000

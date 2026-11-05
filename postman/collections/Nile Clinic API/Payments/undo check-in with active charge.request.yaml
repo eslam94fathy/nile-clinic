@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Undoing a check-in removes the visit, so it is refused while the visit has an active charge: 422 `has_active_charge` on `entry`.
+method: DELETE
+url: '{{base_url}}/queue/:entry'
+order: 25000
+pathVariables:
+  - key: 'entry'
+    value: '{{charged_entry_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 active charge', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('entry');
+      });
+examples: './.resources/undo check-in with active charge.resources/examples'

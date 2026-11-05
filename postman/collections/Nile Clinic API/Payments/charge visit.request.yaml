@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Charge a visit at the doctor's fee at this moment; administrators and receptionists. Allowed while it is
+  waiting, with the doctor, or seen, on its day or later. Uses the visit from "Encounters/add walk-in", and stores
+  the id in `charge_id`. A left visit, a second active charge, or a doctor with no fee is 422 on `visit`. Payment
+  never affects the queue or medical records.
+method: POST
+url: '{{base_url}}/visits/:visit/charge'
+order: 5000
+pathVariables:
+  - key: 'visit'
+    value: '{{visit_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 unpaid at the fee', () => {
+        pm.response.to.have.status(201);
+        pm.expect(pm.response.json().data).to.include({ status: 'unpaid', fee: '300.00', amount_paid: '0.00', balance: '300.00' });
+        pm.expect(pm.response.json().data.patient).to.have.keys('id', 'full_name', 'phone');
+        pm.collectionVariables.set('charge_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/charge visit.resources/examples'

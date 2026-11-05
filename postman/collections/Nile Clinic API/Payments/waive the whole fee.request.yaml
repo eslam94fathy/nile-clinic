@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  A discount of the whole fee leaves nothing owed, so the charge shows as `paid`.
+method: PUT
+url: '{{base_url}}/charges/:charge/discount'
+order: 22000
+pathVariables:
+  - key: 'charge'
+    value: '{{second_charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "400.00",
+      "reason": "Postman synthetic waiver"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 nothing owed', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ status: 'paid', balance: '0.00' });
+      });
+examples: './.resources/waive the whole fee.resources/examples'

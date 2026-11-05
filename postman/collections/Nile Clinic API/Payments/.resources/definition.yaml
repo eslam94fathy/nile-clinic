@@ -1,0 +1,13 @@
+$kind: collection
+name: Payments
+description: |-
+  Consultation fees, charges on visits, and money received (feature 009). For administrators and
+  receptionists; only administrators set fees, discount, and refund; doctors get 403 on everything. This
+  records money handled at the clinic and moves none; no card details are stored. Money is in Egyptian
+  pounds, returned as strings such as `"150.00"`. Charges, payments, and refunds are never deleted.
+
+  Runs after Encounters (uses `visit_id`, `encounter_date`, `patient_id`, `doctor_id`,
+  `queue_appointment_2_id`, and `new_doctor_email`). The administrator's `token` is used throughout, so
+  the receptionist's access is covered by the automated tests rather than this folder. Use synthetic
+  text only. Contract: `specs/009-payments/contracts/payments.openapi.yaml`.
+order: 8300

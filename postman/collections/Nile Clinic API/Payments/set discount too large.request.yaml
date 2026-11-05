@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  A discount cannot exceed the fee less what is paid: 422 `discount_too_large` on `amount`.
+method: PUT
+url: '{{base_url}}/charges/:charge/discount'
+order: 21000
+pathVariables:
+  - key: 'charge'
+    value: '{{second_charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "400.01",
+      "reason": "Postman synthetic hardship"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 too large', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('amount');
+      });
+examples: './.resources/set discount too large.resources/examples'

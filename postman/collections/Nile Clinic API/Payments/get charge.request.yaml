@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  One charge with every payment and refund; administrators and receptionists. It keeps the fee it was created with, whatever happens to the doctor's fee later.
+method: GET
+url: '{{base_url}}/charges/:charge'
+order: 13000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the fee is unchanged', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ fee: '300.00', status: 'paid' });
+        pm.expect(pm.response.json().data.payments).to.have.lengthOf(2);
+      });
+examples: './.resources/get charge.resources/examples'

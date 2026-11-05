@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/charges/5/payments'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This charge has been cancelled.","errors":{"charge":["This charge has been cancelled."]}}
+order: 1000

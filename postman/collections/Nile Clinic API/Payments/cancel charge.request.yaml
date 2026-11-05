@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Cancel a charge with no money held; administrators and receptionists. `reason` is required. It stays on record,
+  and the visit can be charged again.
+method: POST
+url: '{{base_url}}/charges/:charge/cancel'
+order: 17000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Postman synthetic mistake"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 cancelled', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ status: 'cancelled', cancel_reason: 'Postman synthetic mistake' });
+      });
+examples: './.resources/cancel charge.resources/examples'

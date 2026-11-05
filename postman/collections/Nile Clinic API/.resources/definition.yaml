@@ -9,11 +9,12 @@ description: |-
   `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,
   `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,
   `specs/006-appointments/contracts/appointments.openapi.yaml`,
-  `specs/007-patient-queues/contracts/queues.openapi.yaml`, and
-  `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.
+  `specs/007-patient-queues/contracts/queues.openapi.yaml`,
+  `specs/008-medical-encounters/contracts/encounters.openapi.yaml`, and
+  `specs/009-payments/contracts/payments.openapi.yaml`.
 
   **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →
-  Doctors → Scheduling → Appointments → Queues → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
+  Doctors → Scheduling → Appointments → Queues → Encounters → Payments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
   `admin_email` / `admin_password` to an administrator created with `php artisan
   staff:create-admin`. All data must be synthetic.
 
@@ -105,10 +106,22 @@ variables:
     description: 'Queue entry id, set by "Encounters/add walk-in".'
   - key: doctor_token
     value: ''
-    description: 'Set by the "sign in as doctor" requests in Queues and Encounters; cleared by their "sign out as doctor" requests.'
+    description: 'Set by the "sign in as doctor" requests in Queues, Encounters, and Payments; cleared by their "sign out as doctor" requests.'
   - key: encounter_id
     value: ''
     description: 'Set by "Encounters/start encounter".'
   - key: encounter_date
     value: ''
     description: 'The visit date, set by "Encounters/start encounter".'
+  - key: charge_id
+    value: ''
+    description: 'Set by "Payments/charge visit".'
+  - key: second_charge_id
+    value: ''
+    description: 'Set by "Payments/charge visit at new fee".'
+  - key: charged_entry_id
+    value: ''
+    description: 'Queue entry id, set by "Payments/check in appointment to charge".'
+  - key: undo_charge_id
+    value: ''
+    description: 'Set by "Payments/charge checked-in visit".'

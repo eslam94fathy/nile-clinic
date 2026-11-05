@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/visits'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The date field is required.","errors":{"date":["The date field is required."]}}
+order: 2000

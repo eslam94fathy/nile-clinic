@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  A cancelled charge takes no further changes: 422 `charge_cancelled` on `charge`.
+method: POST
+url: '{{base_url}}/charges/:charge/payments'
+order: 18000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "1.00",
+      "method": "cash"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 cancelled', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('charge');
+      });
+examples: './.resources/record payment on cancelled charge.resources/examples'

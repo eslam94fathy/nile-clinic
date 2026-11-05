@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/22/fee'
+  method: PUT
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"doctor":{"id":22,"name":"Pearline Goyette II","title":"Consultant"},"amount":"300.00","set_at":"2026-11-05T14:43:33.000000Z","set_by":{"id":54,"name":"Fae Maggio"}}}
+order: 1000
