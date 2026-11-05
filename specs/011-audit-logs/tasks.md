@@ -453,26 +453,26 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Purpose**: Proof across the whole feature, documentation, measurement, and verification.
 
-- [ ] T045 [P] Write `tests/Feature/Audit/AuditAuthorizationTest.php` (SC-005, FR-013, FR-016)
+- [X] T045 [P] Write `tests/Feature/Audit/AuditAuthorizationTest.php` (SC-005, FR-013, FR-016)
   - Scope: every role against `GET /audit-entries`: only the administrator `200`; receptionist and doctor `403`, also with invalid filters, so refusal comes before validation; no token `401`; a deactivated account's token `401`.
   - Verify: `--filter=AuditAuthorizationTest` → pass.
 
-- [ ] T046 [P] Write `tests/Feature/Audit/AuditPrivacyTest.php` (SC-003, FR-006, FR-008, FR-012, FR-017)
+- [X] T046 [P] Write `tests/Feature/Audit/AuditPrivacyTest.php` (SC-003, FR-006, FR-008, FR-012, FR-017)
   - Scope: create a patient with unique planted synthetic values in name, patient number, phone, national ID, address, and emergency contact; drive updates that plant values in an appointment note and cancellation reason, discount, refund, and cancel reasons, a time-off reason, each clinical field, an addendum, a password, and a patient search's text. Then assert that no planted value appears in `SELECT details FROM audit_entries` (all rows, as raw JSON) or in the body of a search across all entries. Also assert that no value of an encounter's ciphertext appears. Then capture the application log with a temporary `single` channel, as `EncounterPrivacyTest` does, force a recording failure on a refused opening and on a change, and assert that the failure is logged and that no planted value is in the log.
   - Verify: `--filter=AuditPrivacyTest` → pass.
 
-- [ ] T047 [P] Write `tests/Feature/Audit/AuditMessagesTest.php` (SC-008, FR-019)
+- [X] T047 [P] Write `tests/Feature/Audit/AuditMessagesTest.php` (SC-008, FR-019)
   - Scope: as `PaymentsMessagesTest`, for `en` and `ar`: `invalid_cursor`, validation messages using the translated attributes, and `auth.forbidden`. The JSON keys of a search response are identical in both locales, and actions and outcomes are never translated.
   - Verify: `--filter=AuditMessagesTest` → pass.
 
-- [ ] T048 [P] Update `docs/architecture.md`, `docs/roadmap.md`, and `README.md`
+- [X] T048 [P] Update `docs/architecture.md`, `docs/roadmap.md`, and `README.md`
   - Scope:
     - Architecture: a short "Audit trail" section: a new sensitive action adds an `AuditAction` case and an `AuditTrail` call inside its transaction, with a coverage test method, and any new value needs a deliberate allow-list entry. Also add `Http/Middleware/` to the module layout, for middleware used by one module's routes; `app/Http/Middleware/` stays for cross-cutting concerns.
     - Roadmap: Audit logs row as `011`, `Done`, with the spec link. Add a "Before production" note on retention, network addresses, and trusted proxies (plan: Risks).
     - README: a short "Audit logs" section after "Reports": what is recorded, administrators only, append only, no patient details or clinical text, cursor paging, no retention yet, and a note that behind a load balancer trusted proxies must be configured. State that for a `refused` `auth.sign_in`, the staff member is the account that was targeted, not necessarily the person who tried. Link the contract.
   - Verify: `postman spec lint specs/011-audit-logs/contracts/audit.openapi.yaml --issueType=syntax` → no issues.
 
-- [ ] T049 Run Pint and the full suite over `app/Modules/` and `tests/`
+- [X] T049 Run Pint and the full suite over `app/Modules/` and `tests/`
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline

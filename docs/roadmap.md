@@ -22,7 +22,7 @@ this file when a feature is completed or the order changes.
 | 008 | Medical encounters         | Done    | 003, 004, 006, 007 | [specs/008-medical-encounters](../specs/008-medical-encounters/spec.md) |
 | 009 | Payments                   | Done    | 003, 004, 007 | [specs/009-payments](../specs/009-payments/spec.md) |
 | 010 | Reports                    | Done    | 003–009       | [specs/010-reports](../specs/010-reports/spec.md) |
-| —   | Audit logs                 | Next    | 002           | —                                                          |
+| 011 | Audit logs                 | Done    | 002–010       | [specs/011-audit-logs](../specs/011-audit-logs/spec.md) |
 
 Numbers for planned features are indicative; the actual number is assigned by `/speckit-specify`
 when the spec directory is created.
@@ -42,10 +42,13 @@ when the spec directory is created.
 - **009 Payments**: fees and payments stored as decimals; historical prices preserved on each
   record.
 - **010 Reports**: operational and financial summaries for administrators.
-- **Audit logs**: who did what and when on sensitive records. It has no dependency beyond 002, so it
-  can be built early or alongside 003 and later features.
+- **011 Audit logs**: who did what and when on sensitive records, for administrators. Append-only.
 
 ## Before production
 
 Applicable Egyptian health-data and data-protection obligations must be identified for legal review
-before any production use (see `CLAUDE.md`, Security and Privacy).
+before any production use (see `CLAUDE.md`, Security and Privacy). For the audit trail (011) these include how
+long entries must be kept, since none are removed today, and whether network addresses count as personal data.
+
+Behind a load balancer, trusted proxies must be configured. Until then, every audit entry shows the balancer's
+address, and the per-address sign-in limit counts all clients as one.
