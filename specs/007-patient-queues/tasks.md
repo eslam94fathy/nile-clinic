@@ -522,7 +522,7 @@ skipped by call next, the second's appointment is scheduled again.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T037 [US5] Write `tests/Feature/Queues/QueueCorrectionsTest.php` (US5-1…4, FR-014, FR-015)
+- [X] T037 [US5] Write `tests/Feature/Queues/QueueCorrectionsTest.php` (US5-1…4, FR-014, FR-015)
   - Scope: clock fixed; two appointments checked in through the API (numbers 1, 2) and a walk-in
     (3).
     - leave entry 1 → `200`, `left`, `left_at` now, `left_by` the actor
@@ -541,11 +541,11 @@ skipped by call next, the second's appointment is scheduled again.
 
 ### Implementation for User Story 5
 
-- [ ] T038 [US5] Add `lockById` and `delete` to `QueueRepository` / `EloquentQueueRepository`
+- [X] T038 [US5] Add `lockById` and `delete` to `QueueRepository` / `EloquentQueueRepository`
   - Scope: `lockById(int $id): ?QueueEntry` — `lockForUpdate()->find($id)`, no relations;
     `delete(QueueEntry $entry): void`.
 
-- [ ] T039 [US5] Add `leave()` and `undo()` to `QueueService`
+- [X] T039 [US5] Add `leave()` and `undo()` to `QueueService`
   - Scope: both: plain `find($id)` (null → `QueueEntryNotFoundException`) for doctor and date;
     transaction: `lockDay(doctor, date)`; `lockById` (null → 404); refuse unless `waiting` with
     `ValidationException(['entry' => not_changeable])`. `leave(User $actor, int $id)` → update
@@ -554,7 +554,7 @@ skipped by call next, the second's appointment is scheduled again.
     `delete` the entry (the queue day's `last_number` is unchanged, so the number is not reused).
   - Depends: T038
 
-- [ ] T040 [US5] Add `leave()` and `undo()` to `QueueController` and the routes
+- [X] T040 [US5] Add `leave()` and `undo()` to `QueueController` and the routes
   - Scope: both `Gate::authorize('update', QueueEntry::class)` first; `leave` → `QueueEntryResource`
     (200); `undo` → `response()->noContent()`. Routes inside `Route::whereNumber('entry')`:
     `POST /queue/{entry}/leave` `queues.leave`; `DELETE /queue/{entry}` `queues.undo`.

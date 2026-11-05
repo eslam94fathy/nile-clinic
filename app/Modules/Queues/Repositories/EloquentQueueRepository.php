@@ -120,4 +120,14 @@ class EloquentQueueRepository implements QueueRepository
             ->whereIn('status', [QueueStatus::Waiting, QueueStatus::WithDoctor])
             ->exists();
     }
+
+    public function lockById(int $id): ?QueueEntry
+    {
+        return QueueEntry::query()->lockForUpdate()->find($id);
+    }
+
+    public function delete(QueueEntry $entry): void
+    {
+        $entry->delete();
+    }
 }

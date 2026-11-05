@@ -11,6 +11,7 @@ use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Exceptions\QueueConflictException;
+use App\Modules\Queues\Exceptions\QueueEntryNotFoundException;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -152,5 +153,80 @@ class QueueService
         }, attempts: 3);
 
         return $this->queue->find($entry->id);
+    }
+
+    /**
+     * Mark a waiting patient as left; the entry stays in the list for the record (FR-014).
+     *
+     * @throws QueueEntryNotFoundException
+     * @throws ValidationException when not waiting
+     */
+    public function leave(User $actor, int $id): QueueEntry
+    {
+        $current = $this->queue->find($id) ?? throw new QueueEntryNotFoundException;
+
+        DB::transaction(function () use ($actor, $id, $current) {
+            $entry = $this->lockWaiting($id, $current);
+
+            $this->queue->update($entry, [
+                'status' => QueueStatus::Left,
+                'left_at' => now(),
+                'left_by' => $actor->id,
+            ]);
+        }, attempts: 3);
+
+        return $this->queue->find($id);
+    }
+
+    /**
+     * Undo the check-in of a waiting entry: the entry is removed and the appointment is scheduled
+     * again. The queue day's last number is unchanged, so the number is not reused (FR-003, FR-014).
+     *
+     * @throws QueueEntryNotFoundException
+     * @throws ValidationException when not waiting, or a walk-in
+     */
+    public function undo(int $id): void
+    {
+        $current = $this->queue->find($id) ?? throw new QueueEntryNotFoundException;
+
+        DB::transaction(function () use ($id, $current) {
+            $entry = $this->lockWaiting($id, $current);
+
+            if ($entry->appointment_id === null) {
+                throw $this->notChangeable();
+            }
+
+            $this->appointments->update(
+                $this->appointments->lockById($entry->appointment_id),
+                ['status' => AppointmentStatus::Scheduled],
+            );
+
+            $this->queue->delete($entry);
+        }, attempts: 3);
+    }
+
+    /**
+     * Locks the entry's queue day, then the entry (research R3). The doctor and date of an entry
+     * never change, so they come from the plain read before the transaction.
+     *
+     * @throws QueueEntryNotFoundException
+     * @throws ValidationException when not waiting
+     */
+    private function lockWaiting(int $id, QueueEntry $current): QueueEntry
+    {
+        $this->queue->lockDay($current->doctor_id, $current->date->toDateString());
+
+        $entry = $this->queue->lockById($id) ?? throw new QueueEntryNotFoundException;
+
+        if ($entry->status !== QueueStatus::Waiting) {
+            throw $this->notChangeable();
+        }
+
+        return $entry;
+    }
+
+    private function notChangeable(): ValidationException
+    {
+        return ValidationException::withMessages(['entry' => __('queues::messages.not_changeable')]);
     }
 }

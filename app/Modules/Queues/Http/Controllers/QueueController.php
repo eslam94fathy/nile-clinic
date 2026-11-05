@@ -9,11 +9,14 @@ use App\Modules\Queues\Http\Resources\QueueEntryResource;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Services\QueueService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Administrators and receptionists see the waiting lists for today (US2) and add walk-ins (US4).
+ * Administrators and receptionists see the waiting lists for today (US2), add walk-ins (US4), and
+ * correct the list (US5).
  */
 class QueueController extends Controller
 {
@@ -40,5 +43,21 @@ class QueueController extends Controller
             (int) $request->validated('patient_id'),
             (int) $request->validated('doctor_id'),
         ))->response()->setStatusCode(201);
+    }
+
+    public function leave(Request $request, int $entry): QueueEntryResource
+    {
+        Gate::authorize('update', QueueEntry::class);
+
+        return QueueEntryResource::make($this->queue->leave($request->user(), $entry));
+    }
+
+    public function undo(int $entry): Response
+    {
+        Gate::authorize('update', QueueEntry::class);
+
+        $this->queue->undo($entry);
+
+        return response()->noContent();
     }
 }

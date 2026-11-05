@@ -78,4 +78,12 @@ interface QueueRepository
      * read: call only with the queue day locked, before any other plain read in the transaction.
      */
     public function patientActive(int $doctorId, int $patientId, string $date): bool;
+
+    /**
+     * The entry locked `FOR UPDATE` until the caller's transaction ends, or null. No relations are
+     * loaded.
+     */
+    public function lockById(int $id): ?QueueEntry;
+
+    public function delete(QueueEntry $entry): void;
 }

@@ -17,6 +17,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/queue', [QueueController::class, 'index'])->name('queues.index');
     Route::post('/queue/walk-ins', [QueueController::class, 'walkIn'])->name('queues.walk-ins');
 
+    Route::whereNumber('entry')->group(function () {
+        Route::post('/queue/{entry}/leave', [QueueController::class, 'leave'])->name('queues.leave');
+        Route::delete('/queue/{entry}', [QueueController::class, 'undo'])->name('queues.undo');
+    });
+
     // Doctors act on their own list and never send an entry id (research R1).
     Route::get('/doctors/me/queue', [OwnQueueController::class, 'index'])->name('queues.me.index');
     Route::post('/doctors/me/queue/call-next', [OwnQueueController::class, 'callNext'])->name('queues.me.call-next');
