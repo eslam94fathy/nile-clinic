@@ -6,6 +6,8 @@ use App\Modules\Payments\Models\Charge;
 use App\Modules\Payments\Models\DoctorFee;
 use App\Modules\Payments\Policies\ChargePolicy;
 use App\Modules\Payments\Policies\DoctorFeePolicy;
+use App\Modules\Payments\Repositories\Contracts\DoctorFeeRepository;
+use App\Modules\Payments\Repositories\EloquentDoctorFeeRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -17,7 +19,7 @@ class PaymentsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(DoctorFeeRepository::class, EloquentDoctorFeeRepository::class);
     }
 
     /**

@@ -216,7 +216,7 @@ exceptions, and policies.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T014 [US1] Write `tests/Feature/Payments/DoctorFeeTest.php` (US1-1…5, FR-001, FR-002)
+- [X] T014 [US1] Write `tests/Feature/Payments/DoctorFeeTest.php` (US1-1…5, FR-001, FR-002)
   - Scope: clock fixed.
     - administrator `PUT` `{"amount":"350.00"}` → `200`, `data` exactly `{doctor {id, name, title}, amount: "350.00",
       set_at, set_by {id, name}}`; `doctor_fees` has one row; a second `PUT` of `400.5` → `amount: "400.50"`, still one row
@@ -229,27 +229,27 @@ exceptions, and policies.
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Create `app/Modules/Payments/Repositories/Contracts/DoctorFeeRepository.php` and `app/Modules/Payments/Repositories/EloquentDoctorFeeRepository.php`, and bind them in the provider (R7)
+- [X] T015 [US1] Create `app/Modules/Payments/Repositories/Contracts/DoctorFeeRepository.php` and `app/Modules/Payments/Repositories/EloquentDoctorFeeRepository.php`, and bind them in the provider (R7)
   - Scope, each with a docblock: `findForDoctor(int $doctorId): ?DoctorFee` with `setBy`; `set(int $doctorId, string
     $amount, int $userId): void` — `upsert` on `doctor_id`, so simultaneous first settings do not collide;
     `paginateDoctors(int $perPage): LengthAwarePaginator<int, Doctor>` — `Doctor::query()` joined to `users`, ordered by
     `users.name`, then `doctors.id`, with `user`; fees for a page are loaded with `feesFor(array $doctorIds):
     Collection` keyed by `doctor_id`, with `setBy`.
 
-- [ ] T016 [US1] Create `app/Modules/Payments/Services/FeeService.php`
+- [X] T016 [US1] Create `app/Modules/Payments/Services/FeeService.php`
   - Scope: inject `DoctorFeeRepository`, `DoctorService`. `find(int $doctorId): array{doctor: Doctor, fee: ?DoctorFee}` —
     `DoctorService::find` (404 for unknown). `set(User $actor, int $doctorId, string $amount)` — same check, then
     `set`, then `find`. `list(int $perPage)` — the page, each doctor with its fee set as a relation-free pair the
     resource can read.
   - Depends: T015
 
-- [ ] T017 [P] [US1] Create `app/Modules/Payments/Http/Requests/SetFeeRequest.php`, `ListFeesRequest.php`, and `app/Modules/Payments/Http/Resources/DoctorFeeResource.php`
+- [X] T017 [P] [US1] Create `app/Modules/Payments/Http/Requests/SetFeeRequest.php`, `ListFeesRequest.php`, and `app/Modules/Payments/Http/Resources/DoctorFeeResource.php`
   - Scope: `SetFeeRequest`: `authorize()` → `can('set', DoctorFee::class)`; `amount` `required`, `numeric`,
     `decimal:0,2`, `gt:0`, `max:100000`; attribute from `payments::attributes`; `amount(): string` returns the
     validated value through `Money::fromPiastres(Money::toPiastres(...))`. `ListFeesRequest`: `viewAny`; `page`, `per_page`
     as `ListQueueRequest`. Resource: exactly the contract's `DoctorFee`.
 
-- [ ] T018 [US1] Create `app/Modules/Payments/Http/Controllers/FeeController.php` and the routes
+- [X] T018 [US1] Create `app/Modules/Payments/Http/Controllers/FeeController.php` and the routes
   - Scope: `index(ListFeesRequest)`; `show(int $doctor)` → `Gate::authorize('viewAny', DoctorFee::class)` first;
     `update(SetFeeRequest, int $doctor)`. Routes: `GET /fees` `payments.fees`; inside `whereNumber('doctor')`:
     `GET /doctors/{doctor}/fee` `payments.fee`, `PUT /doctors/{doctor}/fee` `payments.fee.set`.
