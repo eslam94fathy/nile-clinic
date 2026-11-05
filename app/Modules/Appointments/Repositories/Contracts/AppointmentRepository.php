@@ -25,14 +25,15 @@ interface AppointmentRepository
     public function lockById(int $id): ?Appointment;
 
     /**
-     * Whether the doctor has a scheduled appointment on this date overlapping [start, end),
-     * other than $exceptId (research R4).
+     * Whether the doctor has a scheduled, checked-in, or completed appointment on this date
+     * overlapping [start, end), other than $exceptId (research R4; feature 007, research R2).
      */
     public function doctorOverlaps(int $doctorId, string $date, int $start, int $end, ?int $exceptId = null): bool;
 
     /**
-     * Whether the patient has a scheduled appointment, with any doctor, on this date overlapping
-     * [start, end), other than $exceptId (research R4).
+     * Whether the patient has a scheduled, checked-in, or completed appointment, with any doctor,
+     * on this date overlapping [start, end), other than $exceptId (research R4; feature 007,
+     * research R2).
      */
     public function patientOverlaps(int $patientId, string $date, int $start, int $end, ?int $exceptId = null): bool;
 

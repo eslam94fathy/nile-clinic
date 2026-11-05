@@ -50,7 +50,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Purpose**: Confirm the starting point. No new dependencies (plan: Technical Context).
 
-- [ ] T001 Confirm the baseline on branch `007-patient-queues` (no file changes)
+- [X] T001 Confirm the baseline on branch `007-patient-queues` (no file changes)
   - Verify:
     - `docker compose exec app php artisan migrate:status` → the twelve existing migrations `Ran`
       (the last is `create_appointments_table`)
@@ -69,14 +69,14 @@ translations, exceptions, and the policy.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Extend `app/Modules/Appointments/Enums/AppointmentStatus.php` (research R2, approved D1)
+- [X] T002 Extend `app/Modules/Appointments/Enums/AppointmentStatus.php` (research R2, approved D1)
   - Scope: add `CheckedIn = 'checked_in'` and `Completed = 'completed'`; add
     `static holdingSlot(): list<string>` returning the values of `Scheduled`, `CheckedIn`,
     `Completed`. Update the docblock transitions: scheduled → checked_in (check-in, feature 007);
     checked_in → scheduled (undo); checked_in → completed (finish); cancelled, no_show, and
     completed are final.
 
-- [ ] T003 Write `tests/Feature/Queues/AppointmentQueueStatesTest.php` — failing first (FR-005, FR-012, R2)
+- [X] T003 Write `tests/Feature/Queues/AppointmentQueueStatesTest.php` — failing first (FR-005, FR-012, R2)
   - Scope: `RefreshDatabase`; clock fixed; doctor with `DoctorSchedule::factory()->withPeriod(
     'sunday', '09:00', '10:00')`; receptionist actor. For each of `checked_in` and `completed` (data
     provider), a factory appointment at `2026-11-01 09:20` updated to that status:
@@ -91,16 +91,16 @@ translations, exceptions, and the policy.
       appointment
   - Verify: `docker compose exec app php artisan test --filter=AppointmentQueueStatesTest` → fails
 
-- [ ] T004 Create the migration `database/migrations/<timestamp>_extend_appointment_slot_holding.php` (R2)
+- [X] T004 Create the migration `database/migrations/<timestamp>_extend_appointment_slot_holding.php` (R2)
   - Scope: `docker compose exec app php artisan make:migration extend_appointment_slot_holding`;
     one-line comment pointing to `specs/007-patient-queues/research.md` R2. `up()`:
-    `DB::statement("ALTER TABLE appointments MODIFY scheduled_flag TINYINT UNSIGNED NULL AS
-    (IF(status IN ('scheduled', 'checked_in', 'completed'), 1, NULL)) STORED")`. `down()`: the same
+    `DB::statement("ALTER TABLE appointments MODIFY scheduled_flag TINYINT UNSIGNED AS
+    (IF(status IN ('scheduled', 'checked_in', 'completed'), 1, NULL)) STORED NULL")`. `down()`: the same
     with `IF(status = 'scheduled', 1, NULL)`. Nothing else changes; the unique index
     `appointments_doctor_slot_unique` stays.
   - Verify: `docker compose exec app php artisan migrate` → `DONE`; `migrate:status` shows it `Ran`.
 
-- [ ] T005 Use `AppointmentStatus::holdingSlot()` in `app/Modules/Appointments/Repositories/EloquentBookedTimeRepository.php` and in `scheduledOverlapping()` of `app/Modules/Appointments/Repositories/EloquentAppointmentRepository.php`
+- [X] T005 Use `AppointmentStatus::holdingSlot()` in `app/Modules/Appointments/Repositories/EloquentBookedTimeRepository.php` and in `scheduledOverlapping()` of `app/Modules/Appointments/Repositories/EloquentAppointmentRepository.php`
   - Scope: replace `->where('status', AppointmentStatus::Scheduled->value)` with
     `->whereIn('status', AppointmentStatus::holdingSlot())` in exactly those two places; rename the
     private method to `holdingOverlapping()` and update both callers and docblocks ("scheduled,
@@ -109,7 +109,7 @@ translations, exceptions, and the policy.
     tests/Feature/Scheduling tests/Unit/Scheduling` → all pass unchanged.
   - Depends: T002, T003, T004
 
-- [ ] T006 Create the migrations `database/migrations/<timestamp>_create_queue_days_table.php` and `<timestamp>_create_queue_entries_table.php` (data-model.md, approved D2)
+- [X] T006 Create the migrations `database/migrations/<timestamp>_create_queue_days_table.php` and `<timestamp>_create_queue_entries_table.php` (data-model.md, approved D2)
   - Scope: two `make:migration` calls, in this order; each with a one-line comment pointing to
     `specs/007-patient-queues/data-model.md`. `queue_days`, exactly:
     - `id()`; `foreignId('doctor_id')->constrained('doctors')->restrictOnDelete()`; `date('date')`;
@@ -134,12 +134,12 @@ translations, exceptions, and the policy.
     - `index(['date', 'doctor_id'], 'queue_entries_date_index')`
   - Verify: `docker compose exec app php artisan migrate` → both `DONE`.
 
-- [ ] T007 [P] Create `app/Modules/Queues/Enums/QueueStatus.php`
+- [X] T007 [P] Create `app/Modules/Queues/Enums/QueueStatus.php`
   - Scope: `enum QueueStatus: string` with `Waiting = 'waiting'`, `WithDoctor = 'with_doctor'`,
     `Seen = 'seen'`, `Left = 'left'`; `static values(): list<string>`. Docblock: transitions per
     data-model.md (waiting → with_doctor → seen; waiting → left; seen and left final).
 
-- [ ] T008 Create `app/Modules/Queues/Models/QueueDay.php` and `app/Modules/Queues/Models/QueueEntry.php`
+- [X] T008 Create `app/Modules/Queues/Models/QueueDay.php` and `app/Modules/Queues/Models/QueueEntry.php`
   - Scope (persistence mapping only, as `Appointments\Models\Appointment`): `QueueDay` fillable
     `doctor_id`, `date`, `last_number`; casts `date` → `date`, `last_number` → `integer`.
     `QueueEntry` fillable `doctor_id`, `patient_id`, `appointment_id`, `date`, `queue_number`,
@@ -152,7 +152,7 @@ translations, exceptions, and the policy.
     `QueueEntryFactory`.
   - Depends: T006, T007
 
-- [ ] T009 [P] Create `database/factories/QueueEntryFactory.php` (synthetic only)
+- [X] T009 [P] Create `database/factories/QueueEntryFactory.php` (synthetic only)
   - Scope: `doctor_id` → `Doctor::factory()`; `patient_id` → `Patient::factory()`;
     `appointment_id` null; `date` → `ClinicClock::today()`; `queue_number` 1; `order_minute` 540;
     `status` `waiting`; `arrived_at` now; `checked_in_by` → `User::factory()->receptionist()`.
@@ -162,7 +162,7 @@ translations, exceptions, and the policy.
     receptionist). Docblock: the factory caveat from this file's header.
   - Depends: T008
 
-- [ ] T010 Write `tests/Feature/Queues/QueuePersistenceTest.php` (R3)
+- [X] T010 Write `tests/Feature/Queues/QueuePersistenceTest.php` (R3)
   - Scope: `RefreshDatabase`; with the factory: two entries with the same doctor, date, number →
     `UniqueConstraintViolationException`; two entries for one appointment → violation; two
     walk-ins (null appointment) → allowed; two `with_doctor` entries of one doctor on one date →
@@ -173,7 +173,7 @@ translations, exceptions, and the policy.
   - Verify: `docker compose exec app php artisan test --filter=QueuePersistenceTest` → pass
   - Depends: T009
 
-- [ ] T011 Create `app/Modules/Queues/Repositories/Contracts/QueueRepository.php` and `app/Modules/Queues/Repositories/EloquentQueueRepository.php` with the methods check-in needs
+- [X] T011 Create `app/Modules/Queues/Repositories/Contracts/QueueRepository.php` and `app/Modules/Queues/Repositories/EloquentQueueRepository.php` with the methods check-in needs
   - Scope (more methods are added in later stories), each with a docblock:
     - `lockDay(int $doctorId, string $date): QueueDay` — `insertOrIgnore` the row (`last_number`
       0, timestamps), then `where(...)->lockForUpdate()->firstOrFail()`, as
@@ -184,7 +184,7 @@ translations, exceptions, and the policy.
     - `find(int $id): ?QueueEntry` — with `patient`, `doctor.user`, `appointment`
   - Depends: T008
 
-- [ ] T012 Create the module skeleton: `app/Modules/Queues/Providers/QueuesServiceProvider.php`, `app/Modules/Queues/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T012 Create the module skeleton: `app/Modules/Queues/Providers/QueuesServiceProvider.php`, `app/Modules/Queues/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: provider mirrors `AppointmentsServiceProvider`: `register()` binds `QueueRepository` →
     `EloquentQueueRepository`; `boot()` loads `routes/api.php` with `api` middleware and `api/v1`
     prefix and translations namespace `queues` (the policy line is added in T015). Routes file:
@@ -193,7 +193,7 @@ translations, exceptions, and the policy.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
   - Depends: T011
 
-- [ ] T013 [P] Create the translations `app/Modules/Queues/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T013 [P] Create the translations `app/Modules/Queues/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('queues::messages.<key>')`), en / ar:
     - `not_checkable`: "Only a scheduled appointment for today can be checked in." / "يمكن تسجيل الوصول لموعد مجدول اليوم فقط."
     - `already_checked_in`: "This appointment is already checked in." / "تم تسجيل الوصول لهذا الموعد بالفعل."
@@ -212,13 +212,13 @@ translations, exceptions, and the policy.
       "queue entry" / "الدور"; `queue` "queue" / "قائمة الانتظار".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T014 [P] Create `app/Modules/Queues/Exceptions/QueueEntryNotFoundException.php` and `QueueConflictException.php` (R3)
+- [X] T014 [P] Create `app/Modules/Queues/Exceptions/QueueEntryNotFoundException.php` and `QueueConflictException.php` (R3)
   - Scope: exactly like `AppointmentNotFoundException` (404, `queues::messages.entry_not_found`)
     and `AppointmentConflictException` (constructor `public readonly string $reason`, `$reason` is
     `'already_checked_in'` or `'patient_with_another_doctor'`; 409 `{message, reason}` with
     `queues::messages.{reason}`); both with an empty `report()`.
 
-- [ ] T015 Write `tests/Feature/Queues/QueuesPolicyTest.php`, then create `app/Modules/Queues/Policies/QueueEntryPolicy.php` (R7)
+- [X] T015 Write `tests/Feature/Queues/QueuesPolicyTest.php`, then create `app/Modules/Queues/Policies/QueueEntryPolicy.php` (R7)
   - Scope: class-level abilities on `QueueEntry::class`: `viewAny`, `create`, `update` → active
     administrator or receptionist; `viewOwn`, `updateOwn` → active doctor. Test: every role (active
     and inactive) × every ability, as `tests/Feature/Appointments/AppointmentPolicyTest.php`. Then
@@ -226,7 +226,7 @@ translations, exceptions, and the policy.
   - Verify: `--filter=QueuesPolicyTest` → fails before the policy exists, passes after.
   - Depends: T012
 
-- [ ] T016 Run the Appointments, Scheduling, and Patients suites
+- [X] T016 Run the Appointments, Scheduling, and Patients suites
   - Verify: `docker compose exec app php artisan test tests/Feature/Appointments tests/Feature/Scheduling tests/Unit/Scheduling tests/Feature/Patients` → all pass.
   - Depends: T005, T012
 
