@@ -46,6 +46,14 @@ class MoneyTest extends TestCase
         $this->assertSame('100000.00', Money::fromPiastres(10000000));
     }
 
+    public function test_from_piastres_keeps_the_sign(): void
+    {
+        $this->assertSame('-1.50', Money::fromPiastres(-150));
+        $this->assertSame('-0.50', Money::fromPiastres(-50));
+        $this->assertSame('-0.05', Money::fromPiastres(-5));
+        $this->assertSame('-150.00', Money::fromPiastres(-15000));
+    }
+
     public function test_due_and_balance(): void
     {
         $this->assertSame('250.00', Money::due('400.00', '150.00'));

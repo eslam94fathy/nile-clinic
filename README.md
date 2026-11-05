@@ -215,6 +215,23 @@ administrators discount at `PUT /api/v1/charges/{charge}/discount` and refund at
 Every endpoint, field, and response is described in
 [specs/009-payments/contracts/payments.openapi.yaml](specs/009-payments/contracts/payments.openapi.yaml).
 
+## Reports
+
+Read-only summaries, for administrators only. Each report takes a period of up to 366 days (`from` and `to`,
+both included) and an optional `doctor_id`.
+
+- `GET /api/v1/reports/money-collected`: money received and refunded, by method, staff member, and day.
+- `GET /api/v1/reports/billing`: what each doctor's visits were charged, what is owed, and seen visits never charged.
+- `GET /api/v1/reports/activity`: appointments by status, the no-show rate, visits, and new patients.
+- `GET /api/v1/reports/times`: average wait and consultation, and counts of medical records.
+
+Reports never identify a patient or contain medical content. Money collected counts on the clinic day it was
+recorded, so a past period never changes, and its net can be negative when refunds exceed the money received. Billing
+and activity show records as they stand now, so a late discount or payment changes billing for a past period.
+
+Every endpoint, field, and response is described in
+[specs/010-reports/contracts/reports.openapi.yaml](specs/010-reports/contracts/reports.openapi.yaml).
+
 ## Daily use
 
 ```sh
