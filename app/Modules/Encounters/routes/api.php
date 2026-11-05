@@ -1,11 +1,20 @@
 <?php
 
+use App\Modules\Encounters\Http\Controllers\EncounterController;
+use App\Modules\Encounters\Http\Controllers\OwnVisitController;
 use Illuminate\Support\Facades\Route;
 
 // Loaded by EncountersServiceProvider with the "api" middleware group and the "api/v1" prefix.
 // Every route is for doctors, under /doctors/me (research R1). Ids are plain ids loaded through the
 // repositories.
 
-Route::middleware('auth:sanctum')->group(function () {
-    //
+Route::middleware('auth:sanctum')->prefix('doctors/me')->group(function () {
+    Route::whereNumber('visit')->group(function () {
+        Route::post('/visits/{visit}/encounter', [OwnVisitController::class, 'start'])->name('encounters.start');
+    });
+
+    Route::whereNumber('encounter')->group(function () {
+        Route::get('/encounters/{encounter}', [EncounterController::class, 'show'])->name('encounters.show');
+        Route::put('/encounters/{encounter}', [EncounterController::class, 'update'])->name('encounters.update');
+    });
 });

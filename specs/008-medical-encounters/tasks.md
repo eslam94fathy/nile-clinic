@@ -215,7 +215,7 @@ it again, and confirm the content is there and the record is a draft.
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T016 [P] [US1] Write `tests/Feature/Encounters/StartEncounterTest.php` (US1-1, 3–7, FR-001, FR-002, FR-005)
+- [X] T016 [P] [US1] Write `tests/Feature/Encounters/StartEncounterTest.php` (US1-1, 3–7, FR-001, FR-002, FR-005)
   - Scope: clock fixed; doctor actor (`$doctor->user`).
     - start for a `with_doctor` entry and a `seen` entry → `201`; `data` is exactly the contract's
       `Encounter` keys: `status: draft`, `visit_id`, `date`, `doctor {id, name, title}`, `patient {id,
@@ -231,7 +231,7 @@ it again, and confirm the content is there and the record is a draft.
     - a doctor without a profile → `404`; administrator and receptionist → `403`, nothing saved
   - Verify: `--filter=StartEncounterTest` → fails
 
-- [ ] T017 [P] [US1] Write `tests/Feature/Encounters/SaveEncounterTest.php` (US1-2, FR-003, FR-004, FR-006, FR-009, R8)
+- [X] T017 [P] [US1] Write `tests/Feature/Encounters/SaveEncounterTest.php` (US1-2, FR-003, FR-004, FR-006, FR-009, R8)
   - Scope: clock fixed; author actor; draft from the factory.
     - `PUT` with all keys → `200` with the content, including Arabic text returned as written; `status`
       still `draft`; `last_saved_at` is set; `GET` returns the same
@@ -248,7 +248,7 @@ it again, and confirm the content is there and the record is a draft.
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Create `app/Modules/Encounters/Services/EncounterService.php` with `start()`, `find()`, and `save()` (R2, R3, R8)
+- [X] T018 [US1] Create `app/Modules/Encounters/Services/EncounterService.php` with `start()`, `find()`, and `save()` (R2, R3, R8)
   - Scope: inject `EncounterRepository`, `QueueRepository`, `DoctorService`.
     - `start(User $user, int $visitId): Encounter`: `$doctorId = DoctorService::findOwn($user)->id`
       **before** the transaction (feature 007 T035: no plain read may precede the lock). Transaction:
@@ -261,7 +261,7 @@ it again, and confirm the content is there and the record is a draft.
       `EncounterNotFoundException`; not draft → `['encounter' => not_editable]`; `update`. Return `find($id)`.
   - Depends: T009, T013
 
-- [ ] T019 [P] [US1] Create `app/Modules/Encounters/Http/Resources/EncounterResource.php` and `AddendumResource.php` (R10)
+- [X] T019 [P] [US1] Create `app/Modules/Encounters/Http/Resources/EncounterResource.php` and `AddendumResource.php` (R10)
   - Scope: `EncounterResource` is exactly the contract's `Encounter`: `id`, `visit_id`
     (`queue_entry_id`), `status` (`->value`), `date` (`toDateString()`), `doctor` `{id, name:
     doctor->user->name, title}`, `patient` `{id, full_name, sex: ->value, date_of_birth}`, the four text
@@ -270,7 +270,7 @@ it again, and confirm the content is there and the record is a draft.
     `AddendumResource`: `id`, `text`, `created_at`. Never the patient's national ID, address, phone, or
     emergency contact (FR-015).
 
-- [ ] T020 [P] [US1] Create `app/Modules/Encounters/Http/Requests/SaveEncounterRequest.php` (FR-003, FR-004, R8)
+- [X] T020 [P] [US1] Create `app/Modules/Encounters/Http/Requests/SaveEncounterRequest.php` (FR-003, FR-004, R8)
   - Scope: `authorize()` → `can('access', Encounter::class)`. Rules, from data-model.md:
     - `chief_complaint`, `examination_findings`, `diagnosis`, `treatment_plan`: `present`, `nullable`,
       `string`, `max:10000`
@@ -281,7 +281,7 @@ it again, and confirm the content is there and the record is a draft.
     returns the validated values with each line rebuilt with exactly the five keys, missing ones null.
     No custom message uses `:input` (R6).
 
-- [ ] T021 [US1] Create `app/Modules/Encounters/Http/Controllers/OwnVisitController.php` and `EncounterController.php`, and the routes (R4)
+- [X] T021 [US1] Create `app/Modules/Encounters/Http/Controllers/OwnVisitController.php` and `EncounterController.php`, and the routes (R4)
   - Scope:
     - `OwnVisitController::start(Request, int $visit)`: `Gate::authorize('access', Encounter::class)`,
       then `EncounterResource::make($service->start(...))` with status `201`.
@@ -298,7 +298,7 @@ it again, and confirm the content is there and the record is a draft.
   - Accept: T016 and T017 pass; `route:list --path=doctors/me` shows the three.
   - Depends: T018, T019, T020
 
-- [ ] T022 [US1] Create `tests/Support/encounter-action.php` and `tests/Feature/Encounters/ConcurrentEncounterTest.php` `#[Group('concurrency')]` with the start case (SC-004, R3)
+- [X] T022 [US1] Create `tests/Support/encounter-action.php` and `tests/Feature/Encounters/ConcurrentEncounterTest.php` `#[Group('concurrency')]` with the start case (SC-004, R3)
   - Scope: the script is like `tests/Support/queue-action.php`, with the same bootstrap and **exit 2
     unless** `DB::connection()->getDatabaseName() === 'clinic_testing'`. Arguments: `action actorId
     targetId startAt [text]`, where `action` is `start` (target = visit id), `save` (target = encounter
