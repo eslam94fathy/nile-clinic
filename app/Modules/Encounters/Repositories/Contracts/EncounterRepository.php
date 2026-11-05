@@ -44,4 +44,13 @@ interface EncounterRepository
      * @return LengthAwarePaginator<int, QueueEntry>
      */
     public function paginateVisits(int $doctorId, array $filters, int $perPage): LengthAwarePaginator;
+
+    /**
+     * One page of the patient's finalized records, newest first, optionally only one doctor's, with
+     * the doctor, its account, and specialties loaded (research R5). No clinical column is selected,
+     * so a listing cannot return clinical content (FR-018).
+     *
+     * @return LengthAwarePaginator<int, Encounter>
+     */
+    public function paginateHistory(int $patientId, ?int $onlyDoctorId, int $perPage): LengthAwarePaginator;
 }

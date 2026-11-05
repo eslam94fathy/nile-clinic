@@ -2,6 +2,7 @@
 
 namespace App\Modules\Encounters\Repositories;
 
+use App\Modules\Encounters\Enums\EncounterStatus;
 use App\Modules\Encounters\Models\Encounter;
 use App\Modules\Encounters\Repositories\Contracts\EncounterRepository;
 use App\Modules\Queues\Enums\QueueStatus;
@@ -56,6 +57,20 @@ class EloquentEncounterRepository implements EncounterRepository
             ->orderBy('queue_entries.date')
             ->orderBy('queue_entries.order_minute')
             ->orderBy('queue_entries.queue_number')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function paginateHistory(int $patientId, ?int $onlyDoctorId, int $perPage): LengthAwarePaginator
+    {
+        return Encounter::query()
+            ->select('id', 'doctor_id', 'date')
+            ->where('patient_id', $patientId)
+            ->where('status', EncounterStatus::Finalized)
+            ->when($onlyDoctorId !== null, fn (Builder $query) => $query->where('doctor_id', $onlyDoctorId))
+            ->with(['doctor.user', 'doctor.specialties'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
             ->paginate($perPage)
             ->withQueryString();
     }

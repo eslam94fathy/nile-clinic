@@ -441,7 +441,7 @@ content in the list, and the other patient is reported as not found.
 
 ### Tests for User Story 4
 
-- [ ] T032 [P] [US4] Write `tests/Feature/Encounters/EncounterAccessTest.php` (US4-2, 4, 5, FR-012, FR-013, SC-003)
+- [X] T032 [P] [US4] Write `tests/Feature/Encounters/EncounterAccessTest.php` (US4-2, 4, 5, FR-012, FR-013, SC-003)
   - Scope: clock fixed; through `GET /doctors/me/encounters/{id}`. Another doctor's `finalized()` record
     of patient P with an addendum:
     - P `waiting`, `with_doctor`, or `seen` on the reader's list today → `200` with clinical content and
@@ -457,7 +457,7 @@ content in the list, and the other patient is reported as not found.
   - Verify: `--filter=EncounterAccessTest` → **passes without new code** (`view` is in T014 and the route
     in T021). This test proves the rule end to end; if it fails, fix the policy, not the test.
 
-- [ ] T033 [P] [US4] Write `tests/Feature/Encounters/PatientHistoryTest.php` — failing first (US4-1, 3, FR-017, FR-018, R5)
+- [X] T033 [P] [US4] Write `tests/Feature/Encounters/PatientHistoryTest.php` — failing first (US4-1, 3, FR-017, FR-018, R5)
   - Scope: clock fixed; the reader, and other doctors with specialties.
     - P on the reader's list today, finalized records from two doctors on three dates → `200`, newest
       first, each exactly `{id, date, doctor {id, name, specialties}}`; no planted text and no clinical
@@ -472,13 +472,13 @@ content in the list, and the other patient is reported as not found.
 
 ### Implementation for User Story 4
 
-- [ ] T034 [US4] Add `paginateHistory` to `EncounterRepository` / `EloquentEncounterRepository` (R5)
+- [X] T034 [US4] Add `paginateHistory` to `EncounterRepository` / `EloquentEncounterRepository` (R5)
   - Scope: `paginateHistory(int $patientId, ?int $onlyDoctorId, int $perPage): LengthAwarePaginator<int,
     Encounter>`: `select('id', 'doctor_id', 'date')`; the patient; status `finalized`; optional doctor;
     `orderByDesc('date')`, `orderByDesc('id')`; `with('doctor.user', 'doctor.specialties')`;
     `withQueryString()`. **No clinical column is selected** (FR-018).
 
-- [ ] T035 [US4] Create `app/Modules/Encounters/Http/Requests/ListPatientEncountersRequest.php` and add `history()` to `EncounterService` (R5)
+- [X] T035 [US4] Create `app/Modules/Encounters/Http/Requests/ListPatientEncountersRequest.php` and add `history()` to `EncounterService` (R5)
   - Scope: request: `authorize()` → `can('access', Encounter::class)`; `page`, `per_page` as T029;
     `perPage()` default 15. Service: `history(User $user, int $patientId, int $perPage)`: `findOwn`;
     `$onList = patientOnList($doctorId, $patientId, ClinicClock::today())`; `paginateHistory($patientId,
@@ -486,12 +486,12 @@ content in the list, and the other patient is reported as not found.
     `HistoryNotFoundException`. No separate patient lookup (FR-013).
   - Depends: T034
 
-- [ ] T036 [P] [US4] Create `app/Modules/Encounters/Http/Resources/EncounterHistoryItemResource.php` (R10)
+- [X] T036 [P] [US4] Create `app/Modules/Encounters/Http/Resources/EncounterHistoryItemResource.php` (R10)
   - Scope: exactly the contract's `EncounterHistoryItem`: `id`, `date`, `doctor` `{id, name:
     doctor->user->name, specialties: SpecialtyResource::collection}`. Not `DoctorSummaryResource`, which
     adds fields US4-1 does not allow.
 
-- [ ] T037 [US4] Create `app/Modules/Encounters/Http/Controllers/PatientEncounterController.php` and the route
+- [X] T037 [US4] Create `app/Modules/Encounters/Http/Controllers/PatientEncounterController.php` and the route
   - Scope: `index(ListPatientEncountersRequest, int $patient)` →
     `EncounterHistoryItemResource::collection(...)`. Route, inside `whereNumber('patient')`:
     `GET /doctors/me/patients/{patient}/encounters` `encounters.history`.

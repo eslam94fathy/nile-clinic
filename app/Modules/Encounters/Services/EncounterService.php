@@ -6,12 +6,14 @@ use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Encounters\Enums\EncounterStatus;
 use App\Modules\Encounters\Exceptions\EncounterNotFoundException;
+use App\Modules\Encounters\Exceptions\HistoryNotFoundException;
 use App\Modules\Encounters\Exceptions\VisitNotFoundException;
 use App\Modules\Encounters\Models\Encounter;
 use App\Modules\Encounters\Repositories\Contracts\EncounterRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
+use App\Modules\Scheduling\Support\ClinicClock;
 use App\Modules\Staff\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +82,30 @@ class EncounterService
     public function listVisits(User $user, array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->encounters->paginateVisits($this->doctors->findOwn($user)->id, $filters, $perPage);
+    }
+
+    /**
+     * A patient's finalized records the doctor may read (FR-017, research R5). On the doctor's list
+     * today: all of them. Otherwise only the doctor's own, and none is the same 404 as an unknown
+     * patient, so no separate patient lookup exists (FR-013).
+     *
+     * @return LengthAwarePaginator<int, Encounter>
+     *
+     * @throws DoctorNotFoundException when the doctor has no profile
+     * @throws HistoryNotFoundException when nothing is readable
+     */
+    public function history(User $user, int $patientId, int $perPage): LengthAwarePaginator
+    {
+        $doctorId = $this->doctors->findOwn($user)->id;
+        $onList = $this->queue->patientOnList($doctorId, $patientId, ClinicClock::today());
+
+        $page = $this->encounters->paginateHistory($patientId, $onList ? null : $doctorId, $perPage);
+
+        if (! $onList && $page->total() === 0) {
+            throw new HistoryNotFoundException;
+        }
+
+        return $page;
     }
 
     /**
