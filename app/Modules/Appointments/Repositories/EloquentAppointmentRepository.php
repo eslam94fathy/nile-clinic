@@ -31,12 +31,12 @@ class EloquentAppointmentRepository implements AppointmentRepository
 
     public function doctorOverlaps(int $doctorId, string $date, int $start, int $end, ?int $exceptId = null): bool
     {
-        return $this->scheduledOverlapping($date, $start, $end, $exceptId)->where('doctor_id', $doctorId)->exists();
+        return $this->holdingOverlapping($date, $start, $end, $exceptId)->where('doctor_id', $doctorId)->exists();
     }
 
     public function patientOverlaps(int $patientId, string $date, int $start, int $end, ?int $exceptId = null): bool
     {
-        return $this->scheduledOverlapping($date, $start, $end, $exceptId)->where('patient_id', $patientId)->exists();
+        return $this->holdingOverlapping($date, $start, $end, $exceptId)->where('patient_id', $patientId)->exists();
     }
 
     public function find(int $id, CarbonImmutable $now): ?Appointment
@@ -153,12 +153,14 @@ class EloquentAppointmentRepository implements AppointmentRepository
     }
 
     /**
+     * Appointments holding their slot (scheduled, checked in, or completed) that overlap the time.
+     *
      * @return Builder<Appointment>
      */
-    private function scheduledOverlapping(string $date, int $start, int $end, ?int $exceptId): Builder
+    private function holdingOverlapping(string $date, int $start, int $end, ?int $exceptId): Builder
     {
         return Appointment::query()
-            ->where('status', AppointmentStatus::Scheduled->value)
+            ->whereIn('status', AppointmentStatus::holdingSlot())
             ->where('date', $date)
             ->where('start_minute', '<', $end)
             ->where('end_minute', '>', $start)

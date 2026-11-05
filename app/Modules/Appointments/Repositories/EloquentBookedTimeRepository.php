@@ -8,7 +8,7 @@ use App\Modules\Scheduling\Repositories\Contracts\BookedTimeRepository;
 
 /**
  * The Appointments side of approved decision D1 (research R2): Scheduling asks which times are
- * taken; only scheduled appointments take a time.
+ * taken; scheduled, checked-in, and completed appointments take a time (feature 007, research R2).
  */
 class EloquentBookedTimeRepository implements BookedTimeRepository
 {
@@ -16,7 +16,7 @@ class EloquentBookedTimeRepository implements BookedTimeRepository
     {
         return Appointment::query()
             ->where('doctor_id', $doctorId)
-            ->where('status', AppointmentStatus::Scheduled->value)
+            ->whereIn('status', AppointmentStatus::holdingSlot())
             ->whereBetween('date', [$from, $to])
             ->orderBy('date')
             ->orderBy('start_minute')

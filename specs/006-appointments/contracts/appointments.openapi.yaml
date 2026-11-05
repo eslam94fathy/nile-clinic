@@ -274,7 +274,8 @@ components:
   schemas:
     Status:
       type: string
-      enum: [scheduled, cancelled, no_show]
+      description: checked_in and completed were added by feature 007; such appointments keep their slot and cannot be rescheduled, cancelled, or marked no-show.
+      enum: [scheduled, cancelled, no_show, checked_in, completed]
     StartTime:
       type: string
       pattern: '^([01][0-9]|2[0-3]):[0-5][05]$'
