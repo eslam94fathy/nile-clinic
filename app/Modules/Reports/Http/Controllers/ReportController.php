@@ -4,6 +4,7 @@ namespace App\Modules\Reports\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Reports\Http\Requests\ReportRequest;
+use App\Modules\Reports\Http\Resources\ActivityRowResource;
 use App\Modules\Reports\Http\Resources\BillingRowResource;
 use App\Modules\Reports\Http\Resources\MoneyCollectedResource;
 use App\Modules\Reports\Services\ReportService;
@@ -28,5 +29,12 @@ class ReportController extends Controller
         $report = $this->reports->billing($request->from(), $request->to(), $request->doctorId(), $request->perPage());
 
         return BillingRowResource::collection($report['rows'])->additional(['totals' => $report['totals']]);
+    }
+
+    public function activity(ReportRequest $request): AnonymousResourceCollection
+    {
+        $report = $this->reports->activity($request->from(), $request->to(), $request->doctorId(), $request->perPage());
+
+        return ActivityRowResource::collection($report['rows'])->additional(['totals' => $report['totals']]);
     }
 }

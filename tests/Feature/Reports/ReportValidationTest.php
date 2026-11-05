@@ -21,6 +21,7 @@ class ReportValidationTest extends TestCase
     private const ENDPOINTS = [
         '/api/v1/reports/money-collected' => false,
         '/api/v1/reports/billing' => true,
+        '/api/v1/reports/activity' => true,
     ];
 
     protected function setUp(): void

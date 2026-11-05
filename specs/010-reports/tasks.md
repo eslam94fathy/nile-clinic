@@ -267,7 +267,7 @@ breakdown match by hand.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T022 [P] [US3] Write `tests/Feature/Reports/ActivityReportTest.php` (US3-1…4, FR-012–FR-014)
+- [X] T022 [P] [US3] Write `tests/Feature/Reports/ActivityReportTest.php` (US3-1…4, FR-012–FR-014)
   - Scope:
     - per doctor and in `totals`: appointments in each of `scheduled`, `cancelled`, `no_show`, `checked_in`, `completed`, with zero for the rest
     - `no_show_rate`: `1` no-show, `5` checked in, `2` completed → `12.5` (compare with `assertEquals`); with only `scheduled` and `cancelled` → `null`; `totals` calculated from the counts, not from the doctors' rates
@@ -283,19 +283,19 @@ breakdown match by hand.
 
 ### Implementation for User Story 3
 
-- [ ] T023 [US3] Add `appointmentsByDoctor`, `visitsByDoctor`, and `patientsRegistered` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php`
+- [X] T023 [US3] Add `appointmentsByDoctor`, `visitsByDoctor`, and `patientsRegistered` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php`
   - Scope:
     - `appointmentsByDoctor(from, to, ?doctorId)`: `appointments` by `date`, with `doctor_id`, `status`, `COUNT(*)`, grouped by both.
     - `visitsByDoctor(from, to, ?doctorId)`: `queue_entries` by `date`, with `doctor_id`, `status`, `COUNT(*)`, and `COUNT(appointment_id) as booked`, grouped by both.
     - `patientsRegistered(string $start, string $end): int`: count of `patients` with `created_at` in those instants.
   - Depends: T015
 
-- [ ] T024 [US3] Add `activity` to `app/Modules/Reports/Services/ReportService.php`
+- [X] T024 [US3] Add `activity` to `app/Modules/Reports/Services/ReportService.php`
   - Scope: merge by doctor, with every status present as 0, using `AppointmentStatus` and `QueueStatus` values. `walk_in` = visits − booked. `no_show_rate` through `ReportMath::noShowRate`, for rows and for `totals` (FR-012). `totals.new_patients` only when
     `$doctorId` is null, using the private `period()`. Reuse the paging helper.
   - Depends: T009, T020, T023
 
-- [ ] T025 [US3] Create `app/Modules/Reports/Http/Resources/ActivityRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
+- [X] T025 [US3] Create `app/Modules/Reports/Http/Resources/ActivityRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
   - Scope: as T021. Route: `GET /reports/activity`, name `reports.activity`.
   - Verify: `docker compose exec app php artisan test --filter="ActivityReportTest|ReportValidationTest"` → pass.
   - Depends: T022, T024

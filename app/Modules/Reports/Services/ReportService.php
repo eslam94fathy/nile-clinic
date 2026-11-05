@@ -2,10 +2,12 @@
 
 namespace App\Modules\Reports\Services;
 
+use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Payments\Enums\PaymentMethod;
 use App\Modules\Payments\Support\Money;
 use App\Modules\Reports\Repositories\Contracts\ReportRepository;
+use App\Modules\Reports\Support\ReportMath;
 use App\Modules\Scheduling\Support\ClinicClock;
 use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -18,6 +20,7 @@ use Illuminate\Pagination\Paginator;
 class ReportService
 {
     private const NO_MONEY = ['received' => 0, 'refunded' => 0];
+
 
     public function __construct(
         private readonly ReportRepository $reports,
@@ -131,6 +134,74 @@ class ReportService
             'balance' => Money::fromPiastres($due - $figures['amount_paid']),
             'cancelled_charges' => $figures['cancelled_charges'],
             'uncharged_seen_visits' => $figures['uncharged_seen_visits'],
+        ];
+    }
+
+    /**
+     * Appointments, the no-show rate, visits, and new patients (US3). New patients are overall only, so they
+     * are left out when a doctor filter is sent (FR-014).
+     *
+     * @return array{rows: LengthAwarePaginator, totals: array<string, mixed>}
+     */
+    public function activity(string $from, string $to, ?int $doctorId, int $perPage): array
+    {
+        $this->assertDoctorExists($doctorId);
+
+        $empty = [
+            'appointments' => array_fill_keys(AppointmentStatus::values(), 0),
+            'visits' => array_fill_keys(QueueStatus::values(), 0),
+            'booked' => 0,
+        ];
+        $byDoctor = [];
+        $totals = $empty;
+
+        foreach ($this->reports->appointmentsByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] ??= $empty;
+            $byDoctor[$row->doctor_id]['appointments'][$row->status] = (int) $row->count;
+            $totals['appointments'][$row->status] += (int) $row->count;
+        }
+
+        foreach ($this->reports->visitsByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] ??= $empty;
+            $byDoctor[$row->doctor_id]['visits'][$row->status] = (int) $row->count;
+            $byDoctor[$row->doctor_id]['booked'] += (int) $row->booked;
+            $totals['visits'][$row->status] += (int) $row->count;
+            $totals['booked'] += (int) $row->booked;
+        }
+
+        $totals = $this->activityFigures($totals);
+
+        if ($doctorId === null) {
+            [$start, $end] = $this->period($from, $to);
+            $totals['new_patients'] = $this->reports->patientsRegistered($start, $end);
+        }
+
+        return [
+            'rows' => $this->pageByDoctorName(array_map($this->activityFigures(...), $byDoctor), $perPage),
+            'totals' => $totals,
+        ];
+    }
+
+    /**
+     * @param  array{appointments: array<string, int>, visits: array<string, int>, booked: int}  $counts
+     * @return array<string, mixed>
+     */
+    private function activityFigures(array $counts): array
+    {
+        $appointments = $counts['appointments'];
+
+        return [
+            'appointments' => $appointments,
+            'no_show_rate' => ReportMath::noShowRate(
+                $appointments[AppointmentStatus::NoShow->value],
+                $appointments[AppointmentStatus::CheckedIn->value],
+                $appointments[AppointmentStatus::Completed->value],
+            ),
+            'visits' => [
+                ...$counts['visits'],
+                'booked' => $counts['booked'],
+                'walk_in' => array_sum($counts['visits']) - $counts['booked'],
+            ],
         ];
     }
 

@@ -38,6 +38,25 @@ interface ReportRepository
     public function unchargedSeenVisitsByDoctor(string $from, string $to, ?int $doctorId): array;
 
     /**
+     * Appointments dated in a period, per doctor and status.
+     *
+     * @return list<object{doctor_id: int, status: string, count: int}>
+     */
+    public function appointmentsByDoctor(string $from, string $to, ?int $doctorId): array;
+
+    /**
+     * Visits dated in a period, per doctor and status, with how many came from an appointment.
+     *
+     * @return list<object{doctor_id: int, status: string, count: int, booked: int}>
+     */
+    public function visitsByDoctor(string $from, string $to, ?int $doctorId): array;
+
+    /**
+     * Patients registered between two UTC instants ($end excluded).
+     */
+    public function patientsRegistered(string $start, string $end): int;
+
+    /**
      * The doctors with these ids, by account name, then id.
      *
      * @param  list<int>  $ids

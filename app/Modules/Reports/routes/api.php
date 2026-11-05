@@ -8,4 +8,5 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/money-collected', [ReportController::class, 'moneyCollected'])->name('reports.money-collected');
     Route::get('/reports/billing', [ReportController::class, 'billing'])->name('reports.billing');
+    Route::get('/reports/activity', [ReportController::class, 'activity'])->name('reports.activity');
 });

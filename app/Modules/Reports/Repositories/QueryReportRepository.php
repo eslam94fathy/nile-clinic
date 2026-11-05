@@ -59,6 +59,38 @@ class QueryReportRepository implements ReportRepository
             ->all();
     }
 
+    public function appointmentsByDoctor(string $from, string $to, ?int $doctorId): array
+    {
+        return DB::table('appointments')
+            ->whereBetween('date', [$from, $to])
+            ->when($doctorId !== null, fn ($query) => $query->where('doctor_id', $doctorId))
+            ->select('doctor_id', 'status')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('doctor_id', 'status')
+            ->get()
+            ->all();
+    }
+
+    public function visitsByDoctor(string $from, string $to, ?int $doctorId): array
+    {
+        return DB::table('queue_entries')
+            ->whereBetween('date', [$from, $to])
+            ->when($doctorId !== null, fn ($query) => $query->where('doctor_id', $doctorId))
+            ->select('doctor_id', 'status')
+            ->selectRaw('COUNT(*) as count, COUNT(appointment_id) as booked')
+            ->groupBy('doctor_id', 'status')
+            ->get()
+            ->all();
+    }
+
+    public function patientsRegistered(string $start, string $end): int
+    {
+        return DB::table('patients')
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $end)
+            ->count();
+    }
+
     public function doctorsByName(array $ids): array
     {
         return DB::table('doctors')
