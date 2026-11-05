@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Only a waiting entry can be marked as left or undone: 422 `not_changeable` on `entry`.
+method: POST
+url: '{{base_url}}/queue/:entry/leave'
+order: 23000
+pathVariables:
+  - key: 'entry'
+    value: '{{queue_left_entry_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 not changeable', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('entry');
+      });
+examples: './.resources/mark as left again.resources/examples'

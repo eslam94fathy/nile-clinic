@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  A patient already waiting or with this doctor today cannot be added again: 422 `already_in_queue` on `patient_id`.
+method: POST
+url: '{{base_url}}/queue/walk-ins'
+order: 8000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{queue_patient_id}},
+      "doctor_id": {{doctor_id}}
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 already in queue', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('patient_id');
+      });
+examples: './.resources/add walk-in again.resources/examples'

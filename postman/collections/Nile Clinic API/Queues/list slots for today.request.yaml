@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Setup: this folder needs two slots left today, so run it before 23:20 clinic time. Stores the first
+  two starts in `queue_slot` and `queue_slot_2`.
+method: GET
+url: '{{base_url}}/doctors/:doctor/slots?from={{queue_date}}&to={{queue_date}}'
+order: 2000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+queryParams:
+  - key: 'from'
+    value: '{{queue_date}}'
+  - key: 'to'
+    value: '{{queue_date}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with two slots left today', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.length).to.be.at.least(2);
+        pm.collectionVariables.set('queue_slot', data[0].start);
+        pm.collectionVariables.set('queue_slot_2', data[1].start);
+      });
+examples: './.resources/list slots for today.resources/examples'

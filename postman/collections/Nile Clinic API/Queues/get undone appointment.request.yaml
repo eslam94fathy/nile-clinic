@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  After an undo, the appointment is `scheduled` again, with all of feature 006's rules.
+method: GET
+url: '{{base_url}}/appointments/:appointment'
+order: 27000
+pathVariables:
+  - key: 'appointment'
+    value: '{{queue_appointment_2_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 scheduled', () => pm.expect(pm.response.json().data.status).to.eql('scheduled'));
+examples: './.resources/get undone appointment.resources/examples'

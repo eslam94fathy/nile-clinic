@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  The next waiting patient in queue order.
+method: POST
+url: '{{base_url}}/doctors/me/queue/call-next'
+order: 17000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the second in order', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('queue_second_entry_id')));
+      });
+examples: './.resources/call second patient.resources/examples'

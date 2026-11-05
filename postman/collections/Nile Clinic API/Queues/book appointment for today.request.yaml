@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Setup: a scheduled appointment for today to check in. The id is stored in `queue_appointment_id`.
+method: POST
+url: '{{base_url}}/appointments'
+order: 3000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{patient_id}},
+      "doctor_id": {{doctor_id}},
+      "date": "{{queue_date}}",
+      "start": "{{queue_slot}}",
+      "note": "Postman synthetic visit"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 scheduled today', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('scheduled');
+        pm.collectionVariables.set('queue_appointment_id', String(data.id));
+      });
+examples: './.resources/book appointment for today.resources/examples'

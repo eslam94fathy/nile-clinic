@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Call the first waiting patient in queue order who is not with another doctor right now. Doctors send no
+  entry id. The patient becomes `with_doctor` with the time.
+method: POST
+url: '{{base_url}}/doctors/me/queue/call-next'
+order: 14000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the first in order is with the doctor', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('queue_first_entry_id')));
+        pm.expect(data.status).to.eql('with_doctor');
+        pm.expect(data.called_at).to.be.a('string');
+      });
+examples: './.resources/call next patient.resources/examples'

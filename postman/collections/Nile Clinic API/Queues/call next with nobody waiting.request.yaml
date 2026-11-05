@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Nobody can be called: 422 `nobody_waiting` on `queue`, and nothing changes.
+method: POST
+url: '{{base_url}}/doctors/me/queue/call-next'
+order: 19000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 nobody waiting', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('queue');
+      });
+examples: './.resources/call next with nobody waiting.resources/examples'

@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Add a registered patient without an appointment to an active doctor's list today; administrators and
+  receptionists. A walk-in takes no slot, so bookable slots are unchanged. Unknown patient or unknown or
+  inactive doctor is 422.
+method: POST
+url: '{{base_url}}/queue/walk-ins'
+order: 7000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{queue_patient_id}},
+      "doctor_id": {{doctor_id}}
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 waiting walk-in', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ status: 'waiting', walk_in: true, appointment: null });
+      });
+examples: './.resources/add walk-in.resources/examples'

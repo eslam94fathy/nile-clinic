@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Finish the visit of the patient with the doctor: the entry becomes `seen` with the time, and its
+  appointment, if any, becomes `completed`. Nobody with the doctor is 422 `no_current_visit`.
+method: POST
+url: '{{base_url}}/doctors/me/queue/finish'
+order: 16000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 seen', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('queue_first_entry_id')));
+        pm.expect(data.status).to.eql('seen');
+        pm.expect(data.finished_at).to.be.a('string');
+      });
+examples: './.resources/finish visit.resources/examples'

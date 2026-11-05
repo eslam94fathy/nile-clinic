@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  A waiting patient left: the entry becomes `left` with the time, stays on the list, and is never called. Administrators and receptionists.
+method: POST
+url: '{{base_url}}/queue/:entry/leave'
+order: 22000
+pathVariables:
+  - key: 'entry'
+    value: '{{queue_left_entry_id}}'
+    description: 'The queue entry id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 left', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.status).to.eql('left');
+        pm.expect(data.left_at).to.be.a('string');
+      });
+examples: './.resources/mark as left.resources/examples'

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue?status=waiting'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":7,"queue_number":7,"status":"waiting","walk_in":false,"arrived_at":"2026-11-05T09:46:05.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":{"id":9,"start":"15:00","end":"15:20"},"doctor":{"id":2,"name":"\u0623\u062d\u0645\u062f \u0645\u0635\u0637\u0641\u0649","title":"Consultant"},"patient":{"id":11,"full_name":"QS7 Synthetic 2","phone":"01038718132"}},{"id":15,"queue_number":2,"status":"waiting","walk_in":true,"arrived_at":"2026-11-05T12:21:17.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":null,"doctor":{"id":16,"name":"Mrs. Dena Franecki Sr.","title":"Resident"},"patient":{"id":22,"full_name":"Postman Queue Patient","phone":"01000000022"}},{"id":14,"queue_number":1,"status":"waiting","walk_in":false,"arrived_at":"2026-11-05T12:21:16.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":{"id":13,"start":"14:40","end":"15:00"},"doctor":{"id":16,"name":"Mrs. Dena Franecki Sr.","title":"Resident"},"patient":{"id":20,"full_name":"\u0631\u064a\u0645 \u0639\u0628\u062f \u0627\u0644\u062d\u0645\u064a\u062f","phone":"01626433707"}}],"links":{"first":"http:\/\/localhost:8080\/api\/v1\/queue?status=waiting&page=1","last":"http:\/\/localhost:8080\/api\/v1\/queue?status=waiting&page=1","prev":null,"next":null},"meta":{"current_page":1,"from":1,"last_page":1,"links":[{"url":null,"label":"&laquo; Previous","page":null,"active":false},{"url":"http:\/\/localhost:8080\/api\/v1\/queue?status=waiting&page=1","label":"1","page":1,"active":true},{"url":null,"label":"Next &raquo;","page":null,"active":false}],"path":"http:\/\/localhost:8080\/api\/v1\/queue","per_page":15,"to":3,"total":3}}
+order: 1000

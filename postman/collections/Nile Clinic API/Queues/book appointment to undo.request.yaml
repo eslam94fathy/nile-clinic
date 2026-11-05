@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Setup: a second appointment today. The id is stored in `queue_appointment_2_id`.
+method: POST
+url: '{{base_url}}/appointments'
+order: 24000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "patient_id": {{patient_id}},
+      "doctor_id": {{doctor_id}},
+      "date": "{{queue_date}}",
+      "start": "{{queue_slot_2}}",
+      "note": "Postman synthetic visit"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 scheduled', () => {
+        pm.response.to.have.status(201);
+        pm.collectionVariables.set('queue_appointment_2_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/book appointment to undo.resources/examples'
