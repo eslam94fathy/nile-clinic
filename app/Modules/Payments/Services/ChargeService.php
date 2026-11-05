@@ -11,8 +11,10 @@ use App\Modules\Payments\Repositories\Contracts\ChargeRepository;
 use App\Modules\Payments\Repositories\Contracts\DoctorFeeRepository;
 use App\Modules\Payments\Support\Money;
 use App\Modules\Queues\Enums\QueueStatus;
+use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
 use App\Modules\Staff\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -64,6 +66,28 @@ class ChargeService
         }, attempts: 3);
 
         return $this->find($charge->id);
+    }
+
+    /**
+     * A date's visits with their active charge, if any (FR-016).
+     *
+     * @param  array{doctor_id?: int, charge_status?: string}  $filters
+     * @return LengthAwarePaginator<int, QueueEntry>
+     */
+    public function listVisits(string $date, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->charges->paginateVisits($date, $filters, $perPage);
+    }
+
+    /**
+     * Charges for a date range, newest first (FR-017).
+     *
+     * @param  array{from: string, to: string, patient_id?: int, doctor_id?: int, status?: string}  $filters
+     * @return LengthAwarePaginator<int, Charge>
+     */
+    public function list(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->charges->paginate($filters, $perPage);
     }
 
     /**

@@ -16,6 +16,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/doctors/{doctor}/fee', [FeeController::class, 'update'])->name('payments.fee.set');
     });
 
+    Route::get('/visits', [VisitChargeController::class, 'index'])->name('payments.visits');
+    Route::get('/charges', [ChargeController::class, 'index'])->name('payments.charges');
+
     Route::whereNumber('visit')->group(function () {
         Route::post('/visits/{visit}/charge', [VisitChargeController::class, 'store'])->name('payments.charge');
     });

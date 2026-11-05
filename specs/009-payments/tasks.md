@@ -367,7 +367,7 @@ the expected visit is returned.
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T027 [P] [US3] Write `tests/Feature/Payments/VisitChargeListTest.php` (US3-1, 4, FR-016, FR-019, R8)
+- [X] T027 [P] [US3] Write `tests/Feature/Payments/VisitChargeListTest.php` (US3-1, 4, FR-016, FR-019, R8)
   - Scope: clock fixed; receptionist actor. Visits of two doctors: no charge; `unpaid`; `partially_paid`; `paid`; a cancelled
     charge; a `left` visit with no charge; a `left` visit with an active charge.
     - `GET /visits?date=2026-11-01` → by doctor, then queue order; each exactly the contract's `VisitCharge`; `balance` and
@@ -380,7 +380,7 @@ the expected visit is returned.
     - doctor → `403`
   - Verify: `--filter=VisitChargeListTest` → fails
 
-- [ ] T028 [P] [US3] Write `tests/Feature/Payments/ChargeListTest.php` (US3-2…4, FR-017, FR-018)
+- [X] T028 [P] [US3] Write `tests/Feature/Payments/ChargeListTest.php` (US3-2…4, FR-017, FR-018)
   - Scope: clock fixed.
     - `GET /charges?from&to` → newest first; each exactly the contract's `ChargeSummary`, with no reasons, payments, or
       refunds; filters by `patient_id`, `doctor_id`, and each `status`, combined; paging
@@ -392,7 +392,7 @@ the expected visit is returned.
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Add `paginateVisits` and `paginate` to `ChargeRepository` / `EloquentChargeRepository` (R8)
+- [X] T029 [US3] Add `paginateVisits` and `paginate` to `ChargeRepository` / `EloquentChargeRepository` (R8)
   - Scope: `paginateVisits(string $date, array $filters, int $perPage): LengthAwarePaginator<int, QueueEntry>` —
     `QueueEntry::query()`, `select('queue_entries.*', 'charges.id as charge_id', 'charges.status as charge_status',
     'charges.fee as charge_fee', 'charges.discount as charge_discount', 'charges.amount_paid as charge_amount_paid')`, left join
@@ -403,7 +403,7 @@ the expected visit is returned.
     `patient_id`, `doctor_id`, `status`; `orderByDesc('date')`, `orderByDesc('id')`; `with('patient', 'doctor.user')`;
     `withQueryString()`.
 
-- [ ] T030 [US3] Create `app/Modules/Payments/Http/Requests/ListVisitChargesRequest.php`, `ListChargesRequest.php`, and `app/Modules/Payments/Http/Resources/VisitChargeResource.php`; add `listVisits()` and `list()` to `ChargeService`
+- [X] T030 [US3] Create `app/Modules/Payments/Http/Requests/ListVisitChargesRequest.php`, `ListChargesRequest.php`, and `app/Modules/Payments/Http/Resources/VisitChargeResource.php`; add `listVisits()` and `list()` to `ChargeService`
   - Scope: `ListVisitChargesRequest`: `viewAny`; `date` `required`, `date_format:Y-m-d`; `doctor_id` nullable integer min 1;
     `charge_status` nullable, in `none`, `unpaid`, `partially_paid`, `paid`; `page`; `per_page` 1–100, default 15.
     `ListChargesRequest`: `viewAny`; `from`, `to` as `ListOwnVisitsRequest`, with `validateRange` (at most 92 days);
@@ -411,7 +411,7 @@ the expected visit is returned.
     contract's `VisitCharge`; `charge_status` `?? 'none'`; `balance` from `Money` or null.
   - Depends: T029
 
-- [ ] T031 [US3] Add `index()` to `VisitChargeController` and `ChargeController`, and the routes
+- [X] T031 [US3] Add `index()` to `VisitChargeController` and `ChargeController`, and the routes
   - Scope: routes `GET /visits` `payments.visits`; `GET /charges` `payments.charges`.
   - Accept: T027, T028 pass.
   - Depends: T030

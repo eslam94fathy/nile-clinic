@@ -3,11 +3,14 @@
 namespace App\Modules\Payments\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Payments\Http\Requests\ListChargesRequest;
 use App\Modules\Payments\Http\Requests\RecordPaymentRequest;
 use App\Modules\Payments\Http\Resources\ChargeResource;
+use App\Modules\Payments\Http\Resources\ChargeSummaryResource;
 use App\Modules\Payments\Models\Charge;
 use App\Modules\Payments\Services\ChargeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -19,6 +22,11 @@ class ChargeController extends Controller
     public function __construct(
         private readonly ChargeService $charges,
     ) {}
+
+    public function index(ListChargesRequest $request): AnonymousResourceCollection
+    {
+        return ChargeSummaryResource::collection($this->charges->list($request->filters(), $request->perPage()));
+    }
 
     public function show(int $charge): ChargeResource
     {
