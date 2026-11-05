@@ -70,7 +70,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write `tests/Feature/Audit/AuditEntriesTableTest.php`, then create `database/migrations/<timestamp>_create_audit_entries_table.php` (R10, approved D6)
+- [X] T002 Write `tests/Feature/Audit/AuditEntriesTableTest.php`, then create `database/migrations/<timestamp>_create_audit_entries_table.php` (R10, approved D6)
   - Scope: `make:migration create_audit_entries_table`, with a comment pointing to `specs/011-audit-logs/data-model.md`. Exactly:
     - `id()`; `string('action', 40)`; `string('outcome', 10)`; `string('actor_type', 10)`;
     - `foreignId('actor_id')->nullable()->constrained('users')->restrictOnDelete()`; `string('actor_role', 20)->nullable()`;
@@ -80,19 +80,19 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Test: `Schema::hasColumns`; `Schema::hasIndex` for the three named indexes and both foreign key indexes; a row whose `subject_id` matches no record can be inserted.
   - Verify: `--filter=AuditEntriesTableTest` fails first; `docker compose exec app php artisan migrate` → `DONE`; then passes.
 
-- [ ] T003 [P] Create the enums in `app/Modules/Audit/Enums/`: `AuditOutcome.php`, `AuditActorType.php`, `AuditSubject.php`, `AuditAction.php`
+- [X] T003 [P] Create the enums in `app/Modules/Audit/Enums/`: `AuditOutcome.php`, `AuditActorType.php`, `AuditSubject.php`, `AuditAction.php`
   - Scope: string-backed, with exactly the values in [data-model.md](data-model.md), "Enums": `AuditOutcome` 2, `AuditActorType` 3, `AuditSubject` 9, `AuditAction` 44. Case names follow values: `patient.updated` → `PatientUpdated`.
   - Verify: a test in T009 asserts `count(AuditAction::cases()) === 44`, and that the values equal the `AuditAction` enum in `contracts/audit.openapi.yaml`.
 
-- [ ] T004 Create `app/Modules/Audit/Models/AuditEntry.php` and `database/factories/AuditEntryFactory.php`
+- [X] T004 Create `app/Modules/Audit/Models/AuditEntry.php` and `database/factories/AuditEntryFactory.php`
   - Scope: `public const UPDATED_AT = null`, as `Payment`. `$fillable`: all columns but `id`. Casts: `action` → `AuditAction`, `outcome` → `AuditOutcome`, `actor_type` → `AuditActorType`, `subject_type` → `AuditSubject`, `details` → `array`, `created_at` → `datetime`. `actor(): BelongsTo` to `User`. Factory: synthetic defaults, with `actor_type` `staff`, `outcome` `succeeded`, `action` `patient.updated`; it accepts `created_at` directly.
   - Depends: T002, T003
 
-- [ ] T005 Create `app/Modules/Audit/Repositories/Contracts/AuditEntryRepository.php` and `app/Modules/Audit/Repositories/EloquentAuditEntryRepository.php`
+- [X] T005 Create `app/Modules/Audit/Repositories/Contracts/AuditEntryRepository.php` and `app/Modules/Audit/Repositories/EloquentAuditEntryRepository.php`
   - Scope: `append(array $attributes): AuditEntry` only, for now. `search` is added in T018. **No update or delete method, ever** (FR-014). The repository never opens a transaction.
   - Depends: T004
 
-- [ ] T006 [P] Write `tests/Feature/Audit/AuditChangesTest.php`, then create `app/Modules/Audit/Support/AuditChanges.php` (R4, R5, FR-006)
+- [X] T006 [P] Write `tests/Feature/Audit/AuditChangesTest.php`, then create `app/Modules/Audit/Support/AuditChanges.php` (R4, R5, FR-006)
   - Scope: `final class` with `public static function of(Model $model, AuditSubject $subject): array` returning `['fields' => list<string>, 'values' => array<string, array{from: mixed, to: mixed}>]`.
     - **Fields**: keys of `getChanges()`; if `$model->wasRecentlyCreated`, keys of `getAttributes()`. Leave out `id`, anything ending in `_at` or `_by`, `name_search`, and generated columns (`active_flag`, `scheduled_flag`, `with_doctor_flag`).
     - **Values**: `private const ALLOWED_VALUES`, keyed by `AuditSubject` value, exactly the table in research R5. Only for allowed fields present in `fields`. Anything else is never read.
@@ -109,7 +109,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: `--filter=AuditChangesTest` → fails first, then passes.
   - Depends: T003
 
-- [ ] T007 Create `app/Modules/Audit/Services/AuditTrail.php` (R6)
+- [X] T007 Create `app/Modules/Audit/Services/AuditTrail.php` (R6)
   - Scope: depends on `AuditEntryRepository` only. Methods, with named arguments at call sites:
     - `record(AuditAction $action, ?AuditSubject $subject = null, ?int $subjectId = null, ?int $patientId = null, array $details = [], ?User $actor = null): void`, always writes with `succeeded`;
     - `recordChanges(AuditAction $action, Model $model, AuditSubject $subject, ?int $patientId = null, array $extraFields = [], ?int $subjectId = null): void`: `AuditChanges::of`, plus `$extraFields` added to `fields` without duplicates; if `fields` is empty, writes nothing. `subject_id` is `$subjectId ?? $model->getKey()`;
@@ -120,12 +120,12 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Bind nothing here; T008 binds the repository.
   - Depends: T005, T006
 
-- [ ] T008 Create the module skeleton: `app/Modules/Audit/Providers/AuditServiceProvider.php`, `app/Modules/Audit/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T008 Create the module skeleton: `app/Modules/Audit/Providers/AuditServiceProvider.php`, `app/Modules/Audit/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: the provider mirrors `ReportsServiceProvider`: binds `AuditEntryRepository`, loads the routes, and loads the translations namespace `audit` (the policy is added in T016). Routes file: header comment plus an empty `Route::middleware('auth:sanctum')->group(...)`. Add `AuditServiceProvider::class` **before** the module providers that use it, directly after `SystemServiceProvider::class`.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
   - Depends: T005
 
-- [ ] T009 Write `tests/Feature/Audit/AuditTrailTest.php` and create `tests/Feature/Audit/Concerns/InteractsWithAuditEntries.php`
+- [X] T009 Write `tests/Feature/Audit/AuditTrailTest.php` and create `tests/Feature/Audit/Concerns/InteractsWithAuditEntries.php`
   - Scope, helpers:
     - `assertOneEntry(AuditAction $action, array $expected = []): AuditEntry`: exactly one entry with that action; each key in `$expected` matches; returns it.
     - `failAuditWrites(): void`: rebinds `AuditEntryRepository` in the container to an anonymous class that wraps the real repository, throws `RuntimeException` from `append`, and passes every other method through. T018 adds `search` to it. Call this **before the test's first request to that route**, because Laravel caches controllers per route.
@@ -134,7 +134,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: `--filter=AuditTrailTest` → pass.
   - Depends: T007, T008
 
-- [ ] T010 Write `tests/Feature/Localization/ServerErrorMessageTest.php`, then translate the general error in `bootstrap/app.php`, `lang/en/auth.php`, and `lang/ar/auth.php` (R13, approved D7, Constitution VII)
+- [X] T010 Write `tests/Feature/Localization/ServerErrorMessageTest.php`, then translate the general error in `bootstrap/app.php`, `lang/en/auth.php`, and `lang/ar/auth.php` (R13, approved D7, Constitution VII)
   - Scope:
     - `bootstrap/app.php`, inside `withExceptions`, after the existing `report` block, importing `Symfony\Component\HttpFoundation\Response`:
       ```php
@@ -151,7 +151,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - Test, with `config(['app.debug' => false])` and a test-only route that throws a `RuntimeException` with a planted message: `en` and `ar` messages with identical structure, and the planted message nowhere in the body. A `422`, `401`, `403`, and `404` keep their status and body. With `app.debug` true, the response is not replaced.
   - Verify: `--filter=ServerErrorMessageTest` fails first, then passes; `docker compose exec app php artisan test --filter=TranslationParityTest` → pass.
 
-- [ ] T011 Run the whole suite on `tests/`
+- [X] T011 Run the whole suite on `tests/`
   - Verify: `docker compose exec app composer test` → all pass, with nothing recorded yet by any module.
   - Depends: T009, T010
 

@@ -19,5 +19,6 @@ return [
     // Project keys (feature 002), not from the framework.
     'unauthenticated' => 'You are not signed in.',
     'forbidden' => 'You are not allowed to perform this action.',
+    'server_error' => 'Something went wrong. Please try again.',
 
 ];
