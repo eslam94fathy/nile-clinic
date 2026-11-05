@@ -42,6 +42,22 @@ class PatientService
     }
 
     /**
+     * Find a patient for a staff member to read, leaving an entry. If the entry cannot be saved, the
+     * patient is not returned (FR-004, FR-007). `find` stays free of this, because writes and other
+     * modules call it.
+     *
+     * @throws PatientNotFoundException
+     */
+    public function open(int $id): Patient
+    {
+        $patient = $this->find($id);
+
+        $this->audit->record(AuditAction::PatientOpened, AuditSubject::Patient, $id, $id);
+
+        return $patient;
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes  validated input; emergency_contact is a nested object
      */
     public function register(array $attributes): Patient

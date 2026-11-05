@@ -38,7 +38,7 @@ class PatientController extends Controller
     {
         Gate::authorize('view', Patient::class);
 
-        return PatientResource::make($this->patients->find($patient));
+        return PatientResource::make($this->patients->open($patient));
     }
 
     public function update(UpdatePatientRequest $request, int $patient): PatientResource

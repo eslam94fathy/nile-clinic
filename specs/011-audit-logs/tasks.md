@@ -326,7 +326,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Independent Test**: As a receptionist, open a patient. As a doctor with access, open that patient's medical record and history. As a doctor without access, try to open them. Search by the patient and confirm each entry and outcome, and that the refused doctor received the same response as before this feature.
 
-- [ ] T033 [P] [US2] Write `tests/Feature/Audit/AuditOpeningsTest.php`, and add `test_patient_opened`, `test_encounter_opened`, and `test_encounter_history_viewed` to `AuditActionCoverageTest` — failing first (FR-004, FR-007, US2 scenarios 1, 4–6, US4 scenario 3)
+- [X] T033 [P] [US2] Write `tests/Feature/Audit/AuditOpeningsTest.php`, and add `test_patient_opened`, `test_encounter_opened`, and `test_encounter_history_viewed` to `AuditActionCoverageTest` — failing first (FR-004, FR-007, US2 scenarios 1, 4–6, US4 scenario 3)
   - Scope:
     - Opening a patient writes `patient.opened`; a doctor opening their own record writes `encounter.opened`, as does another doctor's permitted record; history writes `encounter.history_viewed`, once per page requested, including an empty `200`.
     - With `failAuditWrites()`: each returns a general `500`, and its body holds no patient detail or clinical text.
@@ -334,7 +334,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - Searching by `patient_id` returns entries from patient details, an appointment, a visit, a record, and a charge together (US2 scenario 4).
   - Verify: `--filter='AuditOpeningsTest|test_patient_opened|test_encounter_opened|test_encounter_history_viewed'` → fails.
 
-- [ ] T034 [P] [US2] Write `tests/Feature/Audit/AuditRefusedOpeningsTest.php` — failing first (FR-005, SC-006, US2 scenarios 2, 3; R7, approved D4)
+- [X] T034 [P] [US2] Write `tests/Feature/Audit/AuditRefusedOpeningsTest.php` — failing first (FR-005, SC-006, US2 scenarios 2, 3; R7, approved D4)
   - Scope:
     - Another doctor's unpermitted record → `404` with a `refused` `encounter.opened`; a receptionist and an administrator → `403`, each with `refused`.
     - Refused history → `404` or `403`, with `refused` `encounter.history_viewed`, when the patient has a finalized record.
@@ -345,17 +345,17 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - Refused saves, finalizations, and addenda write no entry (FR-005). No clinical text in any entry.
   - Verify: `--filter=AuditRefusedOpeningsTest` → fails.
 
-- [ ] T035 [US2] Add `open` to `app/Modules/Patients/Services/PatientService.php` and use it in `app/Modules/Patients/Http/Controllers/PatientController.php` (R8)
+- [X] T035 [US2] Add `open` to `app/Modules/Patients/Services/PatientService.php` and use it in `app/Modules/Patients/Http/Controllers/PatientController.php` (R8)
   - Scope: `open(int $id): Patient`: `find`, then `record(PatientOpened, Patient, $id, $id)`. `PatientController::show` calls `open` in place of `find`. **`find` is unchanged**, as `update` and other modules call it. Authorization stays first.
   - Verify: the patient tests of T033 pass; `docker compose exec app php artisan test tests/Feature/Patients` → pass unchanged.
   - Depends: T033
 
-- [ ] T036 [US2] Add `open` and history recording to `app/Modules/Encounters/Services/EncounterService.php`, and use `open` in `app/Modules/Encounters/Http/Controllers/EncounterController.php` (R8)
+- [X] T036 [US2] Add `open` and history recording to `app/Modules/Encounters/Services/EncounterService.php`, and use `open` in `app/Modules/Encounters/Http/Controllers/EncounterController.php` (R8)
   - Scope: `open(Encounter $encounter): Encounter`: `record(EncounterOpened, Encounter, $encounter->id, $encounter->patient_id)`, then return it. `show`: `EncounterResource::make($this->encounters->open($this->readable($encounter)))`. `update`, `finalize`, and `addAddendum` keep `readable` and record no opening. `history`: after the `HistoryNotFoundException` check, `record(EncounterHistoryViewed, Patient, $patientId, $patientId)`, then return the page.
   - Verify: tests of T033 pass; `docker compose exec app php artisan test tests/Feature/Encounters` → pass unchanged, including `EncounterPrivacyTest`.
   - Depends: T033
 
-- [ ] T037 [US2] Create `app/Modules/Encounters/Http/Middleware/RecordRefusedOpening.php` with existence checks, and apply it in `app/Modules/Encounters/routes/api.php` (R7, approved D4)
+- [X] T037 [US2] Create `app/Modules/Encounters/Http/Middleware/RecordRefusedOpening.php` with existence checks, and apply it in `app/Modules/Encounters/routes/api.php` (R7, approved D4)
   - Scope:
     - `EncounterRepository`: `patientIdOfEncounter(int $id): ?int` and `patientHasFinalizedRecord(int $patientId): bool`, selecting `patient_id` and using `exists()`. **No `select *`, no clinical column, and no casts run** (`EncounterPrivacyTest`).
     - `EncounterService`: `recordRefusedOpening(int $encounterId): void` and `recordRefusedHistory(int $patientId): void`, each doing nothing unless the record exists, then `recordRefusal(...)`.

@@ -558,4 +558,50 @@ class AuditActionCoverageTest extends TestCase
         $this->assertSame(['fields' => ['text']], $entry->details);
         $this->assertStringNotContainsString('PLANTED-CLINICAL', json_encode($entry->details));
     }
+
+    /* Openings (US2) */
+
+    public function test_patient_opened(): void
+    {
+        $patient = Patient::factory()->create();
+
+        $this->getJson("/api/v1/patients/{$patient->id}")->assertOk();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::PatientOpened, AuditSubject::Patient, $patient->id, $patient->id);
+        $this->assertNull($entry->details);
+    }
+
+    public function test_encounter_opened(): void
+    {
+        $doctor = $this->signInAsDoctor();
+        $visit = QueueEntry::factory()->seen()->create(['doctor_id' => $doctor->id]);
+        $encounter = Encounter::factory()->forEntry($visit)->create();
+
+        $this->getJson("/api/v1/doctors/me/encounters/{$encounter->id}")->assertOk();
+
+        $this->assertOneEntry(AuditAction::EncounterOpened, [
+            'outcome' => AuditOutcome::Succeeded,
+            'actor_id' => $doctor->user_id,
+            'subject_type' => AuditSubject::Encounter,
+            'subject_id' => $encounter->id,
+            'patient_id' => $visit->patient_id,
+        ]);
+    }
+
+    public function test_encounter_history_viewed(): void
+    {
+        $doctor = $this->signInAsDoctor();
+        $visit = QueueEntry::factory()->seen()->create(['doctor_id' => $doctor->id]);
+        Encounter::factory()->forEntry($visit)->finalized()->create();
+
+        $this->getJson("/api/v1/doctors/me/patients/{$visit->patient_id}/encounters")->assertOk();
+
+        $this->assertOneEntry(AuditAction::EncounterHistoryViewed, [
+            'outcome' => AuditOutcome::Succeeded,
+            'actor_id' => $doctor->user_id,
+            'subject_type' => AuditSubject::Patient,
+            'subject_id' => $visit->patient_id,
+            'patient_id' => $visit->patient_id,
+        ]);
+    }
 }

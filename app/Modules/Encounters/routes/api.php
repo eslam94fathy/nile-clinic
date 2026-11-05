@@ -3,6 +3,7 @@
 use App\Modules\Encounters\Http\Controllers\EncounterController;
 use App\Modules\Encounters\Http\Controllers\OwnVisitController;
 use App\Modules\Encounters\Http\Controllers\PatientEncounterController;
+use App\Modules\Encounters\Http\Middleware\RecordRefusedOpening;
 use Illuminate\Support\Facades\Route;
 
 // Loaded by EncountersServiceProvider with the "api" middleware group and the "api/v1" prefix.
@@ -17,13 +18,13 @@ Route::middleware('auth:sanctum')->prefix('doctors/me')->group(function () {
     });
 
     Route::whereNumber('encounter')->group(function () {
-        Route::get('/encounters/{encounter}', [EncounterController::class, 'show'])->name('encounters.show');
+        Route::get('/encounters/{encounter}', [EncounterController::class, 'show'])->middleware(RecordRefusedOpening::class)->name('encounters.show');
         Route::put('/encounters/{encounter}', [EncounterController::class, 'update'])->name('encounters.update');
         Route::post('/encounters/{encounter}/finalize', [EncounterController::class, 'finalize'])->name('encounters.finalize');
         Route::post('/encounters/{encounter}/addenda', [EncounterController::class, 'addAddendum'])->name('encounters.addenda');
     });
 
     Route::whereNumber('patient')->group(function () {
-        Route::get('/patients/{patient}/encounters', [PatientEncounterController::class, 'index'])->name('encounters.history');
+        Route::get('/patients/{patient}/encounters', [PatientEncounterController::class, 'index'])->middleware(RecordRefusedOpening::class)->name('encounters.history');
     });
 });

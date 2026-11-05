@@ -114,7 +114,43 @@ class EncounterService
             throw new HistoryNotFoundException;
         }
 
+        // If the entry cannot be saved, the history is not returned (FR-007).
+        $this->audit->record(AuditAction::EncounterHistoryViewed, AuditSubject::Patient, $patientId, $patientId);
+
         return $page;
+    }
+
+    /**
+     * A record a doctor is about to read, leaving an entry. If the entry cannot be saved, the record is
+     * not returned (FR-004, FR-007). `find` stays free of this, because the write paths call it.
+     */
+    public function open(Encounter $encounter): Encounter
+    {
+        $this->audit->record(AuditAction::EncounterOpened, AuditSubject::Encounter, $encounter->id, $encounter->patient_id);
+
+        return $encounter;
+    }
+
+    /**
+     * A refused attempt on a record that exists (FR-005). An unknown id is not an attempt on anything.
+     */
+    public function recordRefusedOpening(int $id): void
+    {
+        $patientId = $this->encounters->patientIdOfEncounter($id);
+
+        if ($patientId !== null) {
+            $this->audit->recordRefusal(AuditAction::EncounterOpened, AuditSubject::Encounter, $id, $patientId);
+        }
+    }
+
+    /**
+     * A refused attempt on a medical history that exists (FR-005).
+     */
+    public function recordRefusedHistory(int $patientId): void
+    {
+        if ($this->encounters->patientHasFinalizedRecord($patientId)) {
+            $this->audit->recordRefusal(AuditAction::EncounterHistoryViewed, AuditSubject::Patient, $patientId, $patientId);
+        }
     }
 
     /**
