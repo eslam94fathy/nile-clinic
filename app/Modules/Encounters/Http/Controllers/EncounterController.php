@@ -35,6 +35,14 @@ class EncounterController extends Controller
         return EncounterResource::make($this->encounters->save($encounter, $request->content()));
     }
 
+    public function finalize(int $encounter): EncounterResource
+    {
+        Gate::authorize('access', Encounter::class);
+        Gate::authorize('write', $this->readable($encounter));
+
+        return EncounterResource::make($this->encounters->finalize($encounter));
+    }
+
     /**
      * Not Response::denyAsNotFound: with debug on, that response gains exception keys and would
      * differ from an unknown id's (research R4).

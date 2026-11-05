@@ -16,5 +16,6 @@ Route::middleware('auth:sanctum')->prefix('doctors/me')->group(function () {
     Route::whereNumber('encounter')->group(function () {
         Route::get('/encounters/{encounter}', [EncounterController::class, 'show'])->name('encounters.show');
         Route::put('/encounters/{encounter}', [EncounterController::class, 'update'])->name('encounters.update');
+        Route::post('/encounters/{encounter}/finalize', [EncounterController::class, 'finalize'])->name('encounters.finalize');
     });
 });

@@ -7,6 +7,8 @@
  *
  * Usage: php tests/Support/encounter-action.php action actorId targetId startAt [text]
  *   start     the target is the visit id
+ *   save      the target is the encounter id; complete content, with text as the chief complaint
+ *   finalize  the target is the encounter id
  *
  * Refuses (exit 2) to run against any database but clinic_testing.
  */
@@ -35,6 +37,14 @@ $encounters = $app->make(EncounterService::class);
 
 $run = match ($action) {
     'start' => fn () => $encounters->start($actor, (int) $targetId),
+    'save' => fn () => $encounters->save((int) $targetId, [
+        'chief_complaint' => $text,
+        'examination_findings' => null,
+        'diagnosis' => 'Synthetic diagnosis',
+        'treatment_plan' => null,
+        'prescriptions' => [],
+    ]),
+    'finalize' => fn () => $encounters->finalize((int) $targetId),
     default => throw new InvalidArgumentException("Unknown action: {$action}"),
 };
 

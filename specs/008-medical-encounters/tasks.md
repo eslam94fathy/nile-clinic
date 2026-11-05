@@ -327,7 +327,7 @@ save over it and confirm it is refused and the content is unchanged.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T023 [US2] Write `tests/Feature/Encounters/FinalizeEncounterTest.php` (US2-1…3, 5, 6, FR-007, FR-008, R8)
+- [X] T023 [US2] Write `tests/Feature/Encounters/FinalizeEncounterTest.php` (US2-1…3, 5, 6, FR-007, FR-008, R8)
   - Scope: clock fixed; author actor.
     - a `complete()` draft → `200`, `status: finalized`, `finalized_at` now
     - a draft with a chief complaint, a diagnosis, and no lines → `200`
@@ -345,7 +345,7 @@ save over it and confirm it is refused and the content is unchanged.
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Add `finalize()` to `app/Modules/Encounters/Services/EncounterService.php` (R3, R8)
+- [X] T024 [US2] Add `finalize()` to `app/Modules/Encounters/Services/EncounterService.php` (R3, R8)
   - Scope: `finalize(int $id): Encounter`: transaction: `lockById`; null → `EncounterNotFoundException`;
     not draft → `['encounter' => not_editable]`; collect errors for blank `chief_complaint`, `diagnosis`,
     and each line's blank `dosage`, `frequency`, `duration`, keyed `prescriptions.N.<field>`, with
@@ -353,13 +353,13 @@ save over it and confirm it is refused and the content is unchanged.
     error → `ValidationException`; otherwise `update` with status `finalized` and `finalized_at now()`.
     Return `find($id)`.
 
-- [ ] T025 [US2] Add `finalize()` to `app/Modules/Encounters/Http/Controllers/EncounterController.php` and the route
+- [X] T025 [US2] Add `finalize()` to `app/Modules/Encounters/Http/Controllers/EncounterController.php` and the route
   - Scope: `Gate::authorize('access', Encounter::class)`, `readable`, `Gate::authorize('write', $found)`,
     service, Resource. Route: `POST /doctors/me/encounters/{encounter}/finalize` `encounters.finalize`.
   - Accept: T023 passes.
   - Depends: T024
 
-- [ ] T026 [US2] Extend `tests/Feature/Encounters/ConcurrentEncounterTest.php` with the save-against-finalize case and enable `save` and `finalize` in `tests/Support/encounter-action.php` (US2-4, SC-004)
+- [X] T026 [US2] Extend `tests/Feature/Encounters/ConcurrentEncounterTest.php` with the save-against-finalize case and enable `save` and `finalize` in `tests/Support/encounter-action.php` (US2-4, SC-004)
   - Scope: a `complete()` draft (real date) with chief complaint `BASE`; at the same `startAt`, one
     `finalize` and 6 `save` processes with texts `SAVE-1`…`SAVE-6`. Assert: `finalize` is `ok`; each
     `save` is `ok` or `refused` on `encounter`; the final `chief_complaint` is `BASE` or the text of a

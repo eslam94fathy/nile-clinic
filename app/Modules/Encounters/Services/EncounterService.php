@@ -93,6 +93,62 @@ class EncounterService
     }
 
     /**
+     * Lock a complete draft (FR-007). What it holds at this moment is its final content (FR-008).
+     *
+     * @throws EncounterNotFoundException
+     * @throws ValidationException when already finalized, or naming each missing field
+     */
+    public function finalize(int $id): Encounter
+    {
+        DB::transaction(function () use ($id) {
+            $encounter = $this->lockDraft($id);
+            $missing = $this->missingToFinalize($encounter);
+
+            if ($missing !== []) {
+                throw ValidationException::withMessages($missing);
+            }
+
+            $this->encounters->update($encounter, [
+                'status' => EncounterStatus::Finalized,
+                'finalized_at' => now(),
+            ]);
+        }, attempts: 3);
+
+        return $this->find($id);
+    }
+
+    /**
+     * Field => message for what a finalized record must hold (research R8).
+     *
+     * @return array<string, string>
+     */
+    private function missingToFinalize(Encounter $encounter): array
+    {
+        $missing = [];
+
+        foreach (['chief_complaint', 'diagnosis'] as $field) {
+            if (blank($encounter->{$field})) {
+                $missing[$field] = $this->requiredToFinalize($field);
+            }
+        }
+
+        foreach ($encounter->prescriptions ?? [] as $index => $line) {
+            foreach (['dosage', 'frequency', 'duration'] as $field) {
+                if (blank($line[$field] ?? null)) {
+                    $missing["prescriptions.{$index}.{$field}"] = $this->requiredToFinalize($field);
+                }
+            }
+        }
+
+        return $missing;
+    }
+
+    private function requiredToFinalize(string $field): string
+    {
+        return __('encounters::messages.required_to_finalize', ['attribute' => __("encounters::attributes.{$field}")]);
+    }
+
+    /**
      * @throws EncounterNotFoundException
      * @throws ValidationException when the record is finalized
      */
