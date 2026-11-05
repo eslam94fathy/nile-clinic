@@ -164,4 +164,29 @@ class AuditNoChangeTest extends TestCase
 
         $this->assertSame(1, $this->entriesFor(AuditAction::EncounterDraftSaved));
     }
+
+    /* Accounts (002) */
+
+    public function test_the_same_staff_update_twice_writes_one_entry(): void
+    {
+        $member = User::factory()->receptionist()->create();
+
+        $this->patchJson("/api/v1/staff/{$member->id}", ['role' => 'doctor'])->assertOk();
+        $this->patchJson("/api/v1/staff/{$member->id}", ['role' => 'doctor'])->assertOk();
+
+        $this->assertSame(1, $this->entriesFor(AuditAction::StaffUpdated));
+    }
+
+    public function test_deactivating_and_reactivating_a_member_twice_writes_one_entry_each(): void
+    {
+        $member = User::factory()->receptionist()->create();
+
+        $this->postJson("/api/v1/staff/{$member->id}/deactivate")->assertOk();
+        $this->postJson("/api/v1/staff/{$member->id}/deactivate")->assertOk();
+        $this->postJson("/api/v1/staff/{$member->id}/reactivate")->assertOk();
+        $this->postJson("/api/v1/staff/{$member->id}/reactivate")->assertOk();
+
+        $this->assertSame(1, $this->entriesFor(AuditAction::StaffDeactivated));
+        $this->assertSame(1, $this->entriesFor(AuditAction::StaffReactivated));
+    }
 }

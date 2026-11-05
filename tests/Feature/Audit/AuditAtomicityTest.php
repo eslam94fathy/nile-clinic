@@ -20,8 +20,10 @@ use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Scheduling\Models\DoctorSchedule;
 use App\Modules\Scheduling\Models\DoctorTimeOff;
+use App\Modules\Staff\Enums\Role;
 use App\Modules\Staff\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Audit\Concerns\InteractsWithAuditEntries;
@@ -346,5 +348,108 @@ class AuditAtomicityTest extends TestCase
         $this->postJson("/api/v1/doctors/me/encounters/{$encounter->id}/addenda", ['text' => 'Synthetic'])->assertStatus(500);
 
         $this->assertSame(0, EncounterAddendum::query()->count());
+    }
+
+    /* Accounts (002) */
+
+    public function test_a_successful_sign_in_issues_no_token_when_the_entry_fails(): void
+    {
+        $user = User::factory()->create();
+        $this->failAuditWrites();
+
+        $this->postJson('/api/v1/auth/sign-in', ['email' => $user->email, 'password' => UserFactory::PASSWORD])->assertStatus(500);
+
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
+    public function test_signing_out_keeps_the_token_when_the_entry_fails(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->postJson('/api/v1/auth/sign-in', ['email' => $user->email, 'password' => UserFactory::PASSWORD])->assertOk()->json('data.token');
+        $this->app['auth']->forgetGuards();
+        $this->failAuditWrites();
+
+        $this->withToken($token)->postJson('/api/v1/auth/sign-out')->assertStatus(500);
+
+        $this->assertSame(1, $user->tokens()->count());
+    }
+
+    public function test_creating_a_staff_member_is_not_kept_when_the_entry_fails(): void
+    {
+        $this->failAuditWrites();
+
+        $this->postJson('/api/v1/staff', [
+            'name' => 'Synthetic Reception',
+            'email' => 'reception@clinic.test',
+            'role' => 'receptionist',
+            'password' => 'brand-new-pass-1',
+            'password_confirmation' => 'brand-new-pass-1',
+        ])->assertStatus(500);
+
+        $this->assertNull(User::query()->where('email', 'reception@clinic.test')->first());
+    }
+
+    public function test_a_role_change_is_not_kept_when_the_entry_fails(): void
+    {
+        $member = User::factory()->receptionist()->create();
+        $this->failAuditWrites();
+
+        $this->patchJson("/api/v1/staff/{$member->id}", ['role' => 'doctor'])->assertStatus(500);
+
+        $this->assertSame(Role::Receptionist, $member->fresh()->role);
+    }
+
+    public function test_deactivating_keeps_the_account_and_its_tokens_when_the_entry_fails(): void
+    {
+        $member = User::factory()->receptionist()->create();
+        $member->createToken('synthetic');
+        $this->failAuditWrites();
+
+        $this->postJson("/api/v1/staff/{$member->id}/deactivate")->assertStatus(500);
+
+        $this->assertTrue($member->fresh()->is_active);
+        $this->assertSame(1, $member->tokens()->count());
+    }
+
+    public function test_reactivating_is_not_kept_when_the_entry_fails(): void
+    {
+        $member = User::factory()->inactive()->create();
+        $this->failAuditWrites();
+
+        $this->postJson("/api/v1/staff/{$member->id}/reactivate")->assertStatus(500);
+
+        $this->assertFalse($member->fresh()->is_active);
+    }
+
+    public function test_a_password_reset_keeps_the_password_and_tokens_when_the_entry_fails(): void
+    {
+        $member = User::factory()->create();
+        $member->createToken('synthetic');
+        $hash = $member->password;
+        $this->failAuditWrites();
+
+        $this->putJson("/api/v1/staff/{$member->id}/password", [
+            'password' => 'brand-new-pass-1',
+            'password_confirmation' => 'brand-new-pass-1',
+        ])->assertStatus(500);
+
+        $this->assertSame($hash, $member->fresh()->password);
+        $this->assertSame(1, $member->tokens()->count());
+    }
+
+    public function test_changing_ones_own_password_keeps_it_when_the_entry_fails(): void
+    {
+        $member = User::factory()->create();
+        $hash = $member->password;
+        Sanctum::actingAs($member);
+        $this->failAuditWrites();
+
+        $this->putJson('/api/v1/auth/password', [
+            'current_password' => UserFactory::PASSWORD,
+            'password' => 'brand-new-pass-1',
+            'password_confirmation' => 'brand-new-pass-1',
+        ])->assertStatus(500);
+
+        $this->assertSame($hash, $member->fresh()->password);
     }
 }

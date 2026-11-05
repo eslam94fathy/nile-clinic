@@ -375,7 +375,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 **Independent Test**: Sign in as a staff member, fail a sign-in with the wrong password, carry out several actions, have an administrator change their role and deactivate them, then confirm that filtering by staff member and period returns exactly those entries.
 
-- [ ] T038 [P] [US3] Write `tests/Feature/Audit/AuditSignInTest.php` and `tests/Feature/Audit/AuditCommandTest.php`, and add Staff cases to `AuditActionCoverageTest`, `AuditAtomicityTest`, and `AuditNoChangeTest` — failing first (R6, US3 scenarios 1–6)
+- [X] T038 [P] [US3] Write `tests/Feature/Audit/AuditSignInTest.php` and `tests/Feature/Audit/AuditCommandTest.php`, and add Staff cases to `AuditActionCoverageTest`, `AuditAtomicityTest`, and `AuditNoChangeTest` — failing first (R6, US3 scenarios 1–6)
   - Scope:
     - Coverage: `test_auth_sign_in` (actor and subject are the staff member, even with nobody authenticated), `test_auth_sign_out`, `test_auth_password_changed`, `test_staff_created`, `test_staff_updated` (`role` from and to), `test_staff_deactivated`, `test_staff_reactivated` (`is_active` from and to), `test_staff_password_reset`. Password actions have `password` in `fields`, and never a value.
     - Sign-in: wrong password on an existing account → `refused`, naming the account; a deactivated account → the same; an unknown email → `refused`, with `actor_type` `unknown`, no subject, and the email text stored nowhere; a planted password appears in no entry; attempts past the limit (6 for one email) add no entries; the validation failure on a missing password adds none; with `failAuditWrites()` the refusal's response is still `422`.
@@ -385,7 +385,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - No change: a repeated update; deactivating and reactivating when already so.
   - Verify: `--filter='AuditSignInTest|AuditCommandTest|test_auth_|test_staff_'` → fails.
 
-- [ ] T039 [US3] Record sign-in, sign-out, and own password in `app/Modules/Staff/Services/AuthenticationService.php`
+- [X] T039 [US3] Record sign-in, sign-out, and own password in `app/Modules/Staff/Services/AuthenticationService.php`
   - Scope:
     - `signIn`: leave the rate-limit block first and unchanged, so stopped attempts record nothing. In the failure branch, **before** throwing: `recordRefusal(AuthSignIn, $user ? StaffMember : null, $user?->id, actor: $user)`. On success, wrap `deleteIdleFor`, `issueFor`, and `record(AuthSignIn, StaffMember, $user->id, actor: $user)` in `DB::transaction`, keeping `RateLimiter::clear` before it.
     - `signOut`: `DB::transaction` with `deleteCurrent` and `record(AuthSignOut, StaffMember, $user->id)`.
@@ -394,7 +394,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: tests of T038 for these pass; `docker compose exec app php artisan test tests/Feature/Staff` → all pass unchanged.
   - Depends: T038
 
-- [ ] T040 [US3] Record staff changes in `app/Modules/Staff/Services/StaffManagementService.php`
+- [X] T040 [US3] Record staff changes in `app/Modules/Staff/Services/StaffManagementService.php`
   - Scope, with `AuditSubject::StaffMember`:
     - `create`: `guardUniqueEmail(fn () => DB::transaction(...))` with `recordChanges(StaffCreated, ...)`. No change to `CreateAdministratorCommand`: with nobody authenticated, the actor is `system` (R6).
     - `update`: a private helper that updates and then calls `recordChanges(StaffUpdated, ...)`. The ordinary path becomes `guardUniqueEmail(fn () => DB::transaction(fn () => helper))`; the demotion path keeps its transaction and last-administrator check, and calls the helper inside its guard.

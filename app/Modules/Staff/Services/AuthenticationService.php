@@ -2,6 +2,9 @@
 
 namespace App\Modules\Staff\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Staff\Models\User;
 use App\Modules\Staff\Repositories\Contracts\AccessTokenRepository;
 use App\Modules\Staff\Repositories\Contracts\StaffMemberRepository;
@@ -38,6 +41,7 @@ class AuthenticationService
     public function __construct(
         private readonly StaffMemberRepository $staffMembers,
         private readonly AccessTokenRepository $tokens,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -68,20 +72,34 @@ class AuthenticationService
         $passwordMatches = Hash::check($password, $user?->password ?? $this->dummyHash());
 
         if (! $user || ! $passwordMatches || ! $user->is_active) {
+            // Names the account targeted, never the password tried or an unknown email's text (FR-008).
+            $this->audit->recordRefusal(AuditAction::AuthSignIn, $user ? AuditSubject::StaffMember : null, $user?->id, actor: $user);
+
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
         // Only the account's counter resets; the address counter keeps running, so signing in to
         // one account cannot reset an address that is guessing others.
         RateLimiter::clear($emailKey);
-        $this->tokens->deleteIdleFor($user, $this->idleCutoff());
 
-        return ['token' => $this->tokens->issueFor($user), 'user' => $user];
+        return DB::transaction(function () use ($user) {
+            $this->tokens->deleteIdleFor($user, $this->idleCutoff());
+
+            $token = $this->tokens->issueFor($user);
+
+            $this->audit->record(AuditAction::AuthSignIn, AuditSubject::StaffMember, $user->id, actor: $user);
+
+            return ['token' => $token, 'user' => $user];
+        });
     }
 
     public function signOut(User $user): void
     {
-        $this->tokens->deleteCurrent($user);
+        DB::transaction(function () use ($user) {
+            $this->tokens->deleteCurrent($user);
+
+            $this->audit->record(AuditAction::AuthSignOut, AuditSubject::StaffMember, $user->id);
+        });
     }
 
     /**
@@ -119,6 +137,8 @@ class AuthenticationService
             $current instanceof PersonalAccessToken
                 ? $this->tokens->deleteAllExcept($user, $current)
                 : $this->tokens->deleteAllFor($user);
+
+            $this->audit->record(AuditAction::AuthPasswordChanged, AuditSubject::StaffMember, $user->id, details: ['fields' => ['password']]);
         });
     }
 

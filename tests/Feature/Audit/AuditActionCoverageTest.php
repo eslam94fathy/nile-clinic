@@ -20,6 +20,7 @@ use App\Modules\Scheduling\Models\DoctorSchedule;
 use App\Modules\Scheduling\Models\DoctorTimeOff;
 use App\Modules\Staff\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Audit\Concerns\InteractsWithAuditEntries;
@@ -603,5 +604,132 @@ class AuditActionCoverageTest extends TestCase
             'subject_id' => $visit->patient_id,
             'patient_id' => $visit->patient_id,
         ]);
+    }
+
+    /* Accounts (002) */
+
+    public function test_auth_sign_in(): void
+    {
+        $user = User::factory()->doctor()->create();
+
+        $this->postJson('/api/v1/auth/sign-in', ['email' => $user->email, 'password' => UserFactory::PASSWORD])->assertOk();
+
+        // The actor is the one signing in, passed explicitly because nobody is authenticated yet.
+        $this->assertOneEntry(AuditAction::AuthSignIn, [
+            'outcome' => AuditOutcome::Succeeded,
+            'actor_type' => AuditActorType::Staff,
+            'actor_id' => $user->id,
+            'actor_role' => 'doctor',
+            'subject_type' => AuditSubject::StaffMember,
+            'subject_id' => $user->id,
+            'network_address' => '127.0.0.1',
+        ]);
+    }
+
+    public function test_auth_sign_out(): void
+    {
+        $user = User::factory()->doctor()->create();
+        $token = $this->postJson('/api/v1/auth/sign-in', ['email' => $user->email, 'password' => UserFactory::PASSWORD])->assertOk()->json('data.token');
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($token)->postJson('/api/v1/auth/sign-out')->assertNoContent();
+
+        $this->assertOneEntry(AuditAction::AuthSignOut, [
+            'actor_id' => $user->id,
+            'subject_type' => AuditSubject::StaffMember,
+            'subject_id' => $user->id,
+        ]);
+    }
+
+    public function test_auth_password_changed(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/v1/auth/password', [
+            'current_password' => UserFactory::PASSWORD,
+            'password' => 'planted-new-pass-1',
+            'password_confirmation' => 'planted-new-pass-1',
+        ])->assertSuccessful();
+
+        $entry = $this->assertOneEntry(AuditAction::AuthPasswordChanged, ['actor_id' => $user->id, 'subject_id' => $user->id]);
+        $this->assertSame(['fields' => ['password']], $entry->details);
+    }
+
+    public function test_staff_created(): void
+    {
+        $id = $this->postJson('/api/v1/staff', [
+            'name' => 'Synthetic Reception',
+            'email' => 'reception@clinic.test',
+            'role' => 'receptionist',
+            'password' => 'planted-new-pass-1',
+            'password_confirmation' => 'planted-new-pass-1',
+        ])->assertCreated()->json('data.id');
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffCreated, AuditSubject::StaffMember, $id, null);
+        $this->assertContains('password', $entry->details['fields']);
+        $this->assertArrayNotHasKey('password', $entry->details['values']);
+        $this->assertEquals(['from' => null, 'to' => 'receptionist'], $entry->details['values']['role']);
+        $this->assertEquals(['from' => null, 'to' => true], $entry->details['values']['is_active']);
+
+        $stored = json_encode($entry->getAttributes());
+        $this->assertStringNotContainsString('planted-new-pass-1', $stored);
+        $this->assertStringNotContainsString('reception@clinic.test', $stored);
+        $this->assertStringNotContainsString('Synthetic Reception', $stored);
+    }
+
+    public function test_staff_updated(): void
+    {
+        $member = User::factory()->receptionist()->create();
+
+        $this->patchJson("/api/v1/staff/{$member->id}", ['role' => 'doctor', 'name' => 'Planted Name'])->assertOk();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffUpdated, AuditSubject::StaffMember, $member->id, null);
+        $this->assertEqualsCanonicalizing(['role', 'name'], $entry->details['fields']);
+        $this->assertEquals(['from' => 'receptionist', 'to' => 'doctor'], $entry->details['values']['role']);
+        $this->assertStringNotContainsString('Planted Name', json_encode($entry->details));
+    }
+
+    public function test_staff_updated_when_demoting_an_administrator(): void
+    {
+        $other = User::factory()->administrator()->create();
+
+        $this->patchJson("/api/v1/staff/{$other->id}", ['role' => 'receptionist'])->assertOk();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffUpdated, AuditSubject::StaffMember, $other->id, null);
+        $this->assertEquals(['from' => 'administrator', 'to' => 'receptionist'], $entry->details['values']['role']);
+    }
+
+    public function test_staff_deactivated(): void
+    {
+        $member = User::factory()->receptionist()->create();
+
+        $this->postJson("/api/v1/staff/{$member->id}/deactivate")->assertOk();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffDeactivated, AuditSubject::StaffMember, $member->id, null);
+        $this->assertEquals(['from' => true, 'to' => false], $entry->details['values']['is_active']);
+    }
+
+    public function test_staff_reactivated(): void
+    {
+        $member = User::factory()->inactive()->create();
+
+        $this->postJson("/api/v1/staff/{$member->id}/reactivate")->assertOk();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffReactivated, AuditSubject::StaffMember, $member->id, null);
+        $this->assertEquals(['from' => false, 'to' => true], $entry->details['values']['is_active']);
+    }
+
+    public function test_staff_password_reset(): void
+    {
+        $member = User::factory()->create();
+
+        $this->putJson("/api/v1/staff/{$member->id}/password", [
+            'password' => 'planted-new-pass-1',
+            'password_confirmation' => 'planted-new-pass-1',
+        ])->assertSuccessful();
+
+        $entry = $this->assertEntryByAdministrator(AuditAction::StaffPasswordReset, AuditSubject::StaffMember, $member->id, null);
+        $this->assertSame(['fields' => ['password']], $entry->details);
     }
 }
