@@ -5,6 +5,7 @@ namespace App\Modules\Payments\Repositories;
 use App\Modules\Payments\Enums\PaymentMethod;
 use App\Modules\Payments\Models\Charge;
 use App\Modules\Payments\Models\Payment;
+use App\Modules\Payments\Models\Refund;
 use App\Modules\Payments\Repositories\Contracts\ChargeRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueEntry;
@@ -46,6 +47,11 @@ class EloquentChargeRepository implements ChargeRepository
     public function addPayment(Charge $charge, string $amount, PaymentMethod $method, int $userId): Payment
     {
         return $charge->payments()->create(['amount' => $amount, 'method' => $method, 'received_by' => $userId]);
+    }
+
+    public function addRefund(Charge $charge, string $amount, PaymentMethod $method, string $reason, int $userId): Refund
+    {
+        return $charge->refunds()->create(['amount' => $amount, 'method' => $method, 'reason' => $reason, 'refunded_by' => $userId]);
     }
 
     public function paginateVisits(string $date, array $filters, int $perPage): LengthAwarePaginator

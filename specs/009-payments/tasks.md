@@ -466,7 +466,7 @@ then cancel the charge and confirm the visit can be charged again.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T035 [P] [US5] Write `tests/Feature/Payments/RefundTest.php` (US5-1, 2, 7, FR-015)
+- [X] T035 [P] [US5] Write `tests/Feature/Payments/RefundTest.php` (US5-1, 2, 7, FR-015)
   - Scope: clock fixed; administrator; a `300.00` charge with `300.00` paid through the API.
     - refund `50.00` `cash` with a reason → `201`, `amount_paid: "250.00"`, `balance: "50.00"`, `partially_paid`; one refund
       exactly `{id, amount, method, reason, refunded_by {id, name}, refunded_at}`; the payment row unchanged
@@ -478,7 +478,7 @@ then cancel the charge and confirm the visit can be charged again.
       `404` or `405`
   - Verify: `--filter=RefundTest` → fails
 
-- [ ] T036 [P] [US5] Write `tests/Feature/Payments/CancelChargeTest.php` (US5-4, 5, FR-013)
+- [X] T036 [P] [US5] Write `tests/Feature/Payments/CancelChargeTest.php` (US5-4, 5, FR-013)
   - Scope: clock fixed; receptionist.
     - an unpaid charge with a reason → `200` `cancelled`, reason, `cancelled_by`, `cancelled_at`; still found by `GET`; the visit
       can be charged again → `201` at the current fee, and both rows exist
@@ -488,7 +488,7 @@ then cancel the charge and confirm the visit can be charged again.
     - administrator → `200`; doctor → `403`
   - Verify: `--filter=CancelChargeTest` → fails
 
-- [ ] T037 [P] [US5] Write `tests/Feature/Payments/UndoWithChargeTest.php` (US5-6, FR-014, R4)
+- [X] T037 [P] [US5] Write `tests/Feature/Payments/UndoWithChargeTest.php` (US5-6, FR-014, R4)
   - Scope: clock fixed; a waiting entry for a checked-in appointment.
     - with no charge → `DELETE /queue/{entry}` `204`, as before
     - with an active charge, including `paid` → `422` `queues::messages.has_active_charge` on `entry`; the entry and appointment
@@ -499,12 +499,12 @@ then cancel the charge and confirm the visit can be charged again.
 
 ### Implementation for User Story 5
 
-- [ ] T038 [US5] Add `addRefund` to `ChargeRepository` / `EloquentChargeRepository`, and create `app/Modules/Payments/Http/Requests/RecordRefundRequest.php` and `CancelChargeRequest.php`
+- [X] T038 [US5] Add `addRefund` to `ChargeRepository` / `EloquentChargeRepository`, and create `app/Modules/Payments/Http/Requests/RecordRefundRequest.php` and `CancelChargeRequest.php`
   - Scope: `addRefund(Charge, string $amount, PaymentMethod $method, string $reason, int $userId): Refund`; no method updates or
     deletes one. `RecordRefundRequest`: `can('refund', Charge::class)`; `amount` as payment; `method` as payment; `reason`
     `required`, `string`, `max:500`. `CancelChargeRequest`: `can('cancel', Charge::class)`; `reason` `required`, `string`, `max:500`.
 
-- [ ] T039 [US5] Add `refund()` and `cancel()` to `ChargeService`, `refund()` and `cancel()` to `ChargeController`, and the routes (R6)
+- [X] T039 [US5] Add `refund()` and `cancel()` to `ChargeService`, `refund()` and `cancel()` to `ChargeController`, and the routes (R6)
   - Scope: `refund`: transaction: `lockActive`; amount above `amount_paid` → `['amount' => above_paid]`; `addRefund`; update
     `amount_paid` and `status` from `statusFor`. Returns `find($id)`; controller `201`. `cancel`: transaction: `lockActive`;
     `amount_paid` above 0 → `['charge' => money_held]`; update status `cancelled`, `cancel_reason`, `cancelled_by`, `cancelled_at`.
@@ -513,19 +513,19 @@ then cancel the charge and confirm the visit can be charged again.
   - Accept: T035, T036 pass.
   - Depends: T038
 
-- [ ] T040 [US5] Create `app/Modules/Queues/Repositories/Contracts/VisitChargeRepository.php` and `app/Modules/Payments/Repositories/EloquentVisitChargeRepository.php`, and bind the contract in `PaymentsServiceProvider` (R4, approved D4)
+- [X] T040 [US5] Create `app/Modules/Queues/Repositories/Contracts/VisitChargeRepository.php` and `app/Modules/Payments/Repositories/EloquentVisitChargeRepository.php`, and bind the contract in `PaymentsServiceProvider` (R4, approved D4)
   - Scope: contract, in the style of `Scheduling\…\BookedTimeRepository`, with a docblock that it is declared by Queues and
     implemented by Payments so the dependency goes one way: `hasActiveCharge(int $queueEntryId): bool`. Implementation: an `exists()`
     on `charges` with that entry and `active_flag = 1`.
 
-- [ ] T041 [US5] Change `QueueService::undo` in `app/Modules/Queues/Services/QueueService.php`, and add `has_active_charge` to `app/Modules/Queues/lang/en/messages.php` and `ar/messages.php`
+- [X] T041 [US5] Change `QueueService::undo` in `app/Modules/Queues/Services/QueueService.php`, and add `has_active_charge` to `app/Modules/Queues/lang/en/messages.php` and `ar/messages.php`
   - Scope: inject `VisitChargeRepository`. Right after `lockWaiting`, as the transaction's first plain read: active charge →
     `ValidationException(['entry' => queues::messages.has_active_charge])`. Update the `@throws` docblock. Messages: "This visit has an
     active charge. Cancel the charge first." / "لهذه الزيارة مطالبة نشطة. ألغِ المطالبة أولًا." Nothing else in the Queues module changes.
   - Accept: T037 passes; `docker compose exec app php artisan test tests/Feature/Queues` → all pass unchanged.
   - Depends: T039, T040
 
-- [ ] T042 [US5] Extend `tests/Feature/Payments/ConcurrentPaymentTest.php` with the refund and undo cases, and enable `refund` and `undo` in `tests/Support/payment-action.php` (SC-002, R4)
+- [X] T042 [US5] Extend `tests/Feature/Payments/ConcurrentPaymentTest.php` with the refund and undo cases, and enable `refund` and `undo` in `tests/Support/payment-action.php` (SC-002, R4)
   - Scope: `refund` (target = charge; `cash`, a synthetic reason), `undo` (target = entry; `QueueService::undo`). A charge with `90.00`
     paid and 8 `refund` of `30.00` → three `ok`, five `refused`; `amount_paid` is `0.00` and equals payments less refunds. Charge
     against undo, repeated 5 times with a fresh waiting appointment entry: exactly one of these holds: the charge `ok`, the undo `refused`

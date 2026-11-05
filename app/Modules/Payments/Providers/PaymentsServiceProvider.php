@@ -10,6 +10,8 @@ use App\Modules\Payments\Repositories\Contracts\ChargeRepository;
 use App\Modules\Payments\Repositories\Contracts\DoctorFeeRepository;
 use App\Modules\Payments\Repositories\EloquentChargeRepository;
 use App\Modules\Payments\Repositories\EloquentDoctorFeeRepository;
+use App\Modules\Payments\Repositories\EloquentVisitChargeRepository;
+use App\Modules\Queues\Repositories\Contracts\VisitChargeRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +25,7 @@ class PaymentsServiceProvider extends ServiceProvider
     {
         $this->app->bind(DoctorFeeRepository::class, EloquentDoctorFeeRepository::class);
         $this->app->bind(ChargeRepository::class, EloquentChargeRepository::class);
+        $this->app->bind(VisitChargeRepository::class, EloquentVisitChargeRepository::class);
     }
 
     /**

@@ -3,8 +3,10 @@
 namespace App\Modules\Payments\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Payments\Http\Requests\CancelChargeRequest;
 use App\Modules\Payments\Http\Requests\ListChargesRequest;
 use App\Modules\Payments\Http\Requests\RecordPaymentRequest;
+use App\Modules\Payments\Http\Requests\RecordRefundRequest;
 use App\Modules\Payments\Http\Requests\SetDiscountRequest;
 use App\Modules\Payments\Http\Resources\ChargeResource;
 use App\Modules\Payments\Http\Resources\ChargeSummaryResource;
@@ -41,6 +43,18 @@ class ChargeController extends Controller
         return ChargeResource::make($this->charges->pay($request->user(), $charge, $request->amount(), $request->paymentMethod()))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function refund(RecordRefundRequest $request, int $charge): JsonResponse
+    {
+        return ChargeResource::make($this->charges->refund($request->user(), $charge, $request->amount(), $request->paymentMethod(), $request->reason()))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function cancel(CancelChargeRequest $request, int $charge): ChargeResource
+    {
+        return ChargeResource::make($this->charges->cancel($request->user(), $charge, $request->reason()));
     }
 
     public function discount(SetDiscountRequest $request, int $charge): ChargeResource

@@ -2,11 +2,16 @@
 
 namespace Tests\Feature\Payments;
 
+use App\Modules\Appointments\Enums\AppointmentStatus;
+use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Payments\Models\Charge;
 use App\Modules\Payments\Models\DoctorFee;
 use App\Modules\Payments\Models\Payment;
+use App\Modules\Payments\Models\Refund;
 use App\Modules\Queues\Models\QueueEntry;
+use App\Modules\Scheduling\Support\ClinicClock;
+use App\Modules\Scheduling\Support\ClockTime;
 use App\Modules\Staff\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Process\Pool;
@@ -76,6 +81,67 @@ class ConcurrentPaymentTest extends TestCase
         $this->assertSame('90.00', $charge->fresh()->amount_paid);
         $this->assertSame(3, Payment::query()->count());
         $this->assertSame('90.00', Payment::query()->sum('amount'));
+    }
+
+    public function test_simultaneous_refunds_never_exceed_what_was_paid(): void
+    {
+        $charge = Charge::factory()->fee('100.00')->partiallyPaid('90.00')->create();
+        Payment::factory()->create(['charge_id' => $charge->id, 'amount' => '90.00']);
+        $actor = User::factory()->administrator()->create();
+
+        $results = $this->runAtOnce(array_fill(0, self::PROCESSES, ['refund', $actor->id, $charge->id, '30.00']));
+
+        $this->assertCount(3, array_filter($results, fn (array $r) => $r['result'] === 'ok'));
+
+        $refused = array_values(array_filter($results, fn (array $r) => $r['result'] === 'refused'));
+        $this->assertCount(5, $refused);
+
+        foreach ($refused as $result) {
+            $this->assertArrayHasKey('amount', $result['errors']);
+        }
+
+        $this->assertSame('0.00', $charge->fresh()->amount_paid);
+        $this->assertSame(3, Refund::query()->count());
+        $this->assertSame('90.00', Refund::query()->sum('amount'));
+    }
+
+    /**
+     * Both orders are valid, but never a charge on a removed visit or an undo past an active charge
+     * (FR-014, research R4). Repeated because the order differs between runs.
+     */
+    public function test_a_charge_against_an_undo_stays_consistent(): void
+    {
+        $doctor = Doctor::factory()->create();
+        DoctorFee::factory()->create(['doctor_id' => $doctor->id]);
+        $actor = User::factory()->receptionist()->create();
+
+        foreach (range(1, 5) as $round) {
+            $appointment = Appointment::factory()
+                ->at(ClinicClock::today(), ClockTime::fromMinutes(540 + $round * 20))
+                ->create(['doctor_id' => $doctor->id, 'status' => AppointmentStatus::CheckedIn]);
+            $entry = QueueEntry::factory()->number($round)->forAppointment($appointment)->create();
+
+            [$charged, $undone] = $this->runAtOnce([
+                ['charge', $actor->id, $entry->id],
+                ['undo', $actor->id, $entry->id],
+            ]);
+
+            $charge = Charge::query()->where('queue_entry_id', $entry->id)->first();
+
+            if ($undone['result'] === 'ok') {
+                $this->assertSame('not_found', $charged['result']);
+                $this->assertNull($entry->fresh());
+                $this->assertNull($charge);
+                $this->assertSame(AppointmentStatus::Scheduled, $appointment->fresh()->status);
+            } else {
+                $this->assertSame('ok', $charged['result']);
+                $this->assertSame('refused', $undone['result']);
+                $this->assertArrayHasKey('entry', $undone['errors']);
+                $this->assertNotNull($entry->fresh());
+                $this->assertNotNull($charge);
+                $this->assertSame(AppointmentStatus::CheckedIn, $appointment->fresh()->status);
+            }
+        }
     }
 
     /**

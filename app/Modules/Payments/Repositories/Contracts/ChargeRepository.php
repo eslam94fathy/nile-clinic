@@ -5,6 +5,7 @@ namespace App\Modules\Payments\Repositories\Contracts;
 use App\Modules\Payments\Enums\PaymentMethod;
 use App\Modules\Payments\Models\Charge;
 use App\Modules\Payments\Models\Payment;
+use App\Modules\Payments\Models\Refund;
 use App\Modules\Queues\Models\QueueEntry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -41,6 +42,11 @@ interface ChargeRepository
      * Payments are only ever added: no method changes or deletes one (FR-012).
      */
     public function addPayment(Charge $charge, string $amount, PaymentMethod $method, int $userId): Payment;
+
+    /**
+     * Refunds are only ever added: no method changes or deletes one (FR-012).
+     */
+    public function addRefund(Charge $charge, string $amount, PaymentMethod $method, string $reason, int $userId): Refund;
 
     /**
      * One page of a date's visits, by doctor, then queue order, with patient and doctor account loaded,

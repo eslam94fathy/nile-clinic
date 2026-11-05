@@ -7,12 +7,18 @@
  * Usage: php tests/Support/payment-action.php action actorId targetId startAt [amount]
  *   charge    the target is the visit id
  *   pay       the target is the charge id; cash
+ *   refund    the target is the charge id; cash, a synthetic reason
+ *   undo      the target is the queue entry id
+ *
+ * A charge of a visit that an undo has removed prints {"result":"not_found"}.
  *
  * Refuses (exit 2) to run against any database but clinic_testing.
  */
 
 use App\Modules\Payments\Enums\PaymentMethod;
+use App\Modules\Payments\Exceptions\VisitNotFoundException;
 use App\Modules\Payments\Services\ChargeService;
+use App\Modules\Queues\Services\QueueService;
 use App\Modules\Staff\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +43,12 @@ $charges = $app->make(ChargeService::class);
 $run = match ($action) {
     'charge' => fn () => $charges->charge($actor, (int) $targetId)->id,
     'pay' => fn () => $charges->pay($actor, (int) $targetId, $amount, PaymentMethod::Cash)->id,
+    'refund' => fn () => $charges->refund($actor, (int) $targetId, $amount, PaymentMethod::Cash, 'Synthetic refund')->id,
+    'undo' => function () use ($app, $targetId) {
+        $app->make(QueueService::class)->undo((int) $targetId);
+
+        return (int) $targetId;
+    },
     default => throw new InvalidArgumentException("Unknown action: {$action}"),
 };
 
@@ -48,6 +60,8 @@ try {
     $result = ['result' => 'ok', 'id' => $run()];
 } catch (ValidationException $e) {
     $result = ['result' => 'refused', 'errors' => $e->errors()];
+} catch (VisitNotFoundException) {
+    $result = ['result' => 'not_found'];
 } catch (Throwable $e) {
     $result = ['result' => 'error', 'class' => $e::class];
 }

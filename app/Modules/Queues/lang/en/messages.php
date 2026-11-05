@@ -13,4 +13,5 @@ return [
     'nobody_waiting' => 'Nobody is waiting.',
     'no_current_visit' => 'No patient is with the doctor.',
     'patient_with_another_doctor' => 'This patient is with another doctor.',
+    'has_active_charge' => 'This visit has an active charge. Cancel the charge first.',
 ];

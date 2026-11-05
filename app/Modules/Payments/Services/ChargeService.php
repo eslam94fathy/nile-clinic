@@ -154,6 +154,57 @@ class ChargeService
     }
 
     /**
+     * Record money returned, up to what was paid, also under simultaneous requests (FR-015). What was
+     * received stays on record (FR-012).
+     *
+     * @throws ChargeNotFoundException
+     * @throws ValidationException when cancelled, or the amount is above what was paid
+     */
+    public function refund(User $actor, int $id, string $amount, PaymentMethod $method, string $reason): Charge
+    {
+        DB::transaction(function () use ($actor, $id, $amount, $method, $reason) {
+            $charge = $this->lockActive($id);
+            $paid = Money::toPiastres($charge->amount_paid);
+
+            if (Money::toPiastres($amount) > $paid) {
+                throw $this->refusal('amount', 'above_paid');
+            }
+
+            $this->charges->addRefund($charge, $amount, $method, $reason, $actor->id);
+            $this->applyPaid($charge, $paid - Money::toPiastres($amount), $this->duePiastres($charge));
+        }, attempts: 3);
+
+        return $this->find($id);
+    }
+
+    /**
+     * Cancel a charge with no money held. It stays on record, and the visit can be charged again
+     * (FR-013).
+     *
+     * @throws ChargeNotFoundException
+     * @throws ValidationException when already cancelled, or money is held
+     */
+    public function cancel(User $actor, int $id, string $reason): Charge
+    {
+        DB::transaction(function () use ($actor, $id, $reason) {
+            $charge = $this->lockActive($id);
+
+            if (Money::toPiastres($charge->amount_paid) > 0) {
+                throw $this->refusal('charge', 'money_held');
+            }
+
+            $this->charges->update($charge, [
+                'status' => ChargeStatus::Cancelled,
+                'cancel_reason' => $reason,
+                'cancelled_by' => $actor->id,
+                'cancelled_at' => now(),
+            ]);
+        }, attempts: 3);
+
+        return $this->find($id);
+    }
+
+    /**
      * @throws ChargeNotFoundException
      * @throws ValidationException when cancelled
      */
