@@ -206,6 +206,75 @@ class ReportService
     }
 
     /**
+     * Average wait and consultation, and counts of medical records (US4). Overall averages come from all the
+     * seconds and visits, never from the doctors' averages (research R8).
+     *
+     * @return array{rows: LengthAwarePaginator, totals: array<string, mixed>}
+     */
+    public function times(string $from, string $to, ?int $doctorId, int $perPage): array
+    {
+        $this->assertDoctorExists($doctorId);
+
+        $empty = [
+            'wait_seconds' => 0,
+            'wait_visits' => 0,
+            'consultation_seconds' => 0,
+            'consultation_visits' => 0,
+            'finalized' => 0,
+            'draft' => 0,
+            'none' => 0,
+        ];
+        $byDoctor = [];
+
+        foreach ($this->reports->visitTimesByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] = [
+                ...$empty,
+                'wait_seconds' => (int) $row->wait_seconds,
+                'wait_visits' => (int) $row->wait_visits,
+                'consultation_seconds' => (int) $row->consultation_seconds,
+                'consultation_visits' => (int) $row->consultation_visits,
+            ];
+        }
+
+        foreach ($this->reports->recordsByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] ??= $empty;
+            $byDoctor[$row->doctor_id][$row->record_status ?? 'none'] = (int) $row->count;
+        }
+
+        $totals = $empty;
+
+        foreach ($byDoctor as $figures) {
+            foreach ($figures as $name => $value) {
+                $totals[$name] += $value;
+            }
+        }
+
+        return [
+            'rows' => $this->pageByDoctorName(array_map($this->timesFigures(...), $byDoctor), $perPage),
+            'totals' => $this->timesFigures($totals),
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $figures
+     * @return array<string, array<string, int|null>>
+     */
+    private function timesFigures(array $figures): array
+    {
+        return [
+            'wait' => [
+                'average_minutes' => ReportMath::averageMinutes($figures['wait_seconds'], $figures['wait_visits']),
+                'visits' => $figures['wait_visits'],
+            ],
+            'consultation' => [
+                'average_minutes' => ReportMath::averageMinutes($figures['consultation_seconds'], $figures['consultation_visits']),
+                'visits' => $figures['consultation_visits'],
+            ],
+            'records' => ['finalized' => $figures['finalized'], 'draft' => $figures['draft'], 'none' => $figures['none']],
+        ];
+    }
+
+    /**
      * One page of rows, each with its doctor, by account name. Rows are bounded by the number of doctors, and a
      * doctor can come from any of several queries, so paging happens here rather than in SQL (research R7).
      *

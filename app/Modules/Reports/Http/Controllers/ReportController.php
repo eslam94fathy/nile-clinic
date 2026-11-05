@@ -7,6 +7,7 @@ use App\Modules\Reports\Http\Requests\ReportRequest;
 use App\Modules\Reports\Http\Resources\ActivityRowResource;
 use App\Modules\Reports\Http\Resources\BillingRowResource;
 use App\Modules\Reports\Http\Resources\MoneyCollectedResource;
+use App\Modules\Reports\Http\Resources\TimesRowResource;
 use App\Modules\Reports\Services\ReportService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -36,5 +37,12 @@ class ReportController extends Controller
         $report = $this->reports->activity($request->from(), $request->to(), $request->doctorId(), $request->perPage());
 
         return ActivityRowResource::collection($report['rows'])->additional(['totals' => $report['totals']]);
+    }
+
+    public function times(ReportRequest $request): AnonymousResourceCollection
+    {
+        $report = $this->reports->times($request->from(), $request->to(), $request->doctorId(), $request->perPage());
+
+        return TimesRowResource::collection($report['rows'])->additional(['totals' => $report['totals']]);
     }
 }

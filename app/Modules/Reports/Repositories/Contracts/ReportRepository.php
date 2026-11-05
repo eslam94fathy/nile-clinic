@@ -57,6 +57,21 @@ interface ReportRepository
     public function patientsRegistered(string $start, string $end): int;
 
     /**
+     * Wait and consultation seconds for visits dated in a period, per doctor, with how many visits each covers.
+     *
+     * @return list<object{doctor_id: int, wait_visits: int, wait_seconds: string|null, consultation_visits: string, consultation_seconds: string|null}>
+     */
+    public function visitTimesByDoctor(string $from, string $to, ?int $doctorId): array;
+
+    /**
+     * Seen visits dated in a period, per doctor and the status of their medical record (null for none). No
+     * other encounter column is ever selected (FR-017).
+     *
+     * @return list<object{doctor_id: int, record_status: string|null, count: int}>
+     */
+    public function recordsByDoctor(string $from, string $to, ?int $doctorId): array;
+
+    /**
      * The doctors with these ids, by account name, then id.
      *
      * @param  list<int>  $ids

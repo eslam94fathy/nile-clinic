@@ -22,6 +22,7 @@ class ReportValidationTest extends TestCase
         '/api/v1/reports/money-collected' => false,
         '/api/v1/reports/billing' => true,
         '/api/v1/reports/activity' => true,
+        '/api/v1/reports/times' => true,
     ];
 
     protected function setUp(): void

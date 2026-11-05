@@ -312,7 +312,7 @@ breakdown match by hand.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T026 [P] [US4] Write `tests/Feature/Reports/TimesReportTest.php` (US4-1…4, FR-015–FR-017)
+- [X] T026 [P] [US4] Write `tests/Feature/Reports/TimesReportTest.php` (US4-1…4, FR-015–FR-017)
   - Scope:
     - `wait` from known `arrived_at` and `called_at`, and `consultation` from `called_at` and `finished_at`, per doctor, with `average_minutes` as integers and `visits` as counts
     - rounding: an average of 90 seconds → `2`
@@ -326,18 +326,18 @@ breakdown match by hand.
 
 ### Implementation for User Story 4
 
-- [ ] T027 [US4] Add `visitTimesByDoctor` and `recordsByDoctor` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php` (R8)
+- [X] T027 [US4] Add `visitTimesByDoctor` and `recordsByDoctor` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php` (R8)
   - Scope:
     - `visitTimesByDoctor(from, to, ?doctorId)`: `queue_entries` by `date`, grouped by `doctor_id`, with `COUNT(called_at) as wait_visits`, `SUM(TIMESTAMPDIFF(SECOND, arrived_at, called_at)) as wait_seconds`,
       `SUM(called_at IS NOT NULL AND finished_at IS NOT NULL) as consultation_visits`, and `SUM(TIMESTAMPDIFF(SECOND, called_at, finished_at)) as consultation_seconds`. `TIMESTAMPDIFF` gives NULL where a time is missing, and `SUM` ignores it.
     - `recordsByDoctor(from, to, ?doctorId)`: `queue_entries` with status `seen`, `leftJoin('encounters', ...)` on `queue_entry_id`, grouped by `doctor_id` and `encounters.status`, selecting `doctor_id`, `encounters.status as record_status`, and `COUNT(*)`. **No other `encounters` column** (FR-017).
   - Depends: T015
 
-- [ ] T028 [US4] Add `times` to `app/Modules/Reports/Services/ReportService.php`
+- [X] T028 [US4] Add `times` to `app/Modules/Reports/Services/ReportService.php`
   - Scope: merge by doctor; cast sums to `int` (a null sum → 0). Averages through `ReportMath::averageMinutes`, and `totals` from total seconds over total count (R8). `records`: `finalized`, `draft`, and `none` (null `record_status`). Reuse the paging helper.
   - Depends: T009, T020, T027
 
-- [ ] T029 [US4] Create `app/Modules/Reports/Http/Resources/TimesRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
+- [X] T029 [US4] Create `app/Modules/Reports/Http/Resources/TimesRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
   - Scope: as T021. Route: `GET /reports/times`, name `reports.times`.
   - Verify: `docker compose exec app php artisan test --filter="TimesReportTest|ReportValidationTest"` → pass.
   - Depends: T026, T028

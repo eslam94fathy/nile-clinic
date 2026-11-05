@@ -91,6 +91,35 @@ class QueryReportRepository implements ReportRepository
             ->count();
     }
 
+    public function visitTimesByDoctor(string $from, string $to, ?int $doctorId): array
+    {
+        return DB::table('queue_entries')
+            ->whereBetween('date', [$from, $to])
+            ->when($doctorId !== null, fn ($query) => $query->where('doctor_id', $doctorId))
+            ->select('doctor_id')
+            ->selectRaw('COUNT(called_at) as wait_visits')
+            ->selectRaw('SUM(TIMESTAMPDIFF(SECOND, arrived_at, called_at)) as wait_seconds')
+            ->selectRaw('SUM(called_at IS NOT NULL AND finished_at IS NOT NULL) as consultation_visits')
+            ->selectRaw('SUM(TIMESTAMPDIFF(SECOND, called_at, finished_at)) as consultation_seconds')
+            ->groupBy('doctor_id')
+            ->get()
+            ->all();
+    }
+
+    public function recordsByDoctor(string $from, string $to, ?int $doctorId): array
+    {
+        return DB::table('queue_entries')
+            ->leftJoin('encounters', 'encounters.queue_entry_id', '=', 'queue_entries.id')
+            ->whereBetween('queue_entries.date', [$from, $to])
+            ->where('queue_entries.status', QueueStatus::Seen->value)
+            ->when($doctorId !== null, fn ($query) => $query->where('queue_entries.doctor_id', $doctorId))
+            ->select('queue_entries.doctor_id', 'encounters.status as record_status')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('queue_entries.doctor_id', 'encounters.status')
+            ->get()
+            ->all();
+    }
+
     public function doctorsByName(array $ids): array
     {
         return DB::table('doctors')
