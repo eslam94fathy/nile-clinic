@@ -69,18 +69,18 @@ translations, exceptions, and the access policy.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write `tests/Feature/Encounters/EncounterPrivacyTest.php` with the stack trace case — failing first (FR-021, R6, approved D4)
+- [X] T002 Write `tests/Feature/Encounters/EncounterPrivacyTest.php` with the stack trace case — failing first (FR-021, R6, approved D4)
   - Scope: assert `ini_get('zend.exception_ignore_args')` is `'1'`; call a closure with a string
     argument `SYNTHETIC-PLANTED-TEXT` that throws, and assert `getTraceAsString()` does not contain
     `SYNTHETIC`. More cases are added in T044.
   - Verify: `docker compose exec app php artisan test --filter=EncounterPrivacyTest` → fails
 
-- [ ] T003 Add `zend.exception_ignore_args = On` to `docker/php/conf.d/app.ini` and rebuild
+- [X] T003 Add `zend.exception_ignore_args = On` to `docker/php/conf.d/app.ini` and rebuild
   - Scope: one line, with a short comment that stack traces must not carry patient data (research R6).
   - Verify: `docker compose build app`, then `docker compose up -d app`; T002 passes.
   - Depends: T002
 
-- [ ] T004 Create the migrations `database/migrations/<timestamp>_create_encounters_table.php` and `<timestamp>_create_encounter_addenda_table.php` (data-model.md, approved D1, D2)
+- [X] T004 Create the migrations `database/migrations/<timestamp>_create_encounters_table.php` and `<timestamp>_create_encounter_addenda_table.php` (data-model.md, approved D1, D2)
   - Scope: two `make:migration` calls, in this order; each with a one-line comment pointing to
     `specs/008-medical-encounters/data-model.md`. `encounters`, exactly:
     - `id()`; `foreignId('queue_entry_id')->constrained('queue_entries')->restrictOnDelete()`;
@@ -98,11 +98,11 @@ translations, exceptions, and the access policy.
       `mediumText('text')`; `timestamp('created_at')->nullable()`
   - Verify: `docker compose exec app php artisan migrate` → both `DONE`.
 
-- [ ] T005 [P] Create `app/Modules/Encounters/Enums/EncounterStatus.php`
+- [X] T005 [P] Create `app/Modules/Encounters/Enums/EncounterStatus.php`
   - Scope: `enum EncounterStatus: string` with `Draft = 'draft'`, `Finalized = 'finalized'`;
     `static values(): list<string>`. Docblock: draft → finalized; finalized is final.
 
-- [ ] T006 Create `app/Modules/Encounters/Models/Encounter.php` and `app/Modules/Encounters/Models/EncounterAddendum.php` (R6, R7)
+- [X] T006 Create `app/Modules/Encounters/Models/Encounter.php` and `app/Modules/Encounters/Models/EncounterAddendum.php` (R6, R7)
   - Scope (persistence mapping only, as `Queues\Models\QueueEntry`):
     - `Encounter` fillable: every column but `id` and the timestamps. Casts: `date` → `date`, `status`
       → `EncounterStatus`, `finalized_at` → `datetime`, the four text columns → `encrypted`,
@@ -113,7 +113,7 @@ translations, exceptions, and the access policy.
       `HasFactory`.
   - Depends: T004, T005
 
-- [ ] T007 [P] Create `database/factories/EncounterFactory.php` and `database/factories/EncounterAddendumFactory.php` (synthetic only)
+- [X] T007 [P] Create `database/factories/EncounterFactory.php` and `database/factories/EncounterAddendumFactory.php` (synthetic only)
   - Scope: `EncounterFactory` defaults to an empty draft of a new `QueueEntry::factory()->seen()`,
     copying `doctor_id`, `patient_id`, and `date` from that entry. States: `forEntry(QueueEntry $e)`;
     `complete()` (all four text fields and one full prescription line, status still draft);
@@ -121,7 +121,7 @@ translations, exceptions, and the access policy.
     `text`, for a `finalized()` encounter.
   - Depends: T006
 
-- [ ] T008 Write `tests/Feature/Encounters/EncounterPersistenceTest.php` (FR-002, FR-004, R6)
+- [X] T008 Write `tests/Feature/Encounters/EncounterPersistenceTest.php` (FR-002, FR-004, R6)
   - Scope: `RefreshDatabase`:
     - a second encounter for one queue entry → `UniqueConstraintViolationException`
     - deleting a queue entry, doctor, or patient referenced by an encounter, or an encounter with an
@@ -134,7 +134,7 @@ translations, exceptions, and the access policy.
   - Verify: `docker compose exec app php artisan test --filter=EncounterPersistenceTest` → pass
   - Depends: T007
 
-- [ ] T009 Create `app/Modules/Encounters/Repositories/Contracts/EncounterRepository.php` and `app/Modules/Encounters/Repositories/EloquentEncounterRepository.php` with the core methods
+- [X] T009 Create `app/Modules/Encounters/Repositories/Contracts/EncounterRepository.php` and `app/Modules/Encounters/Repositories/EloquentEncounterRepository.php` with the core methods
   - Scope (more methods are added in later stories), each with a docblock:
     - `find(int $id): ?Encounter` — with `doctor.user`, `patient`, `addenda`
     - `lockById(int $id): ?Encounter` — `lockForUpdate()->find($id)`, no relations
@@ -143,12 +143,12 @@ translations, exceptions, and the access policy.
     - `existsForVisit(int $queueEntryId): bool`
   - Depends: T006
 
-- [ ] T010 Add `patientOnList` to `app/Modules/Queues/Repositories/Contracts/QueueRepository.php` and `app/Modules/Queues/Repositories/EloquentQueueRepository.php` (R4)
+- [X] T010 Add `patientOnList` to `app/Modules/Queues/Repositories/Contracts/QueueRepository.php` and `app/Modules/Queues/Repositories/EloquentQueueRepository.php` (R4)
   - Scope: `patientOnList(int $doctorId, int $patientId, string $date): bool` — an entry of the patient
     with that doctor that date with status `waiting`, `with_doctor`, or `seen`. Plain `exists()`, as
     `patientActive`. Nothing else in the Queues module changes.
 
-- [ ] T011 Create the module skeleton: `app/Modules/Encounters/Providers/EncountersServiceProvider.php`, `app/Modules/Encounters/routes/api.php`, and register in `bootstrap/providers.php`
+- [X] T011 Create the module skeleton: `app/Modules/Encounters/Providers/EncountersServiceProvider.php`, `app/Modules/Encounters/routes/api.php`, and register in `bootstrap/providers.php`
   - Scope: provider mirrors `QueuesServiceProvider`: `register()` binds `EncounterRepository` →
     `EloquentEncounterRepository`; `boot()` loads `routes/api.php` with `api` middleware and `api/v1`
     prefix and translations namespace `encounters` (the policy line is added in T014). Routes file:
@@ -157,7 +157,7 @@ translations, exceptions, and the access policy.
   - Verify: `docker compose exec app php artisan route:list --path=api` still lists every existing route.
   - Depends: T009
 
-- [ ] T012 [P] Create the translations `app/Modules/Encounters/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T012 [P] Create the translations `app/Modules/Encounters/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('encounters::messages.<key>')`), en / ar:
     - `encounter_not_found`: "No medical record was found." / "لم يتم العثور على السجل الطبي."
     - `history_not_found`: "No medical records were found for this patient." / "لم يتم العثور على سجلات طبية لهذا المريض."
@@ -177,12 +177,12 @@ translations, exceptions, and the access policy.
       `encounter` "medical record" / "السجل الطبي"; `visit` "visit" / "الزيارة".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T013 [P] Create `app/Modules/Encounters/Exceptions/EncounterNotFoundException.php`, `VisitNotFoundException.php`, and `HistoryNotFoundException.php` (R4, R5)
+- [X] T013 [P] Create `app/Modules/Encounters/Exceptions/EncounterNotFoundException.php`, `VisitNotFoundException.php`, and `HistoryNotFoundException.php` (R4, R5)
   - Scope: exactly like `QueueEntryNotFoundException`: 404 `{message}` with
     `encounters::messages.encounter_not_found`, `visit_not_found`, and `history_not_found`; each with an
     empty `report()`.
 
-- [ ] T014 Write `tests/Feature/Encounters/EncountersPolicyTest.php`, then create `app/Modules/Encounters/Policies/EncounterPolicy.php` (FR-012–FR-014, R4)
+- [X] T014 Write `tests/Feature/Encounters/EncountersPolicyTest.php`, then create `app/Modules/Encounters/Policies/EncounterPolicy.php` (FR-012–FR-014, R4)
   - Scope: inject `QueueRepository` and `DoctorRepository`. Abilities, all returning `bool`:
     - `access(User)` (class-level on `Encounter::class`): active doctor only
     - `view(User, Encounter)`: the actor's doctor profile (`findByUserId`; none → false) is the
@@ -198,7 +198,7 @@ translations, exceptions, and the access policy.
   - Verify: `--filter=EncountersPolicyTest` → fails before the policy exists, passes after.
   - Depends: T007, T010, T011
 
-- [ ] T015 Run the Queues, Appointments, and Patients suites
+- [X] T015 Run the Queues, Appointments, and Patients suites
   - Verify: `docker compose exec app php artisan test tests/Feature/Queues tests/Feature/Appointments tests/Feature/Patients` → all pass unchanged.
   - Depends: T003, T010, T011
 

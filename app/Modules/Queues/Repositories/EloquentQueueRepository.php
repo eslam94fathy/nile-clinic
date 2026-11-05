@@ -121,6 +121,16 @@ class EloquentQueueRepository implements QueueRepository
             ->exists();
     }
 
+    public function patientOnList(int $doctorId, int $patientId, string $date): bool
+    {
+        return QueueEntry::query()
+            ->where('doctor_id', $doctorId)
+            ->where('patient_id', $patientId)
+            ->where('date', $date)
+            ->whereIn('status', [QueueStatus::Waiting, QueueStatus::WithDoctor, QueueStatus::Seen])
+            ->exists();
+    }
+
     public function lockById(int $id): ?QueueEntry
     {
         return QueueEntry::query()->lockForUpdate()->find($id);
