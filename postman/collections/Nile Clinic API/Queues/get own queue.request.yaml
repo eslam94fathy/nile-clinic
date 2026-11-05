@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  The signed-in doctor's own list for today in queue order, with the patient as {id, full_name, sex,
+  date_of_birth} and no `doctor`. A doctor without a profile gets 404; other roles get 403.
+method: GET
+url: '{{base_url}}/doctors/me/queue'
+order: 13000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the doctor\'s view of the list', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data.map((entry) => entry.id)).to.eql([Number(pm.collectionVariables.get('queue_first_entry_id')), Number(pm.collectionVariables.get('queue_second_entry_id'))]);
+        pm.expect(data[0].patient).to.have.keys('id', 'full_name', 'sex', 'date_of_birth');
+        pm.expect(data[0]).to.not.have.property('doctor');
+      });
+examples: './.resources/get own queue.resources/examples'

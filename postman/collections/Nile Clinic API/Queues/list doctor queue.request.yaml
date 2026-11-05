@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  One doctor's list for today in queue order: booked patients by appointment time and walk-ins by arrival
+  time, merged; equal times go by queue number. Administrators and receptionists. Stores the order in
+  `queue_first_entry_id` and `queue_second_entry_id` for the calls below.
+method: GET
+url: '{{base_url}}/doctors/:doctor/queue'
+order: 9000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 both patients, no note or sensitive fields', () => {
+        pm.response.to.have.status(200);
+        const data = pm.response.json().data;
+        pm.expect(data).to.have.lengthOf(2);
+        data.forEach((entry) => pm.expect(entry.patient).to.have.keys('id', 'full_name', 'phone'));
+        pm.expect(pm.response.text()).to.not.include('Postman synthetic visit');
+        pm.collectionVariables.set('queue_first_entry_id', String(data[0].id));
+        pm.collectionVariables.set('queue_second_entry_id', String(data[1].id));
+      });
+examples: './.resources/list doctor queue.resources/examples'

@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Setup: the entry is stored in `queue_undo_entry_id`.
+method: POST
+url: '{{base_url}}/appointments/:appointment/check-in'
+order: 25000
+pathVariables:
+  - key: 'appointment'
+    value: '{{queue_appointment_2_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 waiting', () => {
+        pm.response.to.have.status(201);
+        pm.collectionVariables.set('queue_undo_entry_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/check in appointment to undo.resources/examples'

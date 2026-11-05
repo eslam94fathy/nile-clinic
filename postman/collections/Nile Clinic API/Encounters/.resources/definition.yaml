@@ -8,7 +8,7 @@ description: |-
   same 404 as something that does not exist.
 
   This folder signs in as the doctor from "Doctors/create doctor account" and sends `doctor_token`
-  by default; the requests that act as the administrator set their own auth. Runs after Appointments
+  by default; the requests that act as the administrator set their own auth. Runs after Queues
   (uses `patient_id`, `doctor_id`, `new_doctor_email`). Records are never deleted. Use synthetic text
   only. Contract: `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.
 auth:

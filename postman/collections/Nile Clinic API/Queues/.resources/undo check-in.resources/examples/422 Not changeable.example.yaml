@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/16'
+  method: DELETE
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This queue entry can no longer be changed.","errors":{"entry":["This queue entry can no longer be changed."]}}
+order: 2000

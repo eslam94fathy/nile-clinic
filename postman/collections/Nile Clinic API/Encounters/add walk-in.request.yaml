@@ -1,8 +1,8 @@
 $kind: http-request
 description: |-
   Setup, as the administrator: a record starts from a visit, so this puts `patient_id` on
-  `doctor_id`'s list for today. The entry id is stored in `visit_id`. Feature 007's queue endpoints are
-  not otherwise in this collection.
+  `doctor_id`'s list for today. The entry id is stored in `visit_id`. The Queues folder leaves nobody
+  waiting, so the next call picks this patient.
 method: POST
 url: '{{base_url}}/queue/walk-ins'
 order: 1000

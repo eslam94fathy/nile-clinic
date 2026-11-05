@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  Setup: a second synthetic patient for the walk-ins. The id is stored in `queue_patient_id`.
+method: POST
+url: '{{base_url}}/patients'
+order: 6000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "Postman Queue Patient",
+      "date_of_birth": "1988-06-15",
+      "sex": "male",
+      "phone": "01000000022"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 patient', () => {
+        pm.response.to.have.status(201);
+        pm.collectionVariables.set('queue_patient_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/register walk-in patient.resources/examples'

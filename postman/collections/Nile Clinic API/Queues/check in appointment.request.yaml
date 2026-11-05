@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  Check in the patient of today's scheduled appointment, at any time that day; administrators and
+  receptionists. They join the doctor's list as `waiting` with the next queue number, and the appointment
+  becomes `checked_in`. Lists never carry the booking note or sensitive patient fields.
+method: POST
+url: '{{base_url}}/appointments/:appointment/check-in'
+order: 4000
+pathVariables:
+  - key: 'appointment'
+    value: '{{queue_appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 waiting with the staff patient summary', () => {
+        pm.response.to.have.status(201);
+        const data = pm.response.json().data;
+        pm.expect(data).to.include({ status: 'waiting', walk_in: false });
+        pm.expect(data.queue_number).to.be.at.least(1);
+        pm.expect(data.appointment.id).to.eql(Number(pm.collectionVariables.get('queue_appointment_id')));
+        pm.expect(data.patient).to.have.keys('id', 'full_name', 'phone');
+      });
+examples: './.resources/check in appointment.resources/examples'

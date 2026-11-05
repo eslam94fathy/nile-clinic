@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Only a scheduled appointment dated today can be checked in, and only once: 422 `not_checkable` on `appointment`.
+method: POST
+url: '{{base_url}}/appointments/:appointment/check-in'
+order: 5000
+pathVariables:
+  - key: 'appointment'
+    value: '{{queue_appointment_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 not checkable', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('appointment');
+      });
+examples: './.resources/check in appointment again.resources/examples'

@@ -8,11 +8,12 @@ description: |-
   `specs/003-patient-records/contracts/patients.openapi.yaml`,
   `specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,
   `specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,
-  `specs/006-appointments/contracts/appointments.openapi.yaml`, and
+  `specs/006-appointments/contracts/appointments.openapi.yaml`,
+  `specs/007-patient-queues/contracts/queues.openapi.yaml`, and
   `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.
 
   **Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →
-  Doctors → Scheduling → Appointments → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
+  Doctors → Scheduling → Appointments → Queues → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set
   `admin_email` / `admin_password` to an administrator created with `php artisan
   staff:create-admin`. All data must be synthetic.
 
@@ -66,12 +67,45 @@ variables:
   - key: appointment_id
     value: ''
     description: 'Set by "Appointments/book appointment".'
+  - key: queue_date
+    value: ''
+    description: 'The clinic''s today, set by "Queues/set hours for today".'
+  - key: queue_weekday
+    value: ''
+    description: 'Today''s weekday in clinic time, set by "Queues/set hours for today".'
+  - key: queue_slot
+    value: ''
+    description: 'First slot left today, set by "Queues/list slots for today".'
+  - key: queue_slot_2
+    value: ''
+    description: 'Second slot left today, set by "Queues/list slots for today".'
+  - key: queue_appointment_id
+    value: ''
+    description: 'Set by "Queues/book appointment for today".'
+  - key: queue_appointment_2_id
+    value: ''
+    description: 'Set by "Queues/book appointment to undo".'
+  - key: queue_patient_id
+    value: ''
+    description: 'Set by "Queues/register walk-in patient".'
+  - key: queue_first_entry_id
+    value: ''
+    description: 'First in queue order, set by "Queues/list doctor queue".'
+  - key: queue_second_entry_id
+    value: ''
+    description: 'Second in queue order, set by "Queues/list doctor queue".'
+  - key: queue_left_entry_id
+    value: ''
+    description: 'Set by "Queues/add walk-in to leave".'
+  - key: queue_undo_entry_id
+    value: ''
+    description: 'Set by "Queues/check in appointment to undo".'
   - key: visit_id
     value: ''
     description: 'Queue entry id, set by "Encounters/add walk-in".'
   - key: doctor_token
     value: ''
-    description: 'Set by "Encounters/sign in as doctor"; cleared by "Encounters/sign out as doctor".'
+    description: 'Set by the "sign in as doctor" requests in Queues and Encounters; cleared by their "sign out as doctor" requests.'
   - key: encounter_id
     value: ''
     description: 'Set by "Encounters/start encounter".'

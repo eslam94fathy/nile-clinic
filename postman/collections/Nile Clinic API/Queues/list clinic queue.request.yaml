@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Every doctor's entries today, by doctor, then queue order, in pages; optional `status` (`waiting`,
+  `with_doctor`, `seen`, `left`). Administrators and receptionists.
+method: GET
+url: '{{base_url}}/queue?status=waiting'
+order: 10000
+queryParams:
+  - key: 'status'
+    value: 'waiting'
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 includes this doctor\'s waiting patients', () => {
+        pm.response.to.have.status(200);
+        const ids = pm.response.json().data.map((entry) => entry.id);
+        pm.expect(ids).to.include(Number(pm.collectionVariables.get('queue_first_entry_id')));
+        pm.expect(ids).to.include(Number(pm.collectionVariables.get('queue_second_entry_id')));
+      });
+examples: './.resources/list clinic queue.resources/examples'

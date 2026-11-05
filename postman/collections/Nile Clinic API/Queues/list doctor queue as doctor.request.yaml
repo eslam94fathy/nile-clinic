@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  The staff lists and reception actions are refused for doctors: 403. Doctors use `/doctors/me/queue`.
+method: GET
+url: '{{base_url}}/doctors/:doctor/queue'
+order: 12000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for a doctor', () => pm.response.to.have.status(403));
+examples: './.resources/list doctor queue as doctor.resources/examples'

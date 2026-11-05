@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/queue'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"id":15,"queue_number":2,"status":"waiting","walk_in":true,"arrived_at":"2026-11-05T12:21:17.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":null,"patient":{"id":22,"full_name":"Postman Queue Patient","sex":"male","date_of_birth":"1988-06-15"}},{"id":14,"queue_number":1,"status":"waiting","walk_in":false,"arrived_at":"2026-11-05T12:21:16.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":{"id":13,"start":"14:40","end":"15:00"},"patient":{"id":20,"full_name":"\u0631\u064a\u0645 \u0639\u0628\u062f \u0627\u0644\u062d\u0645\u064a\u062f","sex":"male","date_of_birth":"1955-05-14"}}]}
+order: 1000

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue?status=done'
+  method: GET
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The selected status is invalid.","errors":{"status":["The selected status is invalid."]}}
+order: 2000

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments/13/check-in'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"Only a scheduled appointment for today can be checked in.","errors":{"appointment":["Only a scheduled appointment for today can be checked in."]}}
+order: 1000

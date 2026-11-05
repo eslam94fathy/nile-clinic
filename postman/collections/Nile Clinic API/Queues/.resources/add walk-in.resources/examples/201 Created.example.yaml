@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/walk-ins'
+  method: POST
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":15,"queue_number":2,"status":"waiting","walk_in":true,"arrived_at":"2026-11-05T12:21:17.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":null,"doctor":{"id":16,"name":"Mrs. Dena Franecki Sr.","title":"Resident"},"patient":{"id":22,"full_name":"Postman Queue Patient","phone":"01000000022"}}}
+order: 1000

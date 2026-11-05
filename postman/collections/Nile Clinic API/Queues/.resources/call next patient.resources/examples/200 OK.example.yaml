@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/me/queue/call-next'
+  method: POST
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":15,"queue_number":2,"status":"with_doctor","walk_in":true,"arrived_at":"2026-11-05T12:21:17.000000Z","called_at":"2026-11-05T12:21:19.000000Z","finished_at":null,"left_at":null,"appointment":null,"patient":{"id":22,"full_name":"Postman Queue Patient","sex":"male","date_of_birth":"1988-06-15"}}}
+order: 1000

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/16/leave'
+  method: POST
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":16,"queue_number":3,"status":"left","walk_in":true,"arrived_at":"2026-11-05T12:21:20.000000Z","called_at":null,"finished_at":null,"left_at":"2026-11-05T12:21:20.000000Z","appointment":null,"doctor":{"id":16,"name":"Mrs. Dena Franecki Sr.","title":"Resident"},"patient":{"id":22,"full_name":"Postman Queue Patient","phone":"01000000022"}}}
+order: 1000

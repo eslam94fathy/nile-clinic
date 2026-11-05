@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`, and\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`, and\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -5414,8 +5414,2948 @@
       ]
     },
     {
+      "name": "Queues",
+      "description": "Check-in on arrival and each doctor's waiting list for the clinic's today (feature 007).\n`/appointments/{id}/check-in`, `/queue…`, and `/doctors/{doctor}/queue` are for administrators and\nreceptionists; `/doctors/me/queue…` is for doctors. Queue numbers start at 1 per doctor and day and\nare never reused. Walk-ins never take a slot.\n\nThis folder replaces the doctor's weekly schedule with today's whole day (\"clear weekly schedule\"\nremoves it later) and needs two slots left today, so run it before 23:20 clinic time. Runs after\nAppointments (uses `patient_id`, `doctor_id`, `new_doctor_email`) and leaves nobody waiting. The\nrequests made as the doctor send `doctor_token`. Contract:\n`specs/007-patient-queues/contracts/queues.openapi.yaml`.",
+      "item": [
+        {
+          "name": "set hours for today",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const zone = { timeZone: 'Africa/Cairo' };",
+                  "pm.collectionVariables.set('queue_date', new Date().toLocaleDateString('en-CA', zone));",
+                  "pm.collectionVariables.set('queue_weekday', new Date().toLocaleDateString('en-US', { ...zone, weekday: 'long' }).toLowerCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 schedule saved', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointment_minutes\": 20,\n  \"periods\": [\n    {\n      \"day\": \"{{queue_weekday}}\",\n      \"start\": \"00:00\",\n      \"end\": \"24:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "schedule"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Setup: replaces the doctor's weekly schedule with today's whole day, because queues are only for\nthe clinic's today and this makes slots available at any hour. \"clear weekly schedule\" removes it\nafter this folder. Sets `queue_date` and `queue_weekday` in clinic time."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/16/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "16",
+                    "schedule"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor_id\":16,\"appointment_minutes\":20,\"days\":[{\"day\":\"sunday\",\"periods\":[]},{\"day\":\"monday\",\"periods\":[]},{\"day\":\"tuesday\",\"periods\":[]},{\"day\":\"wednesday\",\"periods\":[]},{\"day\":\"thursday\",\"periods\":[{\"start\":\"00:00\",\"end\":\"24:00\"}]},{\"day\":\"friday\",\"periods\":[]},{\"day\":\"saturday\",\"periods\":[]}],\"updated_at\":\"2026-11-05T12:21:16+00:00\"}}"
+            }
+          ]
+        },
+        {
+          "name": "list slots for today",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with two slots left today', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.length).to.be.at.least(2);",
+                  "  pm.collectionVariables.set('queue_slot', data[0].start);",
+                  "  pm.collectionVariables.set('queue_slot_2', data[1].start);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/slots?from={{queue_date}}&to={{queue_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{queue_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{queue_date}}"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Setup: this folder needs two slots left today, so run it before 23:20 clinic time. Stores the first\ntwo starts in `queue_slot` and `queue_slot_2`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/16/slots?from=2026-11-05&to=2026-11-05",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "16",
+                    "slots"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"date\":\"2026-11-05\",\"start\":\"14:40\",\"end\":\"15:00\"},{\"date\":\"2026-11-05\",\"start\":\"15:00\",\"end\":\"15:20\"},{\"date\":\"2026-11-05\",\"start\":\"15:20\",\"end\":\"15:40\"},{\"date\":\"2026-11-05\",\"start\":\"15:40\",\"end\":\"16:00\"},{\"date\":\"2026-11-05\",\"start\":\"16:00\",\"end\":\"16:20\"},{\"date\":\"2026-11-05\",\"start\":\"16:20\",\"end\":\"16:40\"},{\"date\":\"2026-11-05\",\"start\":\"16:40\",\"end\":\"17:00\"},{\"date\":\"2026-11-05\",\"start\":\"17:00\",\"end\":\"17:20\"},{\"date\":\"2026-11-05\",\"start\":\"17:20\",\"end\":\"17:40\"},{\"date\":\"2026-11-05\",\"start\":\"17:40\",\"end\":\"18:00\"},{\"date\":\"2026-11-05\",\"start\":\"18:00\",\"end\":\"18:20\"},{\"date\":\"2026-11-05\",\"start\":\"18:20\",\"end\":\"18:40\"},{\"date\":\"2026-11-05\",\"start\":\"18:40\",\"end\":\"19:00\"},{\"date\":\"2026-11-05\",\"start\":\"19:00\",\"end\":\"19:20\"},{\"date\":\"2026-11-05\",\"start\":\"19:20\",\"end\":\"19:40\"},{\"date\":\"2026-11-05\",\"start\":\"19:40\",\"end\":\"20:00\"},{\"date\":\"2026-11-05\",\"start\":\"20:00\",\"end\":\"20:20\"},{\"date\":\"2026-11-05\",\"start\":\"20:20\",\"end\":\"20:40\"},{\"date\":\"2026-11-05\",\"start\":\"20:40\",\"end\":\"21:00\"},{\"date\":\"2026-11-05\",\"start\":\"21:00\",\"end\":\"21:20\"},{\"date\":\"2026-11-05\",\"start\":\"21:20\",\"end\":\"21:40\"},{\"date\":\"2026-11-05\",\"start\":\"21:40\",\"end\":\"22:00\"},{\"date\":\"2026-11-05\",\"start\":\"22:00\",\"end\":\"22:20\"},{\"date\":\"2026-11-05\",\"start\":\"22:20\",\"end\":\"22:40\"},{\"date\":\"2026-11-05\",\"start\":\"22:40\",\"end\":\"23:00\"},{\"date\":\"2026-11-05\",\"start\":\"23:00\",\"end\":\"23:20\"},{\"date\":\"2026-11-05\",\"start\":\"23:20\",\"end\":\"23:40\"},{\"date\":\"2026-11-05\",\"start\":\"23:40\",\"end\":\"24:00\"}]}"
+            }
+          ]
+        },
+        {
+          "name": "book appointment for today",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 scheduled today', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('scheduled');",
+                  "  pm.collectionVariables.set('queue_appointment_id', String(data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patient_id}},\n  \"doctor_id\": {{doctor_id}},\n  \"date\": \"{{queue_date}}\",\n  \"start\": \"{{queue_slot}}\",\n  \"note\": \"Postman synthetic visit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "Setup: a scheduled appointment for today to check in. The id is stored in `queue_appointment_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":13,\"date\":\"2026-11-05\",\"start\":\"14:40\",\"end\":\"15:00\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"},\"note\":\"Postman synthetic visit\",\"booked_by\":{\"id\":42,\"name\":\"Sabina Daugherty\"},\"booked_at\":\"2026-11-05T12:21:16.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "check in appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting with the staff patient summary', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ status: 'waiting', walk_in: false });",
+                  "  pm.expect(data.queue_number).to.be.at.least(1);",
+                  "  pm.expect(data.appointment.id).to.eql(Number(pm.collectionVariables.get('queue_appointment_id')));",
+                  "  pm.expect(data.patient).to.have.keys('id', 'full_name', 'phone');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/check-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "check-in"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Check in the patient of today's scheduled appointment, at any time that day; administrators and\nreceptionists. They join the doctor's list as `waiting` with the next queue number, and the appointment\nbecomes `checked_in`. Lists never carry the booking note or sensitive patient fields."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/13/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "13",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":14,\"queue_number\":1,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"}}}"
+            },
+            {
+              "name": "403 Not reception",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/13/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "13",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/999999/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "999999",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No appointment was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "check in appointment again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 not checkable', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('appointment');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/check-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "check-in"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Only a scheduled appointment dated today can be checked in, and only once: 422 `not_checkable` on `appointment`."
+          },
+          "response": [
+            {
+              "name": "422 Not checkable",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/13/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "13",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Only a scheduled appointment for today can be checked in.\",\"errors\":{\"appointment\":[\"Only a scheduled appointment for today can be checked in.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "register walk-in patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 patient', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('queue_patient_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Postman Queue Patient\",\n  \"date_of_birth\": \"1988-06-15\",\n  \"sex\": \"male\",\n  \"phone\": \"01000000022\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Setup: a second synthetic patient for the walk-ins. The id is stored in `queue_patient_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/patients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "patients"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"sex\":\"male\",\"date_of_birth\":\"1988-06-15\",\"phone\":\"01000000022\",\"national_id\":null,\"address\":null,\"emergency_contact\":null,\"created_at\":\"2026-11-05T12:21:17+00:00\",\"updated_at\":\"2026-11-05T12:21:17+00:00\"}}"
+            }
+          ]
+        },
+        {
+          "name": "add walk-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting walk-in', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.include({ status: 'waiting', walk_in: true, appointment: null });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{queue_patient_id}},\n  \"doctor_id\": {{doctor_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/queue/walk-ins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                "walk-ins"
+              ]
+            },
+            "description": "Add a registered patient without an appointment to an active doctor's list today; administrators and\nreceptionists. A walk-in takes no slot, so bookable slots are unchanged. Unknown patient or unknown or\ninactive doctor is 422."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/walk-ins",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "walk-ins"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":15,\"queue_number\":2,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"phone\":\"01000000022\"}}}"
+            },
+            {
+              "name": "422 Unknown patient",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/walk-ins",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "walk-ins"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No patient was found with this patient number.\",\"errors\":{\"patient_id\":[\"No patient was found with this patient number.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "add walk-in again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 already in queue', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('patient_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{queue_patient_id}},\n  \"doctor_id\": {{doctor_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/queue/walk-ins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                "walk-ins"
+              ]
+            },
+            "description": "A patient already waiting or with this doctor today cannot be added again: 422 `already_in_queue` on `patient_id`."
+          },
+          "response": [
+            {
+              "name": "422 Already in queue",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/walk-ins",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "walk-ins"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This patient is already in this doctor's queue today.\",\"errors\":{\"patient_id\":[\"This patient is already in this doctor's queue today.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list doctor queue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 both patients, no note or sensitive fields', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.lengthOf(2);",
+                  "  data.forEach((entry) => pm.expect(entry.patient).to.have.keys('id', 'full_name', 'phone'));",
+                  "  pm.expect(pm.response.text()).to.not.include('Postman synthetic visit');",
+                  "  pm.collectionVariables.set('queue_first_entry_id', String(data[0].id));",
+                  "  pm.collectionVariables.set('queue_second_entry_id', String(data[1].id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "queue"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "One doctor's list for today in queue order: booked patients by appointment time and walk-ins by arrival\ntime, merged; equal times go by queue number. Administrators and receptionists. Stores the order in\n`queue_first_entry_id` and `queue_second_entry_id` for the calls below."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/16/queue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "16",
+                    "queue"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":15,\"queue_number\":2,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"phone\":\"01000000022\"}},{\"id\":14,\"queue_number\":1,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"}}]}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/999999/queue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "999999",
+                    "queue"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No doctor was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "list clinic queue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 includes this doctor\\'s waiting patients', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().data.map((entry) => entry.id);",
+                  "  pm.expect(ids).to.include(Number(pm.collectionVariables.get('queue_first_entry_id')));",
+                  "  pm.expect(ids).to.include(Number(pm.collectionVariables.get('queue_second_entry_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue?status=waiting",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "waiting"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every doctor's entries today, by doctor, then queue order, in pages; optional `status` (`waiting`,\n`with_doctor`, `seen`, `left`). Administrators and receptionists."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue?status=waiting",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":7,\"queue_number\":7,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T09:46:05.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":9,\"start\":\"15:00\",\"end\":\"15:20\"},\"doctor\":{\"id\":2,\"name\":\"\\u0623\\u062d\\u0645\\u062f \\u0645\\u0635\\u0637\\u0641\\u0649\",\"title\":\"Consultant\"},\"patient\":{\"id\":11,\"full_name\":\"QS7 Synthetic 2\",\"phone\":\"01038718132\"}},{\"id\":15,\"queue_number\":2,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"phone\":\"01000000022\"}},{\"id\":14,\"queue_number\":1,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"}}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/queue?status=waiting&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/queue?status=waiting&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/queue?status=waiting&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/queue\",\"per_page\":15,\"to\":3,\"total\":3}}"
+            },
+            {
+              "name": "422 Unknown status",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue?status=done",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The selected status is invalid.\",\"errors\":{\"status\":[\"The selected status is invalid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "sign in as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a doctor token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.user.role).to.eql('doctor');",
+                  "  pm.collectionVariables.set('doctor_token', data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup: signs in the doctor made by \"Doctors/create doctor account\" and stores the token in\n`doctor_token`, which the doctor's requests below send. The administrator's `token` is kept."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"token\": \"1|<plain-text token, shown once>\", \"token_type\": \"Bearer\", \"user\": {\"id\": 9, \"name\": \"Synthetic Doctor\", \"email\": \"doctor@clinic.test\", \"role\": \"doctor\", \"is_active\": true}}}"
+            }
+          ]
+        },
+        {
+          "name": "list doctor queue as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for a doctor', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "queue"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "The staff lists and reception actions are refused for doctors: 403. Doctors use `/doctors/me/queue`."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/16/queue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "16",
+                    "queue"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get own queue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the doctor\\'s view of the list', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.map((entry) => entry.id)).to.eql([Number(pm.collectionVariables.get('queue_first_entry_id')), Number(pm.collectionVariables.get('queue_second_entry_id'))]);",
+                  "  pm.expect(data[0].patient).to.have.keys('id', 'full_name', 'sex', 'date_of_birth');",
+                  "  pm.expect(data[0]).to.not.have.property('doctor');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue"
+              ]
+            },
+            "description": "The signed-in doctor's own list for today in queue order, with the patient as {id, full_name, sex,\ndate_of_birth} and no `doctor`. A doctor without a profile gets 404; other roles get 403."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":15,\"queue_number\":2,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"sex\":\"male\",\"date_of_birth\":\"1988-06-15\"}},{\"id\":14,\"queue_number\":1,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"sex\":\"male\",\"date_of_birth\":\"1955-05-14\"}}]}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "call next patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the first in order is with the doctor', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('queue_first_entry_id')));",
+                  "  pm.expect(data.status).to.eql('with_doctor');",
+                  "  pm.expect(data.called_at).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/call-next",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "call-next"
+              ]
+            },
+            "description": "Call the first waiting patient in queue order who is not with another doctor right now. Doctors send no\nentry id. The patient becomes `with_doctor` with the time."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/call-next",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "call-next"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":15,\"queue_number\":2,\"status\":\"with_doctor\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":\"2026-11-05T12:21:19.000000Z\",\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"sex\":\"male\",\"date_of_birth\":\"1988-06-15\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "call next during a visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 visit in progress', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('queue');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/call-next",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "call-next"
+              ]
+            },
+            "description": "A doctor has at most one patient at a time: 422 `visit_in_progress` on `queue`."
+          },
+          "response": [
+            {
+              "name": "422 Visit in progress",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/call-next",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "call-next"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Finish the current visit before calling the next patient.\",\"errors\":{\"queue\":[\"Finish the current visit before calling the next patient.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "finish visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 seen', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.id).to.eql(Number(pm.collectionVariables.get('queue_first_entry_id')));",
+                  "  pm.expect(data.status).to.eql('seen');",
+                  "  pm.expect(data.finished_at).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/finish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "finish"
+              ]
+            },
+            "description": "Finish the visit of the patient with the doctor: the entry becomes `seen` with the time, and its\nappointment, if any, becomes `completed`. Nobody with the doctor is 422 `no_current_visit`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/finish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "finish"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":15,\"queue_number\":2,\"status\":\"seen\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:17.000000Z\",\"called_at\":\"2026-11-05T12:21:19.000000Z\",\"finished_at\":\"2026-11-05T12:21:19.000000Z\",\"left_at\":null,\"appointment\":null,\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"sex\":\"male\",\"date_of_birth\":\"1988-06-15\"}}}"
+            },
+            {
+              "name": "422 No current visit",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/finish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "finish"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No patient is with the doctor.\",\"errors\":{\"queue\":[\"No patient is with the doctor.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "call second patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the second in order', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('queue_second_entry_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/call-next",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "call-next"
+              ]
+            },
+            "description": "The next waiting patient in queue order."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/call-next",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "call-next"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":14,\"queue_number\":1,\"status\":\"with_doctor\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":\"2026-11-05T12:21:19.000000Z\",\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"sex\":\"male\",\"date_of_birth\":\"1955-05-14\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "finish second visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 seen', () => pm.expect(pm.response.json().data.status).to.eql('seen'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/finish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "finish"
+              ]
+            },
+            "description": "Finishes the second visit, so everyone on the list has now been seen."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/finish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "finish"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":14,\"queue_number\":1,\"status\":\"seen\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:16.000000Z\",\"called_at\":\"2026-11-05T12:21:19.000000Z\",\"finished_at\":\"2026-11-05T12:21:19.000000Z\",\"left_at\":null,\"appointment\":{\"id\":13,\"start\":\"14:40\",\"end\":\"15:00\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"sex\":\"male\",\"date_of_birth\":\"1955-05-14\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "call next with nobody waiting",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 nobody waiting', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('queue');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/me/queue/call-next",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "me",
+                "queue",
+                "call-next"
+              ]
+            },
+            "description": "Nobody can be called: 422 `nobody_waiting` on `queue`, and nothing changes."
+          },
+          "response": [
+            {
+              "name": "422 Nobody waiting",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/me/queue/call-next",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "me",
+                    "queue",
+                    "call-next"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"Nobody is waiting.\",\"errors\":{\"queue\":[\"Nobody is waiting.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get completed appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "After the visit, the appointment is `completed`. Like `checked_in`, it keeps its slot and cannot be rescheduled, cancelled, or marked no-show."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/13",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "13"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":13,\"date\":\"2026-11-05\",\"start\":\"14:40\",\"end\":\"15:00\",\"status\":\"completed\",\"outside_availability\":false,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"},\"note\":\"Postman synthetic visit\",\"booked_by\":{\"id\":42,\"name\":\"Sabina Daugherty\"},\"booked_at\":\"2026-11-05T12:21:16.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "add walk-in to leave",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('queue_left_entry_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{queue_patient_id}},\n  \"doctor_id\": {{doctor_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/queue/walk-ins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                "walk-ins"
+              ]
+            },
+            "description": "Setup: the same patient can join again once seen. The new entry is stored in `queue_left_entry_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/walk-ins",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "walk-ins"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":16,\"queue_number\":3,\"status\":\"waiting\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:20.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":null,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"phone\":\"01000000022\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "mark as left",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 left', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('left');",
+                  "  pm.expect(data.left_at).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue/:entry/leave",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                ":entry",
+                "leave"
+              ],
+              "variable": [
+                {
+                  "key": "entry",
+                  "value": "{{queue_left_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "A waiting patient left: the entry becomes `left` with the time, stays on the list, and is never called. Administrators and receptionists."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/16/leave",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "16",
+                    "leave"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":16,\"queue_number\":3,\"status\":\"left\",\"walk_in\":true,\"arrived_at\":\"2026-11-05T12:21:20.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":\"2026-11-05T12:21:20.000000Z\",\"appointment\":null,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":22,\"full_name\":\"Postman Queue Patient\",\"phone\":\"01000000022\"}}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/999999/leave",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "999999",
+                    "leave"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No queue entry was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "mark as left again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 not changeable', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('entry');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue/:entry/leave",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                ":entry",
+                "leave"
+              ],
+              "variable": [
+                {
+                  "key": "entry",
+                  "value": "{{queue_left_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Only a waiting entry can be marked as left or undone: 422 `not_changeable` on `entry`."
+          },
+          "response": [
+            {
+              "name": "422 Not changeable",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/16/leave",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "16",
+                    "leave"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This queue entry can no longer be changed.\",\"errors\":{\"entry\":[\"This queue entry can no longer be changed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "book appointment to undo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 scheduled', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('queue_appointment_2_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patient_id}},\n  \"doctor_id\": {{doctor_id}},\n  \"date\": \"{{queue_date}}\",\n  \"start\": \"{{queue_slot_2}}\",\n  \"note\": \"Postman synthetic visit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            },
+            "description": "Setup: a second appointment today. The id is stored in `queue_appointment_2_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":14,\"date\":\"2026-11-05\",\"start\":\"15:00\",\"end\":\"15:20\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"},\"note\":\"Postman synthetic visit\",\"booked_by\":{\"id\":42,\"name\":\"Sabina Daugherty\"},\"booked_at\":\"2026-11-05T12:21:20.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "check in appointment to undo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('queue_undo_entry_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/check-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "check-in"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_2_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Setup: the entry is stored in `queue_undo_entry_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/14/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "14",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":17,\"queue_number\":4,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T12:21:20.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":14,\"start\":\"15:00\",\"end\":\"15:20\"},\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "undo check-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue/:entry",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                ":entry"
+              ],
+              "variable": [
+                {
+                  "key": "entry",
+                  "value": "{{queue_undo_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Undo a mistaken check-in of a waiting entry with an appointment: the entry is removed and the appointment\nis `scheduled` again. Its queue number is not reused. A walk-in is corrected by marking it as left."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/17",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "17"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "422 Not changeable",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/16",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "16"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This queue entry can no longer be changed.\",\"errors\":{\"entry\":[\"This queue entry can no longer be changed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get undone appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 scheduled', () => pm.expect(pm.response.json().data.status).to.eql('scheduled'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_2_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "After an undo, the appointment is `scheduled` again, with all of feature 006's rules."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/14",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "14"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":14,\"date\":\"2026-11-05\",\"start\":\"15:00\",\"end\":\"15:20\",\"status\":\"scheduled\",\"outside_availability\":false,\"doctor\":{\"id\":16,\"name\":\"Mrs. Dena Franecki Sr.\",\"title\":\"Resident\"},\"patient\":{\"id\":20,\"full_name\":\"\\u0631\\u064a\\u0645 \\u0639\\u0628\\u062f \\u0627\\u0644\\u062d\\u0645\\u064a\\u062f\",\"phone\":\"01626433707\"},\"note\":\"Postman synthetic visit\",\"booked_by\":{\"id\":42,\"name\":\"Sabina Daugherty\"},\"booked_at\":\"2026-11-05T12:21:20.000000Z\",\"rescheduled_by\":null,\"rescheduled_at\":null,\"status_changed_by\":null,\"status_changed_at\":null,\"cancellation_reason\":null}}"
+            }
+          ]
+        },
+        {
+          "name": "sign out as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 signed out', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  pm.collectionVariables.set('doctor_token', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-out",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": "Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-out",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-out"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Encounters",
-      "description": "Medical records of visits (feature 008). Doctors only: administrators and receptionists get 403.\nOne record per visit, for booked patients and walk-ins alike. A draft is visible only to its\nauthor; a finalized record cannot be changed, only corrected with addenda. Clinical content is\nreturned only when one record is opened, never in a list. Anything a doctor may not read is the\nsame 404 as something that does not exist.\n\nThis folder signs in as the doctor from \"Doctors/create doctor account\" and sends `doctor_token`\nby default; the requests that act as the administrator set their own auth. Runs after Appointments\n(uses `patient_id`, `doctor_id`, `new_doctor_email`). Records are never deleted. Use synthetic text\nonly. Contract: `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.",
+      "description": "Medical records of visits (feature 008). Doctors only: administrators and receptionists get 403.\nOne record per visit, for booked patients and walk-ins alike. A draft is visible only to its\nauthor; a finalized record cannot be changed, only corrected with addenda. Clinical content is\nreturned only when one record is opened, never in a list. Anything a doctor may not read is the\nsame 404 as something that does not exist.\n\nThis folder signs in as the doctor from \"Doctors/create doctor account\" and sends `doctor_token`\nby default; the requests that act as the administrator set their own auth. Runs after Queues\n(uses `patient_id`, `doctor_id`, `new_doctor_email`). Records are never deleted. Use synthetic text\nonly. Contract: `specs/008-medical-encounters/contracts/encounters.openapi.yaml`.",
       "item": [
         {
           "name": "add walk-in",
@@ -5480,7 +8420,7 @@
                 "walk-ins"
               ]
             },
-            "description": "Setup, as the administrator: a record starts from a visit, so this puts `patient_id` on\n`doctor_id`'s list for today. The entry id is stored in `visit_id`. Feature 007's queue endpoints are\nnot otherwise in this collection."
+            "description": "Setup, as the administrator: a record starts from a visit, so this puts `patient_id` on\n`doctor_id`'s list for today. The entry id is stored in `visit_id`. The Queues folder leaves nobody\nwaiting, so the next call picks this patient."
           },
           "response": [
             {
@@ -7567,6 +10507,61 @@
       "description": "Set by \"Appointments/book appointment\"."
     },
     {
+      "key": "queue_date",
+      "value": "",
+      "description": "The clinic's today, set by \"Queues/set hours for today\"."
+    },
+    {
+      "key": "queue_weekday",
+      "value": "",
+      "description": "Today's weekday in clinic time, set by \"Queues/set hours for today\"."
+    },
+    {
+      "key": "queue_slot",
+      "value": "",
+      "description": "First slot left today, set by \"Queues/list slots for today\"."
+    },
+    {
+      "key": "queue_slot_2",
+      "value": "",
+      "description": "Second slot left today, set by \"Queues/list slots for today\"."
+    },
+    {
+      "key": "queue_appointment_id",
+      "value": "",
+      "description": "Set by \"Queues/book appointment for today\"."
+    },
+    {
+      "key": "queue_appointment_2_id",
+      "value": "",
+      "description": "Set by \"Queues/book appointment to undo\"."
+    },
+    {
+      "key": "queue_patient_id",
+      "value": "",
+      "description": "Set by \"Queues/register walk-in patient\"."
+    },
+    {
+      "key": "queue_first_entry_id",
+      "value": "",
+      "description": "First in queue order, set by \"Queues/list doctor queue\"."
+    },
+    {
+      "key": "queue_second_entry_id",
+      "value": "",
+      "description": "Second in queue order, set by \"Queues/list doctor queue\"."
+    },
+    {
+      "key": "queue_left_entry_id",
+      "value": "",
+      "description": "Set by \"Queues/add walk-in to leave\"."
+    },
+    {
+      "key": "queue_undo_entry_id",
+      "value": "",
+      "description": "Set by \"Queues/check in appointment to undo\"."
+    },
+    {
       "key": "visit_id",
       "value": "",
       "description": "Queue entry id, set by \"Encounters/add walk-in\"."
@@ -7574,7 +10569,7 @@
     {
       "key": "doctor_token",
       "value": "",
-      "description": "Set by \"Encounters/sign in as doctor\"; cleared by \"Encounters/sign out as doctor\"."
+      "description": "Set by the \"sign in as doctor\" requests in Queues and Encounters; cleared by their \"sign out as doctor\" requests."
     },
     {
       "key": "encounter_id",

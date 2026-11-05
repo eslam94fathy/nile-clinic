@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/999999/leave'
+  method: POST
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"No queue entry was found."}
+order: 2000

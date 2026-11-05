@@ -1,0 +1,14 @@
+$kind: collection
+name: Queues
+description: |-
+  Check-in on arrival and each doctor's waiting list for the clinic's today (feature 007).
+  `/appointments/{id}/check-in`, `/queue…`, and `/doctors/{doctor}/queue` are for administrators and
+  receptionists; `/doctors/me/queue…` is for doctors. Queue numbers start at 1 per doctor and day and
+  are never reused. Walk-ins never take a slot.
+
+  This folder replaces the doctor's weekly schedule with today's whole day ("clear weekly schedule"
+  removes it later) and needs two slots left today, so run it before 23:20 clinic time. Runs after
+  Appointments (uses `patient_id`, `doctor_id`, `new_doctor_email`) and leaves nobody waiting. The
+  requests made as the doctor send `doctor_token`. Contract:
+  `specs/007-patient-queues/contracts/queues.openapi.yaml`.
+order: 8100

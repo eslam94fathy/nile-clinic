@@ -1,0 +1,44 @@
+$kind: http-request
+description: |-
+  Setup: replaces the doctor's weekly schedule with today's whole day, because queues are only for
+  the clinic's today and this makes slots available at any hour. "clear weekly schedule" removes it
+  after this folder. Sets `queue_date` and `queue_weekday` in clinic time.
+method: PUT
+url: '{{base_url}}/doctors/:doctor/schedule'
+order: 1000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "appointment_minutes": 20,
+      "periods": [
+        {
+          "day": "{{queue_weekday}}",
+          "start": "00:00",
+          "end": "24:00"
+        }
+      ]
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const zone = { timeZone: 'Africa/Cairo' };
+      pm.collectionVariables.set('queue_date', new Date().toLocaleDateString('en-CA', zone));
+      pm.collectionVariables.set('queue_weekday', new Date().toLocaleDateString('en-US', { ...zone, weekday: 'long' }).toLowerCase());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 schedule saved', () => pm.response.to.have.status(200));
+examples: './.resources/set hours for today.resources/examples'
