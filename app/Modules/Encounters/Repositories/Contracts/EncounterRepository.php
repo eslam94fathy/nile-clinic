@@ -3,6 +3,7 @@
 namespace App\Modules\Encounters\Repositories\Contracts;
 
 use App\Modules\Encounters\Models\Encounter;
+use App\Modules\Encounters\Models\EncounterAddendum;
 use App\Modules\Queues\Models\QueueEntry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -34,6 +35,11 @@ interface EncounterRepository
      * (research R3).
      */
     public function existsForVisit(int $queueEntryId): bool;
+
+    /**
+     * Addenda are only ever added: no method changes or deletes one (FR-011).
+     */
+    public function addAddendum(Encounter $encounter, string $text): EncounterAddendum;
 
     /**
      * One page of the doctor's visits that are with the doctor or seen, by date, then queue order,

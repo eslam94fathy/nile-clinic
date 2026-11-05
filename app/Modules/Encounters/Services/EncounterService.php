@@ -9,6 +9,7 @@ use App\Modules\Encounters\Exceptions\EncounterNotFoundException;
 use App\Modules\Encounters\Exceptions\HistoryNotFoundException;
 use App\Modules\Encounters\Exceptions\VisitNotFoundException;
 use App\Modules\Encounters\Models\Encounter;
+use App\Modules\Encounters\Models\EncounterAddendum;
 use App\Modules\Encounters\Repositories\Contracts\EncounterRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueEntry;
@@ -156,6 +157,21 @@ class EncounterService
         }, attempts: 3);
 
         return $this->find($id);
+    }
+
+    /**
+     * Correct a finalized record (FR-011). A plain insert: finalized never reverts, so no lock is
+     * needed, and simultaneous addenda are all kept (research R3).
+     *
+     * @throws ValidationException when the record is a draft
+     */
+    public function addAddendum(Encounter $encounter, string $text): EncounterAddendum
+    {
+        if ($encounter->status !== EncounterStatus::Finalized) {
+            throw $this->refusal('encounter', 'not_finalized');
+        }
+
+        return $this->encounters->addAddendum($encounter, $text);
     }
 
     /**

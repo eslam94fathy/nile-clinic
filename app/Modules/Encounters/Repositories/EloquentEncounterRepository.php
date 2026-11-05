@@ -4,6 +4,7 @@ namespace App\Modules\Encounters\Repositories;
 
 use App\Modules\Encounters\Enums\EncounterStatus;
 use App\Modules\Encounters\Models\Encounter;
+use App\Modules\Encounters\Models\EncounterAddendum;
 use App\Modules\Encounters\Repositories\Contracts\EncounterRepository;
 use App\Modules\Queues\Enums\QueueStatus;
 use App\Modules\Queues\Models\QueueEntry;
@@ -37,6 +38,11 @@ class EloquentEncounterRepository implements EncounterRepository
     public function existsForVisit(int $queueEntryId): bool
     {
         return Encounter::query()->where('queue_entry_id', $queueEntryId)->exists();
+    }
+
+    public function addAddendum(Encounter $encounter, string $text): EncounterAddendum
+    {
+        return $encounter->addenda()->create(['text' => $text]);
     }
 
     public function paginateVisits(int $doctorId, array $filters, int $perPage): LengthAwarePaginator

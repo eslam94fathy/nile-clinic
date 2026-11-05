@@ -4,10 +4,13 @@ namespace App\Modules\Encounters\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Encounters\Exceptions\EncounterNotFoundException;
+use App\Modules\Encounters\Http\Requests\AddAddendumRequest;
 use App\Modules\Encounters\Http\Requests\SaveEncounterRequest;
+use App\Modules\Encounters\Http\Resources\AddendumResource;
 use App\Modules\Encounters\Http\Resources\EncounterResource;
 use App\Modules\Encounters\Models\Encounter;
 use App\Modules\Encounters\Services\EncounterService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -41,6 +44,17 @@ class EncounterController extends Controller
         Gate::authorize('write', $this->readable($encounter));
 
         return EncounterResource::make($this->encounters->finalize($encounter));
+    }
+
+    public function addAddendum(AddAddendumRequest $request, int $encounter): JsonResponse
+    {
+        $found = $this->readable($encounter);
+
+        Gate::authorize('write', $found);
+
+        return AddendumResource::make($this->encounters->addAddendum($found, $request->validated('text')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**

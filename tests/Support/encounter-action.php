@@ -9,6 +9,7 @@
  *   start     the target is the visit id
  *   save      the target is the encounter id; complete content, with text as the chief complaint
  *   finalize  the target is the encounter id
+ *   addendum  the target is the encounter id; text is the addendum
  *
  * Refuses (exit 2) to run against any database but clinic_testing.
  */
@@ -45,6 +46,7 @@ $run = match ($action) {
         'prescriptions' => [],
     ]),
     'finalize' => fn () => $encounters->finalize((int) $targetId),
+    'addendum' => fn () => $encounters->addAddendum($encounters->find((int) $targetId), $text),
     default => throw new InvalidArgumentException("Unknown action: {$action}"),
 };
 

@@ -511,7 +511,7 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T038 [US5] Write `tests/Feature/Encounters/AddendumTest.php` (US5-1…5, FR-011)
+- [X] T038 [US5] Write `tests/Feature/Encounters/AddendumTest.php` (US5-1…5, FR-011)
   - Scope: clock fixed; author actor; a `finalized()` record.
     - add → `201`, exactly `{id, text, created_at}`; raw clinical columns and `updated_at` unchanged
     - two addenda appear oldest first when opened, and to a permitted reader
@@ -524,24 +524,24 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
 
 ### Implementation for User Story 5
 
-- [ ] T039 [US5] Add `addAddendum` to `EncounterRepository` / `EloquentEncounterRepository` (R8)
+- [X] T039 [US5] Add `addAddendum` to `EncounterRepository` / `EloquentEncounterRepository` (R8)
   - Scope: `addAddendum(Encounter $encounter, string $text): EncounterAddendum`. There is no method to
     update or delete an addendum, and none may be added (FR-011).
 
-- [ ] T040 [US5] Create `app/Modules/Encounters/Http/Requests/AddAddendumRequest.php` and add `addAddendum()` to `EncounterService`
+- [X] T040 [US5] Create `app/Modules/Encounters/Http/Requests/AddAddendumRequest.php` and add `addAddendum()` to `EncounterService`
   - Scope: request: `authorize()` → `can('access', Encounter::class)`; `text` `required`, `string`,
     `max:10000`; attribute from `encounters::attributes`. Service: `addAddendum(Encounter $encounter,
     string $text): EncounterAddendum`: not finalized → `['encounter' => not_finalized]`; otherwise insert.
     A plain insert: finalized never reverts, so no lock is needed (R3).
   - Depends: T039
 
-- [ ] T041 [US5] Add `addAddendum()` to `app/Modules/Encounters/Http/Controllers/EncounterController.php` and the route
+- [X] T041 [US5] Add `addAddendum()` to `app/Modules/Encounters/Http/Controllers/EncounterController.php` and the route
   - Scope: `readable`, `Gate::authorize('write', $found)`, service, `AddendumResource` with status `201`.
     Route: `POST /doctors/me/encounters/{encounter}/addenda` `encounters.addenda`.
   - Accept: T038 passes.
   - Depends: T040
 
-- [ ] T042 [US5] Extend `tests/Feature/Encounters/ConcurrentEncounterTest.php` with the addendum case and enable `addendum` in `tests/Support/encounter-action.php` (US5-6)
+- [X] T042 [US5] Extend `tests/Feature/Encounters/ConcurrentEncounterTest.php` with the addendum case and enable `addendum` in `tests/Support/encounter-action.php` (US5-6)
   - Scope: a `finalized()` record (real date); 4 `addendum` processes at the same `startAt` → four `ok`,
     four rows, and the clinical columns unchanged.
   - Verify: `docker compose exec app php artisan test --group=concurrency` → pass; run it 3 times.

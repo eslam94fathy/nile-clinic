@@ -5,9 +5,11 @@ namespace Tests\Feature\Encounters;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Encounters\Enums\EncounterStatus;
 use App\Modules\Encounters\Models\Encounter;
+use App\Modules\Encounters\Models\EncounterAddendum;
 use App\Modules\Queues\Models\QueueEntry;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Process\Pool;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
@@ -94,6 +96,23 @@ class ConcurrentEncounterTest extends TestCase
             $this->assertSame('refused', $after[0]['result']);
             $this->assertSame($final->chief_complaint, $encounter->fresh()->chief_complaint);
         }
+    }
+
+    public function test_simultaneous_addenda_are_all_kept(): void
+    {
+        $doctor = Doctor::factory()->create();
+        $entry = QueueEntry::factory()->seen()->create(['doctor_id' => $doctor->id]);
+        $encounter = Encounter::factory()->forEntry($entry)->finalized()->create();
+        $content = DB::table('encounters')->where('id', $encounter->id)->first();
+
+        $results = $this->runAtOnce(array_map(
+            fn (int $i) => ['addendum', $doctor->user_id, $encounter->id, "ADDENDUM-{$i}"],
+            range(1, 4),
+        ));
+
+        $this->assertSame(array_fill(0, 4, 'ok'), array_column($results, 'result'));
+        $this->assertSame(4, EncounterAddendum::query()->where('encounter_id', $encounter->id)->count());
+        $this->assertEquals($content, DB::table('encounters')->where('id', $encounter->id)->first());
     }
 
     /**
