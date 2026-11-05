@@ -379,16 +379,16 @@ breakdown match by hand.
     - `docker compose exec app php artisan test --group=concurrency` → pass
   - Depends: T030, T031, T032, T033, T034
 
-- [ ] T036 Measure SC-001 and SC-002 on `clinic_testing` only, and keep the figures for `specs/010-reports/verification.md`
+- [X] T036 Measure SC-001 and SC-002 on `clinic_testing` only, and keep the figures for `specs/010-reports/verification.md`
   - Scope: as feature 009's T047: in a transaction rolled back afterwards, bulk-insert 500 factory doctors, 2,000 patients, 500,000 queue entries with their charges, one payment per charge, 5,000 refunds, 400,000 encounters, and 600,000 appointments, spread over 366 days. Call the `ReportService` methods, which include the PHP calculation, three runs each: a day's money collected (target under 2 s), and each of the four reports over 366 days (target under 5 s). Refuse any database but `clinic_testing`; confirm 0 rows after the rollback. A miss is reported, not hidden, and stored summaries need separate approval (plan: Risks).
   - Depends: T035
 
-- [ ] T037 Run quickstart Q1–Q8 from `specs/010-reports/quickstart.md` on the development stack
+- [X] T037 Run quickstart Q1–Q8 from `specs/010-reports/quickstart.md` on the development stack
   - Scope: synthetic data only. Record what was run.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T035
 
-- [ ] T038 Record the results in `specs/010-reports/verification.md`
+- [X] T038 Record the results in `specs/010-reports/verification.md`
   - Scope: per Q-step and SC-001/SC-002: date, command, observed output summary, pass/fail; failures reported as failures (Constitution VIII). The Postman collection update is a separate follow-up.
   - Depends: T036, T037
 
