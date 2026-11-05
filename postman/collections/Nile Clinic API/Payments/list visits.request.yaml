@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  A date's visits with their charge status and balance, by doctor, then queue order; administrators and
+  receptionists. `charge_status` is `none`, `unpaid`, `partially_paid`, or `paid`, and `none` finds visits not yet
+  charged. Left visits appear only with an active charge.
+method: GET
+url: '{{base_url}}/visits?date={{encounter_date}}&doctor_id={{doctor_id}}&charge_status=paid'
+order: 10000
+queryParams:
+  - key: 'date'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+  - key: 'charge_status'
+    value: 'paid'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 the visit is paid', () => {
+        pm.response.to.have.status(200);
+        const visit = pm.response.json().data.find((v) => v.id === Number(pm.collectionVariables.get('visit_id')));
+        pm.expect(visit).to.include({ charge_status: 'paid', balance: '0.00' });
+        pm.expect(visit.charge_id).to.eql(Number(pm.collectionVariables.get('charge_id')));
+      });
+examples: './.resources/list visits.resources/examples'

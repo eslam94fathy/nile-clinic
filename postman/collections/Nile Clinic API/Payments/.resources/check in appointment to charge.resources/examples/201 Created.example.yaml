@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/appointments/22/check-in'
+  method: POST
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":32,"queue_number":2,"status":"waiting","walk_in":false,"arrived_at":"2026-11-05T14:43:37.000000Z","called_at":null,"finished_at":null,"left_at":null,"appointment":{"id":22,"start":"17:00","end":"17:20"},"doctor":{"id":22,"name":"Pearline Goyette II","title":"Consultant"},"patient":{"id":29,"full_name":"Darryl Stokes","phone":"01986104476"}}}
+order: 1000

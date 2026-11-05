@@ -1,0 +1,37 @@
+$kind: http-request
+description: |-
+  Record money returned; administrators only. `reason` is required, up to 500 characters; do not enter medical
+  details. The original payments stay on record, and refunds cannot be changed or deleted.
+method: POST
+url: '{{base_url}}/charges/:charge/refunds'
+order: 16000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "300.00",
+      "method": "cash",
+      "reason": "Postman synthetic refund"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 unpaid again, payments kept', () => {
+        pm.response.to.have.status(201);
+        pm.expect(pm.response.json().data).to.include({ status: 'unpaid', amount_paid: '0.00', balance: '300.00' });
+        pm.expect(pm.response.json().data.payments).to.have.lengthOf(2);
+        pm.expect(pm.response.json().data.refunds).to.have.lengthOf(1);
+      });
+examples: './.resources/record refund.resources/examples'

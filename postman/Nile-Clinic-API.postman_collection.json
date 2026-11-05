@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`, and\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`,\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`, and\n`specs/009-payments/contracts/payments.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → Payments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -10300,6 +10300,3368 @@
       }
     },
     {
+      "name": "Payments",
+      "description": "Consultation fees, charges on visits, and money received (feature 009). For administrators and\nreceptionists; only administrators set fees, discount, and refund; doctors get 403 on everything. This\nrecords money handled at the clinic and moves none; no card details are stored. Money is in Egyptian\npounds, returned as strings such as `\"150.00\"`. Charges, payments, and refunds are never deleted.\n\nRuns after Encounters (uses `visit_id`, `encounter_date`, `patient_id`, `doctor_id`,\n`queue_appointment_2_id`, and `new_doctor_email`). The administrator's `token` is used throughout, so\nthe receptionist's access is covered by the automated tests rather than this folder. Use synthetic\ntext only. Contract: `specs/009-payments/contracts/payments.openapi.yaml`.",
+      "item": [
+        {
+          "name": "set doctor fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the fee as a string', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ amount: '300.00' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"300.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/fee",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "fee"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Set or change a doctor's consultation fee; administrators only. Above 0, at most 100000, with at most\ntwo decimals, sent as a string or number. Money is returned as a string with two decimals. A new fee\napplies to later charges only."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/22/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "22",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"amount\":\"300.00\",\"set_at\":\"2026-11-05T14:43:33.000000Z\",\"set_by\":{\"id\":54,\"name\":\"Fae Maggio\"}}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/22/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "22",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "set a bad fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on amount', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('amount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"1.999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/fee",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "fee"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "More than two decimals, zero, negative, or above 100000 is 422 on `amount`, and nothing changes."
+          },
+          "response": [
+            {
+              "name": "422 Too many decimals",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/22/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "22",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The amount field must have 0-2 decimal places.\",\"errors\":{\"amount\":[\"The amount field must have 0-2 decimal places.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get doctor fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with who set it', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ amount: '300.00' });",
+                  "  pm.expect(pm.response.json().data.set_by).to.have.keys('id', 'name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/fee",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "fee"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "One doctor's current fee; administrators and receptionists. `amount` is null for a doctor with no fee; an unknown doctor is 404."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/22/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "22",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"amount\":\"300.00\",\"set_at\":\"2026-11-05T14:43:33.000000Z\",\"set_by\":{\"id\":54,\"name\":\"Fae Maggio\"}}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/999999/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "999999",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No doctor was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "list fees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 in pages', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(pm.response.json().meta.total).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/fees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "fees"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every doctor by account name, with their fee or null, in pages; administrators and receptionists."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/fees?per_page=2",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "fees"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":21,\"name\":\"Berenice Williamson\",\"title\":\"Resident\"},\"amount\":null,\"set_at\":null,\"set_by\":null},{\"doctor\":{\"id\":13,\"name\":\"Christina Bayer\",\"title\":\"Specialist\"},\"amount\":null,\"set_at\":null,\"set_by\":null}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=12\",\"prev\":null,\"next\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=2\"},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":12,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=2\",\"label\":\"2\",\"page\":2,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=3\",\"label\":\"3\",\"page\":3,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=4\",\"label\":\"4\",\"page\":4,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=5\",\"label\":\"5\",\"page\":5,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=6\",\"label\":\"6\",\"page\":6,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=7\",\"label\":\"7\",\"page\":7,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=8\",\"label\":\"8\",\"page\":8,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=9\",\"label\":\"9\",\"page\":9,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=10\",\"label\":\"10\",\"page\":10,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=11\",\"label\":\"11\",\"page\":11,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=12\",\"label\":\"12\",\"page\":12,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees?per_page=2&page=2\",\"label\":\"Next &raquo;\",\"page\":2,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/fees\",\"per_page\":2,\"to\":2,\"total\":23}}"
+            }
+          ]
+        },
+        {
+          "name": "charge visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 unpaid at the fee', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'unpaid', fee: '300.00', amount_paid: '0.00', balance: '300.00' });",
+                  "  pm.expect(pm.response.json().data.patient).to.have.keys('id', 'full_name', 'phone');",
+                  "  pm.collectionVariables.set('charge_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/visits/:visit/charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "visits",
+                ":visit",
+                "charge"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{visit_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Charge a visit at the doctor's fee at this moment; administrators and receptionists. Allowed while it is\nwaiting, with the doctor, or seen, on its day or later. Uses the visit from \"Encounters/add walk-in\", and stores\nthe id in `charge_id`. A left visit, a second active charge, or a doctor with no fee is 422 on `visit`. Payment\nnever affects the queue or medical records."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits/31/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits",
+                    "31",
+                    "charge"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"unpaid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"0.00\",\"balance\":\"300.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[],\"refunds\":[]}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits/999999/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits",
+                    "999999",
+                    "charge"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No visit was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "charge visit again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 already charged', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('visit');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/visits/:visit/charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "visits",
+                ":visit",
+                "charge"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{visit_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "A visit has at most one active charge, also under simultaneous requests: 422 `already_charged` on `visit`."
+          },
+          "response": [
+            {
+              "name": "422 Already charged",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits/31/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits",
+                    "31",
+                    "charge"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This visit has already been charged.\",\"errors\":{\"visit\":[\"This visit has already been charged.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record part payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 partly paid, exact to the piastre', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'partially_paid', amount_paid: '100.10', balance: '199.90' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"100.10\",\n  \"method\": \"cash\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "payments"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Record money received; administrators and receptionists. `method` is `cash`, `card`, or `wallet`. A charge\ntakes several payments. This records money and moves none: no card details are stored. Payments cannot be\nchanged or deleted."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/payments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "payments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"partially_paid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"100.10\",\"balance\":\"199.90\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[{\"id\":3,\"amount\":\"100.10\",\"method\":\"cash\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"}],\"refunds\":[]}}"
+            },
+            {
+              "name": "422 Unknown method",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/payments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "payments"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The selected payment method is invalid.\",\"errors\":{\"method\":[\"The selected payment method is invalid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record payment above balance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 above the balance', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('amount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"199.91\",\n  \"method\": \"card\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "payments"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A payment cannot exceed the balance, also under simultaneous requests: 422 `above_balance` on `amount`."
+          },
+          "response": [
+            {
+              "name": "422 Above balance",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/payments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "payments"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The amount is more than the balance owed.\",\"errors\":{\"amount\":[\"The amount is more than the balance owed.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record remaining payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 paid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'paid', amount_paid: '300.00', balance: '0.00' });",
+                  "  pm.expect(pm.response.json().data.payments).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"199.90\",\n  \"method\": \"card\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "payments"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "The rest of the balance, by another method."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/payments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "payments"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"paid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"300.00\",\"balance\":\"0.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[{\"id\":3,\"amount\":\"100.10\",\"method\":\"cash\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"},{\"id\":4,\"amount\":\"199.90\",\"method\":\"card\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"}],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "list visits",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the visit is paid', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const visit = pm.response.json().data.find((v) => v.id === Number(pm.collectionVariables.get('visit_id')));",
+                  "  pm.expect(visit).to.include({ charge_status: 'paid', balance: '0.00' });",
+                  "  pm.expect(visit.charge_id).to.eql(Number(pm.collectionVariables.get('charge_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/visits?date={{encounter_date}}&doctor_id={{doctor_id}}&charge_status=paid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "visits"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "charge_status",
+                  "value": "paid"
+                }
+              ]
+            },
+            "description": "A date's visits with their charge status and balance, by doctor, then queue order; administrators and\nreceptionists. `charge_status` is `none`, `unpaid`, `partially_paid`, or `paid`, and `none` finds visits not yet\ncharged. Left visits appear only with an active charge."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits?date=2026-11-05&doctor_id=22&charge_status=paid",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":31,\"date\":\"2026-11-05\",\"status\":\"waiting\",\"walk_in\":true,\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"charge_status\":\"paid\",\"charge_id\":5,\"balance\":\"0.00\"}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/visits?date=2026-11-05&doctor_id=22&charge_status=paid&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/visits?date=2026-11-05&doctor_id=22&charge_status=paid&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/visits?date=2026-11-05&doctor_id=22&charge_status=paid&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/visits\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            },
+            {
+              "name": "422 No date",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The date field is required.\",\"errors\":{\"date\":[\"The date field is required.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "list charges",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 summaries only', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const charge = pm.response.json().data.find((c) => c.id === Number(pm.collectionVariables.get('charge_id')));",
+                  "  pm.expect(charge).to.not.have.property('payments');",
+                  "  pm.expect(charge).to.not.have.property('refunds');",
+                  "  pm.expect(charge.status).to.eql('paid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges?from={{encounter_date}}&to={{encounter_date}}&patient_id={{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "patient_id",
+                  "value": "{{patient_id}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "paid",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Charges for a range of at most 92 days, newest first, optionally by patient, doctor, and status; administrators\nand receptionists. Never reasons, payments, or refunds."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges?from=2026-11-05&to=2026-11-05&patient_id=29",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"id\":5,\"visit_id\":31,\"status\":\"paid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"300.00\",\"balance\":\"0.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\"}],\"links\":{\"first\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/charges?from=2026-11-05&to=2026-11-05&patient_id=29&page=1\",\"last\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/charges?from=2026-11-05&to=2026-11-05&patient_id=29&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/charges?from=2026-11-05&to=2026-11-05&patient_id=29&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http:\\/\\/localhost:8080\\/api\\/v1\\/charges\",\"per_page\":15,\"to\":1,\"total\":1}}"
+            },
+            {
+              "name": "422 Range too long",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges?from=2026-01-01&to=2026-12-31",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The date range can be at most 92 days.\",\"errors\":{\"to\":[\"The date range can be at most 92 days.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "change doctor fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 new fee', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ amount: '400.00' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"400.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/:doctor/fee",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ":doctor",
+                "fee"
+              ],
+              "variable": [
+                {
+                  "key": "doctor",
+                  "value": "{{doctor_id}}",
+                  "description": "The doctor id (not the staff account id)"
+                }
+              ]
+            },
+            "description": "Setup for the next two requests: the fee rises to `400.00`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/doctors/22/fee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "doctors",
+                    "22",
+                    "fee"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"amount\":\"400.00\",\"set_at\":\"2026-11-05T14:43:35.000000Z\",\"set_by\":{\"id\":54,\"name\":\"Fae Maggio\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "get charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 the fee is unchanged', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ fee: '300.00', status: 'paid' });",
+                  "  pm.expect(pm.response.json().data.payments).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges/:charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "One charge with every payment and refund; administrators and receptionists. It keeps the fee it was created with, whatever happens to the doctor's fee later."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"paid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"300.00\",\"balance\":\"0.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[{\"id\":3,\"amount\":\"100.10\",\"method\":\"cash\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"},{\"id\":4,\"amount\":\"199.90\",\"method\":\"card\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"}],\"refunds\":[]}}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No charge was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "cancel with money held",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 money held', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('charge');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Postman synthetic mistake\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A charge with money paid cannot be cancelled: 422 `money_held` on `charge`. Refund it first."
+          },
+          "response": [
+            {
+              "name": "422 Money held",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"A charge with money paid cannot be cancelled. Record a refund first.\",\"errors\":{\"charge\":[\"A charge with money paid cannot be cancelled. Record a refund first.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record refund above paid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 above what was paid', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('amount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"300.01\",\n  \"method\": \"cash\",\n  \"reason\": \"Postman synthetic refund\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/refunds",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "refunds"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A refund cannot exceed the amount paid, also under simultaneous requests: 422 `above_paid` on `amount`."
+          },
+          "response": [
+            {
+              "name": "422 Above paid",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/refunds",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "refunds"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The amount is more than what has been paid.\",\"errors\":{\"amount\":[\"The amount is more than what has been paid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "record refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 unpaid again, payments kept', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'unpaid', amount_paid: '0.00', balance: '300.00' });",
+                  "  pm.expect(pm.response.json().data.payments).to.have.lengthOf(2);",
+                  "  pm.expect(pm.response.json().data.refunds).to.have.lengthOf(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"300.00\",\n  \"method\": \"cash\",\n  \"reason\": \"Postman synthetic refund\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/refunds",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "refunds"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Record money returned; administrators only. `reason` is required, up to 500 characters; do not enter medical\ndetails. The original payments stay on record, and refunds cannot be changed or deleted."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/refunds",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "refunds"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"unpaid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"0.00\",\"balance\":\"300.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[{\"id\":3,\"amount\":\"100.10\",\"method\":\"cash\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"},{\"id\":4,\"amount\":\"199.90\",\"method\":\"card\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"}],\"refunds\":[{\"id\":2,\"amount\":\"300.00\",\"method\":\"cash\",\"reason\":\"Postman synthetic refund\",\"refunded_by\":{\"id\":54,\"name\":\"Fae Maggio\"},\"refunded_at\":\"2026-11-05T14:43:36.000000Z\"}]}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/refunds",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "refunds"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "cancel charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 cancelled', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'cancelled', cancel_reason: 'Postman synthetic mistake' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Postman synthetic mistake\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Cancel a charge with no money held; administrators and receptionists. `reason` is required. It stays on record,\nand the visit can be charged again."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":5,\"visit_id\":31,\"status\":\"cancelled\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"300.00\",\"discount\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"0.00\",\"balance\":\"300.00\",\"charged_at\":\"2026-11-05T14:43:34.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":\"Postman synthetic mistake\",\"cancelled_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"cancelled_at\":\"2026-11-05T14:43:36.000000Z\",\"payments\":[{\"id\":3,\"amount\":\"100.10\",\"method\":\"cash\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"},{\"id\":4,\"amount\":\"199.90\",\"method\":\"card\",\"received_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"received_at\":\"2026-11-05T14:43:34.000000Z\"}],\"refunds\":[{\"id\":2,\"amount\":\"300.00\",\"method\":\"cash\",\"reason\":\"Postman synthetic refund\",\"refunded_by\":{\"id\":54,\"name\":\"Fae Maggio\"},\"refunded_at\":\"2026-11-05T14:43:36.000000Z\"}]}}"
+            }
+          ]
+        },
+        {
+          "name": "record payment on cancelled charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 cancelled', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('charge');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"1.00\",\n  \"method\": \"cash\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "payments"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A cancelled charge takes no further changes: 422 `charge_cancelled` on `charge`."
+          },
+          "response": [
+            {
+              "name": "422 Cancelled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5/payments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5",
+                    "payments"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This charge has been cancelled.\",\"errors\":{\"charge\":[\"This charge has been cancelled.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "charge visit at new fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 at the new fee', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'unpaid', fee: '400.00' });",
+                  "  pm.collectionVariables.set('second_charge_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/visits/:visit/charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "visits",
+                ":visit",
+                "charge"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{visit_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "After cancelling, the visit can be charged again, at the current fee. The id is stored in `second_charge_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits/31/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits",
+                    "31",
+                    "charge"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":6,\"visit_id\":31,\"status\":\"unpaid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"0.00\",\"amount_due\":\"400.00\",\"amount_paid\":\"0.00\",\"balance\":\"400.00\",\"charged_at\":\"2026-11-05T14:43:36.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "set discount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 less is owed', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ fee: '400.00', discount: '150.00', amount_due: '250.00', balance: '250.00' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"150.00\",\n  \"reason\": \"Postman synthetic hardship\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/discount",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "discount"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{second_charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Set or replace a discount; administrators only. `reason` is required. The fee stays visible, and sending 0 removes\na discount."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/6/discount",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "6",
+                    "discount"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":6,\"visit_id\":31,\"status\":\"unpaid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"150.00\",\"amount_due\":\"250.00\",\"amount_paid\":\"0.00\",\"balance\":\"250.00\",\"charged_at\":\"2026-11-05T14:43:36.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":\"Postman synthetic hardship\",\"discounted_by\":{\"id\":54,\"name\":\"Fae Maggio\"},\"discounted_at\":\"2026-11-05T14:43:36.000000Z\",\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[],\"refunds\":[]}}"
+            },
+            {
+              "name": "403 Not an administrator",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/6/discount",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "6",
+                    "discount"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "set discount too large",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 too large', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('amount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"400.01\",\n  \"reason\": \"Postman synthetic hardship\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/discount",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "discount"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{second_charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A discount cannot exceed the fee less what is paid: 422 `discount_too_large` on `amount`."
+          },
+          "response": [
+            {
+              "name": "422 Too large",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/6/discount",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "6",
+                    "discount"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The discount is more than the fee less what has been paid.\",\"errors\":{\"amount\":[\"The discount is more than the fee less what has been paid.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "waive the whole fee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 nothing owed', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'paid', balance: '0.00' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"400.00\",\n  \"reason\": \"Postman synthetic waiver\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/discount",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "discount"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{second_charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A discount of the whole fee leaves nothing owed, so the charge shows as `paid`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/6/discount",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "6",
+                    "discount"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":6,\"visit_id\":31,\"status\":\"paid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"400.00\",\"amount_due\":\"0.00\",\"amount_paid\":\"0.00\",\"balance\":\"0.00\",\"charged_at\":\"2026-11-05T14:43:36.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":\"Postman synthetic waiver\",\"discounted_by\":{\"id\":54,\"name\":\"Fae Maggio\"},\"discounted_at\":\"2026-11-05T14:43:37.000000Z\",\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "check in appointment to charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 waiting', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('charged_entry_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/appointments/:appointment/check-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                ":appointment",
+                "check-in"
+              ],
+              "variable": [
+                {
+                  "key": "appointment",
+                  "value": "{{queue_appointment_2_id}}",
+                  "description": "The appointment id"
+                }
+              ]
+            },
+            "description": "Setup for the undo rule: checks in the appointment \"Queues/undo check-in\" left scheduled. The entry is stored in\n`charged_entry_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/appointments/22/check-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointments",
+                    "22",
+                    "check-in"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":32,\"queue_number\":2,\"status\":\"waiting\",\"walk_in\":false,\"arrived_at\":\"2026-11-05T14:43:37.000000Z\",\"called_at\":null,\"finished_at\":null,\"left_at\":null,\"appointment\":{\"id\":22,\"start\":\"17:00\",\"end\":\"17:20\"},\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"}}}"
+            }
+          ]
+        },
+        {
+          "name": "charge checked-in visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 unpaid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('undo_charge_id', String(pm.response.json().data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/visits/:visit/charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "visits",
+                ":visit",
+                "charge"
+              ],
+              "variable": [
+                {
+                  "key": "visit",
+                  "value": "{{charged_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Setup: a waiting visit can be charged. The id is stored in `undo_charge_id`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/visits/32/charge",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "visits",
+                    "32",
+                    "charge"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":7,\"visit_id\":32,\"status\":\"unpaid\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"0.00\",\"amount_due\":\"400.00\",\"amount_paid\":\"0.00\",\"balance\":\"400.00\",\"charged_at\":\"2026-11-05T14:43:37.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":null,\"cancelled_by\":null,\"cancelled_at\":null,\"payments\":[],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "undo check-in with active charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 active charge', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('entry');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue/:entry",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                ":entry"
+              ],
+              "variable": [
+                {
+                  "key": "entry",
+                  "value": "{{charged_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "Undoing a check-in removes the visit, so it is refused while the visit has an active charge: 422 `has_active_charge` on `entry`."
+          },
+          "response": [
+            {
+              "name": "422 Active charge",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/32",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "32"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"This visit has an active charge. Cancel the charge first.\",\"errors\":{\"entry\":[\"This visit has an active charge. Cancel the charge first.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "cancel charge before undo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 cancelled', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'cancelled' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Postman synthetic wrong visit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{undo_charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Cancel the charge first."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/7/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "7",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":7,\"visit_id\":32,\"status\":\"cancelled\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"0.00\",\"amount_due\":\"400.00\",\"amount_paid\":\"0.00\",\"balance\":\"400.00\",\"charged_at\":\"2026-11-05T14:43:37.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":\"Postman synthetic wrong visit\",\"cancelled_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"cancelled_at\":\"2026-11-05T14:43:38.000000Z\",\"payments\":[],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "undo check-in after cancelling",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/queue/:entry",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "queue",
+                ":entry"
+              ],
+              "variable": [
+                {
+                  "key": "entry",
+                  "value": "{{charged_entry_id}}",
+                  "description": "The queue entry id"
+                }
+              ]
+            },
+            "description": "With the charge cancelled, the undo works and the appointment is scheduled again."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/queue/32",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "queue",
+                    "32"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "get cancelled charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 kept with no visit', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.include({ status: 'cancelled' });",
+                  "  pm.expect(pm.response.json().data.visit_id).to.be.null;",
+                  "  pm.expect(pm.response.json().data.patient.id).to.eql(Number(pm.collectionVariables.get('patient_id')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges/:charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{undo_charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "A cancelled charge stays on record after its visit is removed: `visit_id` is null, and it keeps its patient, doctor, and date."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/7",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "7"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"id\":7,\"visit_id\":null,\"status\":\"cancelled\",\"date\":\"2026-11-05\",\"doctor\":{\"id\":22,\"name\":\"Pearline Goyette II\",\"title\":\"Consultant\"},\"patient\":{\"id\":29,\"full_name\":\"Darryl Stokes\",\"phone\":\"01986104476\"},\"fee\":\"400.00\",\"discount\":\"0.00\",\"amount_due\":\"400.00\",\"amount_paid\":\"0.00\",\"balance\":\"400.00\",\"charged_at\":\"2026-11-05T14:43:37.000000Z\",\"charged_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"discount_reason\":null,\"discounted_by\":null,\"discounted_at\":null,\"cancel_reason\":\"Postman synthetic wrong visit\",\"cancelled_by\":{\"id\":55,\"name\":\"Rogelio Beahan\"},\"cancelled_at\":\"2026-11-05T14:43:38.000000Z\",\"payments\":[],\"refunds\":[]}}"
+            }
+          ]
+        },
+        {
+          "name": "sign in as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a doctor token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.collectionVariables.set('doctor_token', pm.response.json().data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup for the refusal check: signs in the doctor and stores the token in `doctor_token`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"token\": \"1|<plain-text token, shown once>\", \"token_type\": \"Bearer\", \"user\": {\"id\": 9, \"name\": \"Synthetic Doctor\", \"email\": \"doctor@clinic.test\", \"role\": \"doctor\", \"is_active\": true}}}"
+            }
+          ]
+        },
+        {
+          "name": "get charge as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for a doctor', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:charge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charges",
+                ":charge"
+              ],
+              "variable": [
+                {
+                  "key": "charge",
+                  "value": "{{charge_id}}",
+                  "description": "The charge id"
+                }
+              ]
+            },
+            "description": "Doctors have no access to fees or payments: 403 on every endpoint, before any lookup."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/charges/5",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "charges",
+                    "5"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "sign out as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 signed out', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  pm.collectionVariables.set('doctor_token', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-out",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": "Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-out",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-out"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "clear weekly schedule",
       "event": [
         {
@@ -10569,7 +13931,7 @@
     {
       "key": "doctor_token",
       "value": "",
-      "description": "Set by the \"sign in as doctor\" requests in Queues and Encounters; cleared by their \"sign out as doctor\" requests."
+      "description": "Set by the \"sign in as doctor\" requests in Queues, Encounters, and Payments; cleared by their \"sign out as doctor\" requests."
     },
     {
       "key": "encounter_id",
@@ -10580,6 +13942,26 @@
       "key": "encounter_date",
       "value": "",
       "description": "The visit date, set by \"Encounters/start encounter\"."
+    },
+    {
+      "key": "charge_id",
+      "value": "",
+      "description": "Set by \"Payments/charge visit\"."
+    },
+    {
+      "key": "second_charge_id",
+      "value": "",
+      "description": "Set by \"Payments/charge visit at new fee\"."
+    },
+    {
+      "key": "charged_entry_id",
+      "value": "",
+      "description": "Queue entry id, set by \"Payments/check in appointment to charge\"."
+    },
+    {
+      "key": "undo_charge_id",
+      "value": "",
+      "description": "Set by \"Payments/charge checked-in visit\"."
     }
   ]
 }

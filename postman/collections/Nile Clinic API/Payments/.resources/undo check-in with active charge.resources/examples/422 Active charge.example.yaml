@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/32'
+  method: DELETE
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"This visit has an active charge. Cancel the charge first.","errors":{"entry":["This visit has an active charge. Cancel the charge first."]}}
+order: 1000

@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  A refund cannot exceed the amount paid, also under simultaneous requests: 422 `above_paid` on `amount`.
+method: POST
+url: '{{base_url}}/charges/:charge/refunds'
+order: 15000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "300.01",
+      "method": "cash",
+      "reason": "Postman synthetic refund"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 above what was paid', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('amount');
+      });
+examples: './.resources/record refund above paid.resources/examples'

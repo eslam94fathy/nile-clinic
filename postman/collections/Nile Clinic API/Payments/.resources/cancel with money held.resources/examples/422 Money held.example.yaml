@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/charges/5/cancel'
+  method: POST
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"A charge with money paid cannot be cancelled. Record a refund first.","errors":{"charge":["A charge with money paid cannot be cancelled. Record a refund first."]}}
+order: 1000

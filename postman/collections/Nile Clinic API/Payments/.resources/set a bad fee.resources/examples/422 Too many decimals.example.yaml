@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/doctors/22/fee'
+  method: PUT
+response:
+  statusCode: 422
+  statusText: Unprocessable Content
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"The amount field must have 0-2 decimal places.","errors":{"amount":["The amount field must have 0-2 decimal places."]}}
+order: 1000

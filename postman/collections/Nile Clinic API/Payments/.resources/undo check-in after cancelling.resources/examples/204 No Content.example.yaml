@@ -1,0 +1,12 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/queue/32'
+  method: DELETE
+response:
+  statusCode: 204
+  statusText: No Content
+  headers: []
+  body:
+    type: text
+    content: ''
+order: 1000

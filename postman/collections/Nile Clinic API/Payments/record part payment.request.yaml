@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  Record money received; administrators and receptionists. `method` is `cash`, `card`, or `wallet`. A charge
+  takes several payments. This records money and moves none: no card details are stored. Payments cannot be
+  changed or deleted.
+method: POST
+url: '{{base_url}}/charges/:charge/payments'
+order: 7000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "100.10",
+      "method": "cash"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 partly paid, exact to the piastre', () => {
+        pm.response.to.have.status(201);
+        pm.expect(pm.response.json().data).to.include({ status: 'partially_paid', amount_paid: '100.10', balance: '199.90' });
+      });
+examples: './.resources/record part payment.resources/examples'

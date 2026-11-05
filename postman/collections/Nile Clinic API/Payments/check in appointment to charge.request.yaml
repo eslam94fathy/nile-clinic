@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Setup for the undo rule: checks in the appointment "Queues/undo check-in" left scheduled. The entry is stored in
+  `charged_entry_id`.
+method: POST
+url: '{{base_url}}/appointments/:appointment/check-in'
+order: 23000
+pathVariables:
+  - key: 'appointment'
+    value: '{{queue_appointment_2_id}}'
+    description: 'The appointment id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('201 waiting', () => {
+        pm.response.to.have.status(201);
+        pm.collectionVariables.set('charged_entry_id', String(pm.response.json().data.id));
+      });
+examples: './.resources/check in appointment to charge.resources/examples'

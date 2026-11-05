@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  Every doctor by account name, with their fee or null, in pages; administrators and receptionists.
+method: GET
+url: '{{base_url}}/fees'
+order: 4000
+queryParams:
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 in pages', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty;
+        pm.expect(pm.response.json().meta.total).to.be.above(0);
+      });
+examples: './.resources/list fees.resources/examples'

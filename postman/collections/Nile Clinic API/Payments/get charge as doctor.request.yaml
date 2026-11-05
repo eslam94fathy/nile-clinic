@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Doctors have no access to fees or payments: 403 on every endpoint, before any lookup.
+method: GET
+url: '{{base_url}}/charges/:charge'
+order: 30000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for a doctor', () => pm.response.to.have.status(403));
+examples: './.resources/get charge as doctor.resources/examples'

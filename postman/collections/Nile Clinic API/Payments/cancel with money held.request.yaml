@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  A charge with money paid cannot be cancelled: 422 `money_held` on `charge`. Refund it first.
+method: POST
+url: '{{base_url}}/charges/:charge/cancel'
+order: 14000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Postman synthetic mistake"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 money held', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('charge');
+      });
+examples: './.resources/cancel with money held.resources/examples'

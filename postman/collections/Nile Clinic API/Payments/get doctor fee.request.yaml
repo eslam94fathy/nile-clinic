@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  One doctor's current fee; administrators and receptionists. `amount` is null for a doctor with no fee; an unknown doctor is 404.
+method: GET
+url: '{{base_url}}/doctors/:doctor/fee'
+order: 3000
+pathVariables:
+  - key: 'doctor'
+    value: '{{doctor_id}}'
+    description: 'The doctor id (not the staff account id)'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with who set it', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ amount: '300.00' });
+        pm.expect(pm.response.json().data.set_by).to.have.keys('id', 'name');
+      });
+examples: './.resources/get doctor fee.resources/examples'

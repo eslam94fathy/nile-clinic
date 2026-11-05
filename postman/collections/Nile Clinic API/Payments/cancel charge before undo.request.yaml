@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  Cancel the charge first.
+method: POST
+url: '{{base_url}}/charges/:charge/cancel'
+order: 26000
+pathVariables:
+  - key: 'charge'
+    value: '{{undo_charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Postman synthetic wrong visit"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 cancelled', () => {
+        pm.response.to.have.status(200);
+        pm.expect(pm.response.json().data).to.include({ status: 'cancelled' });
+      });
+examples: './.resources/cancel charge before undo.resources/examples'

@@ -1,0 +1,37 @@
+$kind: http-request
+description: |-
+  Charges for a range of at most 92 days, newest first, optionally by patient, doctor, and status; administrators
+  and receptionists. Never reasons, payments, or refunds.
+method: GET
+url: '{{base_url}}/charges?from={{encounter_date}}&to={{encounter_date}}&patient_id={{patient_id}}'
+order: 11000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'patient_id'
+    value: '{{patient_id}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+    disabled: true
+  - key: 'status'
+    value: 'paid'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 summaries only', () => {
+        pm.response.to.have.status(200);
+        const charge = pm.response.json().data.find((c) => c.id === Number(pm.collectionVariables.get('charge_id')));
+        pm.expect(charge).to.not.have.property('payments');
+        pm.expect(charge).to.not.have.property('refunds');
+        pm.expect(charge.status).to.eql('paid');
+      });
+examples: './.resources/list charges.resources/examples'

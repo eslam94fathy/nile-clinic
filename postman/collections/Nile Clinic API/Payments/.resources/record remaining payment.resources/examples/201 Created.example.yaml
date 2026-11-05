@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/charges/5/payments'
+  method: POST
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":{"id":5,"visit_id":31,"status":"paid","date":"2026-11-05","doctor":{"id":22,"name":"Pearline Goyette II","title":"Consultant"},"patient":{"id":29,"full_name":"Darryl Stokes","phone":"01986104476"},"fee":"300.00","discount":"0.00","amount_due":"300.00","amount_paid":"300.00","balance":"0.00","charged_at":"2026-11-05T14:43:34.000000Z","charged_by":{"id":55,"name":"Rogelio Beahan"},"discount_reason":null,"discounted_by":null,"discounted_at":null,"cancel_reason":null,"cancelled_by":null,"cancelled_at":null,"payments":[{"id":3,"amount":"100.10","method":"cash","received_by":{"id":55,"name":"Rogelio Beahan"},"received_at":"2026-11-05T14:43:34.000000Z"},{"id":4,"amount":"199.90","method":"card","received_by":{"id":55,"name":"Rogelio Beahan"},"received_at":"2026-11-05T14:43:34.000000Z"}],"refunds":[]}}
+order: 1000

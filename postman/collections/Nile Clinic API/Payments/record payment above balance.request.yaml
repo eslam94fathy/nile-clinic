@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  A payment cannot exceed the balance, also under simultaneous requests: 422 `above_balance` on `amount`.
+method: POST
+url: '{{base_url}}/charges/:charge/payments'
+order: 8000
+pathVariables:
+  - key: 'charge'
+    value: '{{charge_id}}'
+    description: 'The charge id'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+  - key: 'Content-Type'
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "amount": "199.91",
+      "method": "card"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 above the balance', () => {
+        pm.response.to.have.status(422);
+        pm.expect(pm.response.json().errors).to.have.property('amount');
+      });
+examples: './.resources/record payment above balance.resources/examples'
