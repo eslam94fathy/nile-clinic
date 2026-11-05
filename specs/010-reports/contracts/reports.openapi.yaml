@@ -1,0 +1,383 @@
+openapi: 3.1.0
+info:
+  title: Nile Clinic API — Reports
+  version: 1.0.0
+  description: >
+    Endpoints introduced by feature 010. All are read-only and for active administrators only; receptionists and
+    doctors get 403. Responses are JSON, and field names and structure are identical in every locale; only `message`
+    texts change with Accept-Language (en, ar; fallback en). Statuses and methods are fixed English identifiers. Money
+    is in Egyptian pounds, returned as a string with two decimals; `net` can be negative. Dates are the clinic's date
+    (Africa/Cairo). Every period includes both ends, and is at most 366 days. No response identifies a patient or holds
+    medical content. Figures reflect the records at the moment of the request.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Compose environment (port from APP_PORT)
+
+security:
+  - bearerToken: []
+
+paths:
+  /reports/money-collected:
+    get:
+      operationId: getMoneyCollected
+      summary: Money received and refunded, by method, staff member, and day (FR-007, FR-008)
+      description: >
+        Money counts on the clinic day it was recorded. With `doctor_id`, only money on that doctor's charges counts.
+        Only methods and days with money movement are listed, so a period with none has zero totals and empty lists.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/DoctorId'
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/MoneyCollected' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /reports/billing:
+    get:
+      operationId: getBilling
+      summary: What each doctor's visits were charged and what is owed (FR-009–FR-011)
+      description: >
+        Covers charges dated in the period, as they stand now. Cancelled charges are only counted. Doctors are ordered by
+        account name; `totals` covers every doctor, whichever page is returned.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/DoctorId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page of doctors, with totals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, totals, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - type: object
+                          required: [doctor]
+                          properties:
+                            doctor: { $ref: '#/components/schemas/Doctor' }
+                        - $ref: '#/components/schemas/BillingFigures'
+                  totals: { $ref: '#/components/schemas/BillingFigures' }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /reports/activity:
+    get:
+      operationId: getActivity
+      summary: Appointments, no-show rate, visits, and new patients (FR-012–FR-014)
+      description: >
+        Covers appointments and visits dated in the period. Doctors are ordered by account name; `totals` covers every
+        doctor, whichever page is returned. `totals.new_patients` is left out when `doctor_id` is sent.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/DoctorId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page of doctors, with totals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, totals, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - type: object
+                          required: [doctor]
+                          properties:
+                            doctor: { $ref: '#/components/schemas/Doctor' }
+                        - $ref: '#/components/schemas/ActivityFigures'
+                  totals:
+                    allOf:
+                      - $ref: '#/components/schemas/ActivityFigures'
+                      - type: object
+                        properties:
+                          new_patients: { type: integer, minimum: 0 }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /reports/times:
+    get:
+      operationId: getTimes
+      summary: Average wait and consultation, and medical record counts (FR-015–FR-017)
+      description: >
+        Covers visits dated in the period. Record counts cover seen visits only and hold no clinical content. Doctors are
+        ordered by account name; `totals` covers every doctor, whichever page is returned.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/DoctorId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: One page of doctors, with totals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, totals, links, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - type: object
+                          required: [doctor]
+                          properties:
+                            doctor: { $ref: '#/components/schemas/Doctor' }
+                        - $ref: '#/components/schemas/TimesFigures'
+                  totals: { $ref: '#/components/schemas/TimesFigures' }
+                  links: { type: object }
+                  meta: { type: object }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  parameters:
+    AcceptLanguage:
+      in: header
+      name: Accept-Language
+      required: false
+      schema: { type: string, enum: [en, ar], default: en }
+    From:
+      in: query
+      name: from
+      required: true
+      description: First clinic date of the period, included.
+      schema: { type: string, format: date }
+    To:
+      in: query
+      name: to
+      required: true
+      description: Last clinic date of the period, included. Not before `from`, and at most 366 days including both ends.
+      schema: { type: string, format: date }
+    DoctorId:
+      in: query
+      name: doctor_id
+      required: false
+      description: Only this doctor. An unknown doctor is 404; a doctor with no activity gives zero totals.
+      schema: { type: integer, minimum: 1 }
+    Page:
+      in: query
+      name: page
+      required: false
+      schema: { type: integer, minimum: 1 }
+    PerPage:
+      in: query
+      name: per_page
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+
+  responses:
+    Unauthenticated:
+      description: Missing or invalid token, or a deactivated account.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Forbidden:
+      description: Not an administrator.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    NotFound:
+      description: No such doctor.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    ValidationFailed:
+      description: Validation failed.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message, errors]
+            properties:
+              message: { type: string }
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items: { type: string }
+
+  schemas:
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+
+    Money:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      examples: ['150.00']
+
+    SignedMoney:
+      type: string
+      pattern: '^-?\d+\.\d{2}$'
+      examples: ['150.00', '-0.50']
+
+    Doctor:
+      type: object
+      required: [id, name, title]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: [string, 'null'] }
+
+    MoneyFigures:
+      type: object
+      required: [received, refunded, net]
+      properties:
+        received: { $ref: '#/components/schemas/Money' }
+        refunded: { $ref: '#/components/schemas/Money' }
+        net: { $ref: '#/components/schemas/SignedMoney' }
+
+    MoneyCollected:
+      type: object
+      required: [from, to, totals, by_method, by_day]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        totals: { $ref: '#/components/schemas/MoneyFigures' }
+        by_method:
+          type: array
+          description: In the order cash, card, wallet. Only methods with money movement.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/MoneyFigures'
+              - type: object
+                required: [method, staff]
+                properties:
+                  method: { type: string, enum: [cash, card, wallet] }
+                  staff:
+                    type: array
+                    description: By account name, then id.
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/MoneyFigures'
+                        - type: object
+                          required: [id, name]
+                          properties:
+                            id: { type: integer }
+                            name: { type: string }
+        by_day:
+          type: array
+          description: Oldest first. Only days with money movement.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/MoneyFigures'
+              - type: object
+                required: [date]
+                properties:
+                  date: { type: string, format: date }
+
+    BillingFigures:
+      type: object
+      required: [active_charges, fees, discounts, amount_due, amount_paid, balance, cancelled_charges, uncharged_seen_visits]
+      properties:
+        active_charges: { type: integer, minimum: 0 }
+        fees: { $ref: '#/components/schemas/Money' }
+        discounts: { $ref: '#/components/schemas/Money' }
+        amount_due: { $ref: '#/components/schemas/Money' }
+        amount_paid: { $ref: '#/components/schemas/Money' }
+        balance: { $ref: '#/components/schemas/Money' }
+        cancelled_charges: { type: integer, minimum: 0 }
+        uncharged_seen_visits: { type: integer, minimum: 0 }
+
+    ActivityFigures:
+      type: object
+      required: [appointments, no_show_rate, visits]
+      properties:
+        appointments:
+          type: object
+          required: [scheduled, cancelled, no_show, checked_in, completed]
+          properties:
+            scheduled: { type: integer, minimum: 0 }
+            cancelled: { type: integer, minimum: 0 }
+            no_show: { type: integer, minimum: 0 }
+            checked_in: { type: integer, minimum: 0 }
+            completed: { type: integer, minimum: 0 }
+        no_show_rate:
+          type: [number, 'null']
+          description: >
+            A percentage to one decimal place, such as 12.5: no-shows divided by appointments that were no-shows, checked
+            in, or completed. Null when there are none of those.
+        visits:
+          type: object
+          required: [waiting, with_doctor, seen, left, booked, walk_in]
+          properties:
+            waiting: { type: integer, minimum: 0 }
+            with_doctor: { type: integer, minimum: 0 }
+            seen: { type: integer, minimum: 0 }
+            left: { type: integer, minimum: 0 }
+            booked: { type: integer, minimum: 0 }
+            walk_in: { type: integer, minimum: 0 }
+
+    TimesFigures:
+      type: object
+      required: [wait, consultation, records]
+      properties:
+        wait: { $ref: '#/components/schemas/AverageTime' }
+        consultation: { $ref: '#/components/schemas/AverageTime' }
+        records:
+          type: object
+          description: Seen visits by the state of their medical record.
+          required: [finalized, draft, none]
+          properties:
+            finalized: { type: integer, minimum: 0 }
+            draft: { type: integer, minimum: 0 }
+            none: { type: integer, minimum: 0 }
+
+    AverageTime:
+      type: object
+      required: [average_minutes, visits]
+      properties:
+        average_minutes:
+          type: [integer, 'null']
+          description: To the nearest whole minute. Null when no visits are covered.
+        visits:
+          type: integer
+          minimum: 0
+          description: The number of visits the average covers.
