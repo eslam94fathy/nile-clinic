@@ -169,6 +169,31 @@ patient as left at `POST /api/v1/queue/{entry}/leave` and undo a check-in at
 Every endpoint, field, and response is described in
 [specs/007-patient-queues/contracts/queues.openapi.yaml](specs/007-patient-queues/contracts/queues.openapi.yaml).
 
+## Medical encounters
+
+Only doctors use medical records; administrators and receptionists are refused. A doctor lists their
+visits at `GET /api/v1/doctors/me/visits`, starts a visit's record at
+`POST /api/v1/doctors/me/visits/{visit}/encounter`, and opens or saves it at
+`GET` and `PUT /api/v1/doctors/me/encounters/{encounter}`. They lock it at
+`POST /api/v1/doctors/me/encounters/{encounter}/finalize` and correct it afterwards at
+`POST /api/v1/doctors/me/encounters/{encounter}/addenda`. A patient's history is at
+`GET /api/v1/doctors/me/patients/{patient}/encounters`.
+
+- Each visit has at most one record, for booked patients and walk-ins alike. Finishing a visit does
+  not need one, and it can be written later.
+- A draft is visible only to its author. A finalized record cannot be changed, only corrected with
+  addenda, which cannot be changed or deleted either.
+- A doctor reads their own records at any time, and another doctor's finalized records only while the
+  patient is on their list today as waiting, with the doctor, or seen. Anything else is reported as
+  not found.
+- Clinical content is encrypted in the database and returned only when one record is opened, never in
+  a list or a log.
+
+Every endpoint, field, and response is described in
+[specs/008-medical-encounters/contracts/encounters.openapi.yaml](specs/008-medical-encounters/contracts/encounters.openapi.yaml).
+After pulling this feature, run `docker compose build app` and `docker compose up -d app`: the image
+gained a PHP setting that keeps call arguments out of stack traces.
+
 ## Daily use
 
 ```sh
@@ -232,6 +257,11 @@ documented with a safe placeholder. `.env` is git-ignored; never commit it or pu
 
 The database is reachable only inside the Compose network (host `mysql`, no published port).
 The API and phpMyAdmin are bound to `127.0.0.1`, so they are not reachable from other machines.
+
+> **`APP_KEY` protects medical records.** Clinical content is encrypted with it, so losing it
+> permanently destroys that content, and changing it makes the content unreadable. Back it up
+> separately from the database before any production use. To rotate it, move the old key to
+> `APP_PREVIOUS_KEYS`; never just replace it.
 
 ## phpMyAdmin (optional, development only)
 

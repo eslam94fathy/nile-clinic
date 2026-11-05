@@ -553,14 +553,14 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T043 [P] Write `tests/Feature/Encounters/EncountersAuthorizationTest.php` (SC-003)
+- [X] T043 [P] Write `tests/Feature/Encounters/EncountersAuthorizationTest.php` (SC-003)
   - Scope: data providers over all seven endpoints with valid input (clock fixed): administrator and
     receptionist × every endpoint → `403` (`auth.forbidden`) and no row changed; doctor × every endpoint →
     success code; no token × every endpoint → `401`; a doctor with a real token then deactivated → `401`
     (`InteractsWithStaffTokens::usingToken()`); a receptionist with an invalid body or an unknown id →
     `403`, not `422` or `404`; existing queue, appointment, and patient responses contain no record data.
 
-- [ ] T044 [P] Extend `tests/Feature/Encounters/EncounterPrivacyTest.php` with the planted-text cases (SC-002, FR-021)
+- [X] T044 [P] Extend `tests/Feature/Encounters/EncounterPrivacyTest.php` with the planted-text cases (SC-002, FR-021)
   - Scope: plant `SYNTHETIC-PLANTED-TEXT` in every clinical field, a prescription line, and an addendum.
     Absent from:
     - `GET /doctors/me/visits` and the patient history, and the same with `DB::listen`: no query in
@@ -571,14 +571,14 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
       neither the response nor that file contains the text
     - raw values of the `encounters` and `encounter_addenda` tables
 
-- [ ] T045 [P] Write `tests/Feature/Encounters/EncountersMessagesTest.php` (FR-024, SC-006)
+- [X] T045 [P] Write `tests/Feature/Encounters/EncountersMessagesTest.php` (FR-024, SC-006)
   - Scope: for `en` and `ar`: `encounter_not_found`, `history_not_found`, `visit_not_found`,
     `visit_not_started`, `already_started`, `not_editable`, `required_to_finalize` with its translated
     attribute, `not_finalized`, a translated attribute name in a `required` message, a `max` message on
     `prescriptions.0.dosage`, `403` → `auth.forbidden`; JSON keys identical across locales; `status` and
     `record_status` values identical across locales; Arabic clinical text returned unchanged under `en`.
 
-- [ ] T046 [P] Update `docs/roadmap.md` and `README.md`
+- [X] T046 [P] Update `docs/roadmap.md` and `README.md`
   - Scope: Roadmap: 008 `Done` with the spec link and depends on `003, 004, 006, 007`; 009 `Next`.
     README: a short "Medical encounters" section after "Patient queues": the seven endpoints, doctors
     only; one record per visit; draft, finalized, and addenda; the access rule; clinical content is
@@ -587,14 +587,14 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
     `APP_PREVIOUS_KEYS`. Note that `docker compose build app` is needed after pulling this feature.
   - Verify: `postman spec lint specs/008-medical-encounters/contracts/encounters.openapi.yaml --issueType=syntax` → no issues.
 
-- [ ] T047 Run Pint and the full suite
+- [X] T047 Run Pint and the full suite
   - Verify:
     - `docker compose exec app vendor/bin/pint --test` → exit 0 (if not, run `vendor/bin/pint`, then re-run tests)
     - `docker compose exec app composer test` → all pass, exit 0, count above the T001 baseline
     - `docker compose exec app php artisan test --group=concurrency` → pass
   - Depends: T043, T044, T045, T046
 
-- [ ] T048 Measure SC-005 on `clinic_testing` only
+- [X] T048 Measure SC-005 on `clinic_testing` only
   - Scope: as feature 007's SC-004: in a transaction rolled back afterwards, 500 factory doctors, and
     500,000 queue entries and encounters bulk-inserted (one short fixed synthetic ciphertext; the clinical
     columns need not be realistic because the list queries do not select them); `paginateVisits` and
@@ -602,12 +602,12 @@ unchanged, the addendum appears when the record is opened, and another doctor ca
     is reported, not hidden.
   - Depends: T047
 
-- [ ] T049 Run quickstart Q1–Q9 from `specs/008-medical-encounters/quickstart.md` on the development stack
+- [X] T049 Run quickstart Q1–Q9 from `specs/008-medical-encounters/quickstart.md` on the development stack
   - Scope: synthetic data only. Record what was run.
   - Accept: every Q-step's expected outcome is observed.
   - Depends: T047
 
-- [ ] T050 Record the results in `specs/008-medical-encounters/verification.md`
+- [X] T050 Record the results in `specs/008-medical-encounters/verification.md`
   - Scope: per Q-step and SC-005: date, command, observed output summary, pass/fail; failures reported as
     failures (Constitution VIII). Postman collection update is a separate follow-up (as for 005, 006).
   - Depends: T048, T049
