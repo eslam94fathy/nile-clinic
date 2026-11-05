@@ -404,7 +404,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: all tests of T038 pass; `docker compose exec app php artisan test tests/Feature/Staff` → all pass unchanged; `docker compose exec app php artisan test --group=concurrency` → pass.
   - Depends: T038
 
-- [ ] T041 [US3] Write `tests/Feature/Audit/ConcurrentAuditTest.php` and `tests/Support/audit-action.php` (R10, Constitution XI)
+- [X] T041 [US3] Write `tests/Feature/Audit/ConcurrentAuditTest.php` and `tests/Support/audit-action.php` (R10, Constitution XI)
   - Scope:
     - Child script: same shape as `tests/Support/payment-action.php`, including refusing any database but `clinic_testing`, waiting for a shared start time, and printing one JSON line. It calls `Auth::setUser($actor)` before the action, so `actor_id` is real and the user row is locked. **The existing child scripts stay unchanged**: they never authenticate, so they cannot exercise that lock.
     - Test, with `#[Group('concurrency')]`, mirroring `ConcurrentPaymentTest`, with simultaneous processes in each scenario:
