@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  With `per_page=1` the page holds one doctor, and `totals` still covers them all.
+method: GET
+url: '{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}&per_page=1'
+order: 6000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'per_page'
+    value: '1'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with one row and totals over every page', () => {
+        pm.response.to.have.status(200);
+        const { data, totals, meta } = pm.response.json();
+        pm.expect(data.length).to.be.at.most(1);
+        pm.expect(meta.per_page).to.eql(1);
+        pm.expect(totals).to.have.property('balance');
+      });
+examples: './.resources/get billing for all doctors.resources/examples'

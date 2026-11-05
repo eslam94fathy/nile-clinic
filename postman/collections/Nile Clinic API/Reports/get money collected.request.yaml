@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Money received and refunded on these clinic days, by method, staff member, and day, for this doctor's charges. Without
+  `doctor_id` it covers the whole clinic. Only methods and days with money movement are listed.
+method: GET
+url: '{{base_url}}/reports/money-collected?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}'
+order: 1000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const piastres = (amount) => {
+        const [whole, fraction] = amount.replace('-', '').split('.');
+        const value = Number(whole) * 100 + Number(fraction);
+        return amount.startsWith('-') ? -value : value;
+      };
+      const sum = (rows, figure) => rows.reduce((total, row) => total + piastres(row[figure]), 0);
+      pm.test('200 and every breakdown adds up', () => {
+        pm.response.to.have.status(200);
+        const report = pm.response.json().data;
+        for (const figure of ['received', 'refunded', 'net']) {
+          pm.expect(sum(report.by_method, figure)).to.eql(piastres(report.totals[figure]));
+          pm.expect(sum(report.by_day, figure)).to.eql(piastres(report.totals[figure]));
+          for (const method of report.by_method) {
+            pm.expect(sum(method.staff, figure)).to.eql(piastres(method[figure]));
+          }
+        }
+        pm.expect(piastres(report.totals.received)).to.be.above(0);
+        pm.expect(report.by_day.map((day) => day.date)).to.eql([pm.collectionVariables.get('encounter_date')]);
+      });
+examples: './.resources/get money collected.resources/examples'

@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/money-collected?from=2026-11-05&to=2026-11-05&doctor_id=999999999'
+  method: GET
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"message":"No doctor was found."}
+order: 1000

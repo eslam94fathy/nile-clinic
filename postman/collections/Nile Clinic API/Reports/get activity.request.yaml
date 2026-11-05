@@ -1,0 +1,39 @@
+$kind: http-request
+description: |-
+  Appointments by status, the no-show rate, and visits, for this doctor. New patients are overall only, so they are left out
+  when `doctor_id` is sent.
+method: GET
+url: '{{base_url}}/reports/activity?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}'
+order: 7000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with counts and no new patients', () => {
+        pm.response.to.have.status(200);
+        const { data, totals } = pm.response.json();
+        pm.expect(data).to.have.lengthOf(1);
+        pm.expect(totals).to.not.have.property('new_patients');
+        pm.expect(totals.appointments).to.have.all.keys('scheduled', 'cancelled', 'no_show', 'checked_in', 'completed');
+        pm.expect(totals.visits).to.have.all.keys('waiting', 'with_doctor', 'seen', 'left', 'booked', 'walk_in');
+        pm.expect(totals.visits.booked + totals.visits.walk_in).to.eql(totals.visits.waiting + totals.visits.with_doctor + totals.visits.seen + totals.visits.left);
+      });
+examples: './.resources/get activity.resources/examples'

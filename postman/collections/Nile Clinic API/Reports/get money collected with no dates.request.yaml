@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  `from` and `to` are required on every report.
+method: GET
+url: '{{base_url}}/reports/money-collected'
+order: 2000
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('422 on from and to', () => {
+        pm.response.to.have.status(422);
+        const errors = pm.response.json().errors;
+        pm.expect(errors).to.have.property('from');
+        pm.expect(errors).to.have.property('to');
+      });
+examples: './.resources/get money collected with no dates.resources/examples'

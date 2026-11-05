@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Nile Clinic API",
-    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`,\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`, and\n`specs/009-payments/contracts/payments.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → Payments → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
+    "description": "Backend API of the Nile Clinic Management System (Laravel 13, `/api/v1`).\n\nContracts: `specs/001-project-foundation/contracts/health.openapi.yaml`,\n`specs/002-staff-auth-roles/contracts/staff-auth.openapi.yaml`,\n`specs/003-patient-records/contracts/patients.openapi.yaml`,\n`specs/004-doctors-specialties/contracts/doctors.openapi.yaml`,\n`specs/005-scheduling-availability/contracts/scheduling.openapi.yaml`,\n`specs/006-appointments/contracts/appointments.openapi.yaml`,\n`specs/007-patient-queues/contracts/queues.openapi.yaml`,\n`specs/008-medical-encounters/contracts/encounters.openapi.yaml`,\n`specs/009-payments/contracts/payments.openapi.yaml`, and\n`specs/010-reports/contracts/reports.openapi.yaml`.\n\n**Run order**: System → Auth/sign in (stores `token`) → Auth → Staff → Patients → Specialties →\nDoctors → Scheduling → Appointments → Queues → Encounters → Payments → Reports → clear weekly schedule → sign out. Select the **Nile Clinic Local** environment and set\n`admin_email` / `admin_password` to an administrator created with `php artisan\nstaff:create-admin`. All data must be synthetic.\n\nEvery request sends `Accept: application/json` and `Accept-Language: {{locale}}` (`en` or `ar`);\nfield names and structure are identical in both locales, only `message` texts change.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -13662,6 +13662,1292 @@
       ]
     },
     {
+      "name": "Reports",
+      "description": "Read-only summaries over a period of up to 366 days (feature 010). For administrators only; receptionists and\ndoctors get 403 on every report. No report identifies a patient or contains medical content. Money is in Egyptian\npounds, returned as strings such as `\"150.00\"`, and `net` can be negative. Money collected counts on the clinic day\nit was recorded; billing and activity show records as they stand now.\n\nRuns after Payments (uses `encounter_date`, `doctor_id`, and `new_doctor_email`). The administrator's `token` is used\nthroughout, so the receptionist's refusal is covered by the automated tests rather than this folder. Contract:\n`specs/010-reports/contracts/reports.openapi.yaml`.",
+      "item": [
+        {
+          "name": "get money collected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const piastres = (amount) => {",
+                  "  const [whole, fraction] = amount.replace('-', '').split('.');",
+                  "  const value = Number(whole) * 100 + Number(fraction);",
+                  "  return amount.startsWith('-') ? -value : value;",
+                  "};",
+                  "const sum = (rows, figure) => rows.reduce((total, row) => total + piastres(row[figure]), 0);",
+                  "pm.test('200 and every breakdown adds up', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const report = pm.response.json().data;",
+                  "  for (const figure of ['received', 'refunded', 'net']) {",
+                  "    pm.expect(sum(report.by_method, figure)).to.eql(piastres(report.totals[figure]));",
+                  "    pm.expect(sum(report.by_day, figure)).to.eql(piastres(report.totals[figure]));",
+                  "    for (const method of report.by_method) {",
+                  "      pm.expect(sum(method.staff, figure)).to.eql(piastres(method[figure]));",
+                  "    }",
+                  "  }",
+                  "  pm.expect(piastres(report.totals.received)).to.be.above(0);",
+                  "  pm.expect(report.by_day.map((day) => day.date)).to.eql([pm.collectionVariables.get('encounter_date')]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/money-collected?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "money-collected"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                }
+              ]
+            },
+            "description": "Money received and refunded on these clinic days, by method, staff member, and day, for this doctor's charges. Without\n`doctor_id` it covers the whole clinic. Only methods and days with money movement are listed."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/money-collected?from=2026-11-05&to=2026-11-05&doctor_id=27",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "money-collected"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "27"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":{\"from\":\"2026-11-05\",\"to\":\"2026-11-05\",\"totals\":{\"received\":\"300.00\",\"refunded\":\"300.00\",\"net\":\"0.00\"},\"by_method\":[{\"method\":\"cash\",\"received\":\"100.10\",\"refunded\":\"300.00\",\"net\":\"-199.90\",\"staff\":[{\"id\":66,\"name\":\"Cecelia Howe\",\"received\":\"100.10\",\"refunded\":\"300.00\",\"net\":\"-199.90\"}]},{\"method\":\"card\",\"received\":\"199.90\",\"refunded\":\"0.00\",\"net\":\"199.90\",\"staff\":[{\"id\":66,\"name\":\"Cecelia Howe\",\"received\":\"199.90\",\"refunded\":\"0.00\",\"net\":\"199.90\"}]}],\"by_day\":[{\"date\":\"2026-11-05\",\"received\":\"300.00\",\"refunded\":\"300.00\",\"net\":\"0.00\"}]}}"
+            }
+          ]
+        },
+        {
+          "name": "get money collected with no dates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on from and to', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  const errors = pm.response.json().errors;",
+                  "  pm.expect(errors).to.have.property('from');",
+                  "  pm.expect(errors).to.have.property('to');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/money-collected",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "money-collected"
+              ]
+            },
+            "description": "`from` and `to` are required on every report."
+          },
+          "response": [
+            {
+              "name": "422 No dates",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/money-collected",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "money-collected"
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The from date field is required. (and 1 more error)\",\"errors\":{\"from\":[\"The from date field is required.\"],\"to\":[\"The to date field is required.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get money collected over too long a period",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 on to', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('to');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/money-collected?from=2026-01-01&to=2027-01-02",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "money-collected"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2027-01-02"
+                }
+              ]
+            },
+            "description": "A period is at most 366 days, including both ends. This one is 367."
+          },
+          "response": [
+            {
+              "name": "422 Range too long",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/money-collected?from=2026-01-01&to=2027-01-02",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "money-collected"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2027-01-02"
+                    }
+                  ]
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"The period cannot be longer than 366 days.\",\"errors\":{\"to\":[\"The period cannot be longer than 366 days.\"]}}"
+            }
+          ]
+        },
+        {
+          "name": "get money collected for an unknown doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 for an unknown doctor', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/money-collected?from={{encounter_date}}&to={{encounter_date}}&doctor_id=999999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "money-collected"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "999999999"
+                }
+              ]
+            },
+            "description": "An unknown doctor is 404 on every report. A known doctor with no activity gives zero totals."
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/money-collected?from=2026-11-05&to=2026-11-05&doctor_id=999999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "money-collected"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "999999999"
+                    }
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"No doctor was found.\"}"
+            }
+          ]
+        },
+        {
+          "name": "get billing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const piastres = (amount) => {",
+                  "  const [whole, fraction] = amount.replace('-', '').split('.');",
+                  "  const value = Number(whole) * 100 + Number(fraction);",
+                  "  return amount.startsWith('-') ? -value : value;",
+                  "};",
+                  "const sum = (rows, figure) => rows.reduce((total, row) => total + piastres(row[figure]), 0);",
+                  "pm.test('200 with one doctor and figures that agree', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, totals } = pm.response.json();",
+                  "  pm.expect(data).to.have.lengthOf(1);",
+                  "  pm.expect(data[0].doctor.id).to.eql(Number(pm.collectionVariables.get('doctor_id')));",
+                  "  pm.expect(piastres(totals.amount_due)).to.eql(piastres(totals.fees) - piastres(totals.discounts));",
+                  "  pm.expect(piastres(totals.balance)).to.eql(piastres(totals.amount_due) - piastres(totals.amount_paid));",
+                  "  pm.expect(totals.active_charges).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "billing"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "What this doctor's visits were charged and what is owed, as charges stand now, with seen visits that were never charged.\nCancelled charges are only counted. Doctors are paged by account name; `totals` covers every doctor."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "billing"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "27"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":27,\"name\":\"Postman Doctor\",\"title\":\"Senior Consultant\"},\"active_charges\":1,\"fees\":\"400.00\",\"discounts\":\"400.00\",\"amount_due\":\"0.00\",\"amount_paid\":\"0.00\",\"balance\":\"0.00\",\"cancelled_charges\":2,\"uncharged_seen_visits\":2}],\"links\":{\"first\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"last\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http://localhost:8080/api/v1/reports/billing\",\"per_page\":15,\"to\":1,\"total\":1},\"totals\":{\"active_charges\":1,\"fees\":\"400.00\",\"discounts\":\"400.00\",\"amount_due\":\"0.00\",\"amount_paid\":\"0.00\",\"balance\":\"0.00\",\"cancelled_charges\":2,\"uncharged_seen_visits\":2}}"
+            }
+          ]
+        },
+        {
+          "name": "get billing for all doctors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with one row and totals over every page', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, totals, meta } = pm.response.json();",
+                  "  pm.expect(data.length).to.be.at.most(1);",
+                  "  pm.expect(meta.per_page).to.eql(1);",
+                  "  pm.expect(totals).to.have.property('balance');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}&per_page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "billing"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "per_page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "With `per_page=1` the page holds one doctor, and `totals` still covers them all."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "billing"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":26,\"name\":\"Arvilla Zboncak\",\"title\":\"Consultant\"},\"active_charges\":1,\"fees\":\"300.00\",\"discounts\":\"0.00\",\"amount_due\":\"300.00\",\"amount_paid\":\"150.00\",\"balance\":\"150.00\",\"cancelled_charges\":1,\"uncharged_seen_visits\":1}],\"links\":{\"first\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=1\",\"last\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=15\",\"prev\":null,\"next\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=2\"},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":15,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=2\",\"label\":\"2\",\"page\":2,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=3\",\"label\":\"3\",\"page\":3,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=4\",\"label\":\"4\",\"page\":4,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=5\",\"label\":\"5\",\"page\":5,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=6\",\"label\":\"6\",\"page\":6,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=7\",\"label\":\"7\",\"page\":7,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=8\",\"label\":\"8\",\"page\":8,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=9\",\"label\":\"9\",\"page\":9,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=10\",\"label\":\"10\",\"page\":10,\"active\":false},{\"url\":null,\"label\":\"...\",\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=14\",\"label\":\"14\",\"page\":14,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=15\",\"label\":\"15\",\"page\":15,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/billing?from=2026-11-05&to=2026-11-05&per_page=1&page=2\",\"label\":\"Next &raquo;\",\"page\":2,\"active\":false}],\"path\":\"http://localhost:8080/api/v1/reports/billing\",\"per_page\":1,\"to\":1,\"total\":15},\"totals\":{\"active_charges\":7,\"fees\":\"2700.00\",\"discounts\":\"2000.00\",\"amount_due\":\"700.00\",\"amount_paid\":\"150.00\",\"balance\":\"550.00\",\"cancelled_charges\":11,\"uncharged_seen_visits\":23}}"
+            }
+          ]
+        },
+        {
+          "name": "get activity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with counts and no new patients', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, totals } = pm.response.json();",
+                  "  pm.expect(data).to.have.lengthOf(1);",
+                  "  pm.expect(totals).to.not.have.property('new_patients');",
+                  "  pm.expect(totals.appointments).to.have.all.keys('scheduled', 'cancelled', 'no_show', 'checked_in', 'completed');",
+                  "  pm.expect(totals.visits).to.have.all.keys('waiting', 'with_doctor', 'seen', 'left', 'booked', 'walk_in');",
+                  "  pm.expect(totals.visits.booked + totals.visits.walk_in).to.eql(totals.visits.waiting + totals.visits.with_doctor + totals.visits.seen + totals.visits.left);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/activity?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "activity"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Appointments by status, the no-show rate, and visits, for this doctor. New patients are overall only, so they are left out\nwhen `doctor_id` is sent."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/activity?from=2026-11-05&to=2026-11-05&doctor_id=27",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "activity"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "27"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":27,\"name\":\"Postman Doctor\",\"title\":\"Senior Consultant\"},\"appointments\":{\"scheduled\":1,\"cancelled\":0,\"no_show\":0,\"checked_in\":0,\"completed\":1},\"no_show_rate\":0,\"visits\":{\"waiting\":0,\"with_doctor\":0,\"seen\":3,\"left\":1,\"booked\":1,\"walk_in\":3}}],\"links\":{\"first\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"last\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http://localhost:8080/api/v1/reports/activity\",\"per_page\":15,\"to\":1,\"total\":1},\"totals\":{\"appointments\":{\"scheduled\":1,\"cancelled\":0,\"no_show\":0,\"checked_in\":0,\"completed\":1},\"no_show_rate\":0,\"visits\":{\"waiting\":0,\"with_doctor\":0,\"seen\":3,\"left\":1,\"booked\":1,\"walk_in\":3}}}"
+            }
+          ]
+        },
+        {
+          "name": "get activity for all doctors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with new patients', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().totals.new_patients).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/activity?from={{encounter_date}}&to={{encounter_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "activity"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                }
+              ]
+            },
+            "description": "Without `doctor_id`, `totals` also has `new_patients`, counted on the clinic day each was registered."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "activity"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":26,\"name\":\"Arvilla Zboncak\",\"title\":\"Consultant\"},\"appointments\":{\"scheduled\":0,\"cancelled\":0,\"no_show\":0,\"checked_in\":0,\"completed\":0},\"no_show_rate\":null,\"visits\":{\"waiting\":1,\"with_doctor\":0,\"seen\":2,\"left\":0,\"booked\":0,\"walk_in\":3}}],\"links\":{\"first\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=1\",\"last\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=16\",\"prev\":null,\"next\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=2\"},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":16,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=2\",\"label\":\"2\",\"page\":2,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=3\",\"label\":\"3\",\"page\":3,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=4\",\"label\":\"4\",\"page\":4,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=5\",\"label\":\"5\",\"page\":5,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=6\",\"label\":\"6\",\"page\":6,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=7\",\"label\":\"7\",\"page\":7,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=8\",\"label\":\"8\",\"page\":8,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=9\",\"label\":\"9\",\"page\":9,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=10\",\"label\":\"10\",\"page\":10,\"active\":false},{\"url\":null,\"label\":\"...\",\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=15\",\"label\":\"15\",\"page\":15,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=16\",\"label\":\"16\",\"page\":16,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/activity?from=2026-11-05&to=2026-11-05&per_page=1&page=2\",\"label\":\"Next &raquo;\",\"page\":2,\"active\":false}],\"path\":\"http://localhost:8080/api/v1/reports/activity\",\"per_page\":1,\"to\":1,\"total\":16},\"totals\":{\"appointments\":{\"scheduled\":8,\"cancelled\":0,\"no_show\":0,\"checked_in\":1,\"completed\":8},\"no_show_rate\":0,\"visits\":{\"waiting\":5,\"with_doctor\":0,\"seen\":27,\"left\":8,\"booked\":9,\"walk_in\":31},\"new_patients\":30}}"
+            }
+          ]
+        },
+        {
+          "name": "get times",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with whole minutes and record counts', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const { data, totals } = pm.response.json();",
+                  "  pm.expect(data).to.have.lengthOf(1);",
+                  "  pm.expect(Number.isInteger(totals.wait.average_minutes)).to.eql(true);",
+                  "  pm.expect(Number.isInteger(totals.consultation.average_minutes)).to.eql(true);",
+                  "  pm.expect(totals.records).to.have.all.keys('finalized', 'draft', 'none');",
+                  "  pm.expect(totals.records.finalized).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reports/times?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "times"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Average wait and consultation in whole minutes, each with the number of visits it covers, and counts of seen visits by the\nstate of their medical record. It holds no clinical content."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "times"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "doctor_id",
+                      "value": "27"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\":[{\"doctor\":{\"id\":27,\"name\":\"Postman Doctor\",\"title\":\"Senior Consultant\"},\"wait\":{\"average_minutes\":0,\"visits\":3},\"consultation\":{\"average_minutes\":0,\"visits\":3},\"records\":{\"finalized\":1,\"draft\":0,\"none\":2}}],\"links\":{\"first\":\"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"last\":\"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"prev\":null,\"next\":null},\"meta\":{\"current_page\":1,\"from\":1,\"last_page\":1,\"links\":[{\"url\":null,\"label\":\"&laquo; Previous\",\"page\":null,\"active\":false},{\"url\":\"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1\",\"label\":\"1\",\"page\":1,\"active\":true},{\"url\":null,\"label\":\"Next &raquo;\",\"page\":null,\"active\":false}],\"path\":\"http://localhost:8080/api/v1/reports/times\",\"per_page\":15,\"to\":1,\"total\":1},\"totals\":{\"wait\":{\"average_minutes\":0,\"visits\":3},\"consultation\":{\"average_minutes\":0,\"visits\":3},\"records\":{\"finalized\":1,\"draft\":0,\"none\":2}}}"
+            }
+          ]
+        },
+        {
+          "name": "sign in as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a doctor token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.collectionVariables.set('doctor_token', pm.response.json().data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{new_doctor_email}}\",\n  \"password\": \"postman-doctor-pass-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-in"
+              ]
+            },
+            "description": "Setup for the refusal check: signs in the doctor and stores the token in `doctor_token`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-in",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-in"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"data\": {\"token\": \"1|<plain-text token, shown once>\", \"token_type\": \"Bearer\", \"user\": {\"id\": 9, \"name\": \"Synthetic Doctor\", \"email\": \"doctor@clinic.test\", \"role\": \"doctor\", \"is_active\": true}}}"
+            }
+          ]
+        },
+        {
+          "name": "get billing as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 for a doctor', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "billing"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{encounter_date}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{encounter_date}}"
+                }
+              ]
+            },
+            "description": "Reports are for administrators only: 403 on every report, before validation and lookup."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/reports/billing?from=2026-11-05&to=2026-11-05",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reports",
+                    "billing"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-11-05"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-05"
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"message\":\"You are not allowed to perform this action.\"}"
+            }
+          ]
+        },
+        {
+          "name": "sign out as doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 signed out', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  pm.collectionVariables.set('doctor_token', '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/sign-out",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": "Clean-up: ends the doctor's token and clears `doctor_token`. The administrator stays signed in."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/sign-out",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "sign-out"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "clear weekly schedule",
       "event": [
         {
@@ -13931,7 +15217,7 @@
     {
       "key": "doctor_token",
       "value": "",
-      "description": "Set by the \"sign in as doctor\" requests in Queues, Encounters, and Payments; cleared by their \"sign out as doctor\" requests."
+      "description": "Set by the \"sign in as doctor\" requests in Queues, Encounters, Payments, and Reports; cleared by their \"sign out as doctor\" requests."
     },
     {
       "key": "encounter_id",

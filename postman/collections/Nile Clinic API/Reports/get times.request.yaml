@@ -1,0 +1,39 @@
+$kind: http-request
+description: |-
+  Average wait and consultation in whole minutes, each with the number of visits it covers, and counts of seen visits by the
+  state of their medical record. It holds no clinical content.
+method: GET
+url: '{{base_url}}/reports/times?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}'
+order: 9000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('200 with whole minutes and record counts', () => {
+        pm.response.to.have.status(200);
+        const { data, totals } = pm.response.json();
+        pm.expect(data).to.have.lengthOf(1);
+        pm.expect(Number.isInteger(totals.wait.average_minutes)).to.eql(true);
+        pm.expect(Number.isInteger(totals.consultation.average_minutes)).to.eql(true);
+        pm.expect(totals.records).to.have.all.keys('finalized', 'draft', 'none');
+        pm.expect(totals.records.finalized).to.be.above(0);
+      });
+examples: './.resources/get times.resources/examples'

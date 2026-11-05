@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: '{{base_url}}/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27'
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {"data":[{"doctor":{"id":27,"name":"Postman Doctor","title":"Senior Consultant"},"wait":{"average_minutes":0,"visits":3},"consultation":{"average_minutes":0,"visits":3},"records":{"finalized":1,"draft":0,"none":2}}],"links":{"first":"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","last":"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","prev":null,"next":null},"meta":{"current_page":1,"from":1,"last_page":1,"links":[{"url":null,"label":"&laquo; Previous","page":null,"active":false},{"url":"http://localhost:8080/api/v1/reports/times?from=2026-11-05&to=2026-11-05&doctor_id=27&page=1","label":"1","page":1,"active":true},{"url":null,"label":"Next &raquo;","page":null,"active":false}],"path":"http://localhost:8080/api/v1/reports/times","per_page":15,"to":1,"total":1},"totals":{"wait":{"average_minutes":0,"visits":3},"consultation":{"average_minutes":0,"visits":3},"records":{"finalized":1,"draft":0,"none":2}}}
+order: 1000

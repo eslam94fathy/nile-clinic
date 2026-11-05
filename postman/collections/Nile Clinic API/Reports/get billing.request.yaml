@@ -1,0 +1,45 @@
+$kind: http-request
+description: |-
+  What this doctor's visits were charged and what is owed, as charges stand now, with seen visits that were never charged.
+  Cancelled charges are only counted. Doctors are paged by account name; `totals` covers every doctor.
+method: GET
+url: '{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}&doctor_id={{doctor_id}}'
+order: 5000
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+  - key: 'doctor_id'
+    value: '{{doctor_id}}'
+  - key: 'page'
+    value: '1'
+    disabled: true
+  - key: 'per_page'
+    value: '15'
+    disabled: true
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const piastres = (amount) => {
+        const [whole, fraction] = amount.replace('-', '').split('.');
+        const value = Number(whole) * 100 + Number(fraction);
+        return amount.startsWith('-') ? -value : value;
+      };
+      const sum = (rows, figure) => rows.reduce((total, row) => total + piastres(row[figure]), 0);
+      pm.test('200 with one doctor and figures that agree', () => {
+        pm.response.to.have.status(200);
+        const { data, totals } = pm.response.json();
+        pm.expect(data).to.have.lengthOf(1);
+        pm.expect(data[0].doctor.id).to.eql(Number(pm.collectionVariables.get('doctor_id')));
+        pm.expect(piastres(totals.amount_due)).to.eql(piastres(totals.fees) - piastres(totals.discounts));
+        pm.expect(piastres(totals.balance)).to.eql(piastres(totals.amount_due) - piastres(totals.amount_paid));
+        pm.expect(totals.active_charges).to.be.above(0);
+      });
+examples: './.resources/get billing.resources/examples'

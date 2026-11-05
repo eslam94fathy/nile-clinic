@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Reports are for administrators only: 403 on every report, before validation and lookup.
+method: GET
+url: '{{base_url}}/reports/billing?from={{encounter_date}}&to={{encounter_date}}'
+order: 11000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{doctor_token}}'
+queryParams:
+  - key: 'from'
+    value: '{{encounter_date}}'
+  - key: 'to'
+    value: '{{encounter_date}}'
+headers:
+  - key: 'Accept'
+    value: 'application/json'
+  - key: 'Accept-Language'
+    value: '{{locale}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('403 for a doctor', () => pm.response.to.have.status(403));
+examples: './.resources/get billing as doctor.resources/examples'
