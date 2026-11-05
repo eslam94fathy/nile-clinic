@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 // repositories.
 
 Route::middleware('auth:sanctum')->prefix('doctors/me')->group(function () {
+    Route::get('/visits', [OwnVisitController::class, 'index'])->name('encounters.visits');
+
     Route::whereNumber('visit')->group(function () {
         Route::post('/visits/{visit}/encounter', [OwnVisitController::class, 'start'])->name('encounters.start');
     });

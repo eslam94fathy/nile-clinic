@@ -3,11 +3,14 @@
 namespace App\Modules\Encounters\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Encounters\Http\Requests\ListOwnVisitsRequest;
 use App\Modules\Encounters\Http\Resources\EncounterResource;
+use App\Modules\Encounters\Http\Resources\VisitResource;
 use App\Modules\Encounters\Models\Encounter;
 use App\Modules\Encounters\Services\EncounterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -19,6 +22,13 @@ class OwnVisitController extends Controller
     public function __construct(
         private readonly EncounterService $encounters,
     ) {}
+
+    public function index(ListOwnVisitsRequest $request): AnonymousResourceCollection
+    {
+        return VisitResource::collection(
+            $this->encounters->listVisits($request->user(), $request->filters(), $request->perPage()),
+        );
+    }
 
     public function start(Request $request, int $visit): JsonResponse
     {

@@ -3,6 +3,8 @@
 namespace App\Modules\Encounters\Repositories\Contracts;
 
 use App\Modules\Encounters\Models\Encounter;
+use App\Modules\Queues\Models\QueueEntry;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface EncounterRepository
 {
@@ -32,4 +34,14 @@ interface EncounterRepository
      * (research R3).
      */
     public function existsForVisit(int $queueEntryId): bool;
+
+    /**
+     * One page of the doctor's visits that are with the doctor or seen, by date, then queue order,
+     * with the patient loaded and `encounter_id` and `encounter_status` selected (research R9). No
+     * clinical column is selected, so a listing cannot return clinical content (FR-018).
+     *
+     * @param  array{from: string, to: string, patient_id?: int, record_status?: string}  $filters
+     * @return LengthAwarePaginator<int, QueueEntry>
+     */
+    public function paginateVisits(int $doctorId, array $filters, int $perPage): LengthAwarePaginator;
 }

@@ -10,8 +10,10 @@ use App\Modules\Encounters\Exceptions\VisitNotFoundException;
 use App\Modules\Encounters\Models\Encounter;
 use App\Modules\Encounters\Repositories\Contracts\EncounterRepository;
 use App\Modules\Queues\Enums\QueueStatus;
+use App\Modules\Queues\Models\QueueEntry;
 use App\Modules\Queues\Repositories\Contracts\QueueRepository;
 use App\Modules\Staff\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -65,6 +67,19 @@ class EncounterService
         }, attempts: 3);
 
         return $this->find($encounter->id);
+    }
+
+    /**
+     * The doctor's visits with their record status (FR-016).
+     *
+     * @param  array{from: string, to: string, patient_id?: int, record_status?: string}  $filters
+     * @return LengthAwarePaginator<int, QueueEntry>
+     *
+     * @throws DoctorNotFoundException when the doctor has no profile
+     */
+    public function listVisits(User $user, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->encounters->paginateVisits($this->doctors->findOwn($user)->id, $filters, $perPage);
     }
 
     /**

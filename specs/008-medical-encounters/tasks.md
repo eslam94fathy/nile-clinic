@@ -381,7 +381,7 @@ Filter by each record status and confirm the expected visit is returned with no 
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T027 [US3] Write `tests/Feature/Encounters/OwnVisitListTest.php` (US3-1…3, FR-016, FR-018, R9)
+- [X] T027 [US3] Write `tests/Feature/Encounters/OwnVisitListTest.php` (US3-1…3, FR-016, FR-018, R9)
   - Scope: clock fixed; doctor D with visits: no record, draft, finalized (`seen` or `with_doctor`), plus
     a `waiting` and a `left` entry, plus another doctor's visit.
     - `GET /doctors/me/visits?from&to` → `200`, the three visits in date then queue order; each exactly
@@ -397,7 +397,7 @@ Filter by each record status and confirm the expected visit is returned with no 
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Add `paginateVisits` to `EncounterRepository` / `EloquentEncounterRepository` (R9)
+- [X] T028 [US3] Add `paginateVisits` to `EncounterRepository` / `EloquentEncounterRepository` (R9)
   - Scope: `paginateVisits(int $doctorId, array $filters, int $perPage): LengthAwarePaginator<int,
     QueueEntry>`: `QueueEntry::query()`, `select('queue_entries.*', 'encounters.id as encounter_id',
     'encounters.status as encounter_status')`, left join `encounters` on `queue_entry_id`; the doctor;
@@ -406,7 +406,7 @@ Filter by each record status and confirm the expected visit is returned with no 
     `order_minute`, `queue_number`; `with('patient')`; `withQueryString()`. **No clinical column is
     selected** (FR-018).
 
-- [ ] T029 [US3] Create `app/Modules/Encounters/Http/Requests/ListOwnVisitsRequest.php` and add `listVisits()` to `EncounterService`
+- [X] T029 [US3] Create `app/Modules/Encounters/Http/Requests/ListOwnVisitsRequest.php` and add `listVisits()` to `EncounterService`
   - Scope: request mirrors `ListOwnAppointmentsRequest`: `authorize()` → `can('access', Encounter::class)`;
     `from`, `to` required `date_format:Y-m-d`, `to` `after_or_equal:from`; `patient_id` nullable integer
     min 1; `record_status` nullable, in `none`, `draft`, `finalized`; `page` nullable integer min 1;
@@ -415,12 +415,12 @@ Filter by each record status and confirm the expected visit is returned with no 
     `listVisits(User $user, array $filters, int $perPage)` → `paginateVisits(findOwn($user)->id, ...)`.
   - Depends: T028
 
-- [ ] T030 [P] [US3] Create `app/Modules/Encounters/Http/Resources/VisitResource.php`
+- [X] T030 [P] [US3] Create `app/Modules/Encounters/Http/Resources/VisitResource.php`
   - Scope: exactly the contract's `Visit`: `id`, `date`, `walk_in` (`appointment_id === null`),
     `arrived_at`, `called_at`, `finished_at` (`toISOString()`, nullable), `record_status`
     (`encounter_status ?? 'none'`), `encounter_id`, `patient` `{id, full_name, sex, date_of_birth}`.
 
-- [ ] T031 [US3] Add `index()` to `app/Modules/Encounters/Http/Controllers/OwnVisitController.php` and the route
+- [X] T031 [US3] Add `index()` to `app/Modules/Encounters/Http/Controllers/OwnVisitController.php` and the route
   - Scope: `index(ListOwnVisitsRequest)` → `VisitResource::collection(...)`. Route:
     `GET /doctors/me/visits` `encounters.visits`.
   - Accept: T027 passes.
