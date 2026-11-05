@@ -6,6 +6,8 @@ use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Audit\Repositories\Contracts\AuditEntryRepository;
 use App\Modules\Audit\Repositories\EloquentAuditEntryRepository;
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use RuntimeException;
 
 trait InteractsWithAuditEntries
@@ -50,6 +52,11 @@ trait InteractsWithAuditEntries
             public function append(array $attributes): AuditEntry
             {
                 throw new RuntimeException('Forced audit failure.');
+            }
+
+            public function search(array $filters, ?CarbonImmutable $start, ?CarbonImmutable $end, int $perPage): CursorPaginator
+            {
+                return $this->real->search($filters, $start, $end, $perPage);
             }
         });
     }

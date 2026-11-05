@@ -167,7 +167,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 ### Search
 
-- [ ] T012 [P] [US1] Write `tests/Feature/Audit/AuditSearchTest.php` — failing first (FR-009, FR-010, FR-012)
+- [X] T012 [P] [US1] Write `tests/Feature/Audit/AuditSearchTest.php` — failing first (FR-009, FR-010, FR-012)
   - Scope, using `AuditEntry::factory()`:
     - each filter alone, and several together;
     - `subject_type` with `subject_id`, including entries whose record no longer exists;
@@ -180,24 +180,24 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
     - unknown `staff_id` or `patient_id` → `200` with an empty `data`.
   - Verify: `--filter=AuditSearchTest` → fails (no route yet).
 
-- [ ] T013 [P] [US1] Write `tests/Feature/Audit/AuditValidationTest.php` — failing first (FR-009, data-model "Validation")
+- [X] T013 [P] [US1] Write `tests/Feature/Audit/AuditValidationTest.php` — failing first (FR-009, data-model "Validation")
   - Scope: `422` for a malformed `from`, `to` before `from`, `subject_type` not in the enum, `subject_id` without `subject_type` and the reverse, an `action` or `outcome` not in the enum, `staff_id` `0`, `per_page` `0` and `101`, and a `cursor` of `not-a-cursor` and of a validly encoded value with no `id`. `200` for no filters, and for a period longer than 366 days.
   - Verify: `--filter=AuditValidationTest` → fails.
 
-- [ ] T014 [P] [US1] Write `tests/Feature/Audit/AuditEntryPolicyTest.php` — failing first (FR-013)
+- [X] T014 [P] [US1] Write `tests/Feature/Audit/AuditEntryPolicyTest.php` — failing first (FR-013)
   - Scope: as `PaymentsPolicyTest`: every role, active and inactive, with `viewAny`; only the active administrator is allowed.
   - Verify: `--filter=AuditEntryPolicyTest` → fails.
 
-- [ ] T015 [P] [US1] Create the translations `app/Modules/Audit/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
+- [X] T015 [P] [US1] Create the translations `app/Modules/Audit/lang/en/messages.php`, `lang/ar/messages.php`, `lang/en/attributes.php`, `lang/ar/attributes.php`
   - Scope: messages (`__('audit::messages.<key>')`), en / ar: `invalid_cursor`: "The cursor is not valid." / "المؤشر غير صالح."
     Attributes en / ar: `from` "from date" / "تاريخ البداية"; `to` "to date" / "تاريخ النهاية"; `staff_id` "staff member" / "الموظف"; `patient_id` "patient" / "المريض"; `subject_type` "record type" / "نوع السجل"; `subject_id` "record" / "السجل"; `action` "action" / "الإجراء"; `outcome` "outcome" / "النتيجة"; `per_page` "items per page" / "عدد العناصر في الصفحة"; `cursor` "cursor" / "المؤشر".
   - Verify: `docker compose exec app php artisan test --filter=TranslationParityTest` → pass
 
-- [ ] T016 [US1] Create `app/Modules/Audit/Policies/AuditEntryPolicy.php`, registered in `AuditServiceProvider`
+- [X] T016 [US1] Create `app/Modules/Audit/Policies/AuditEntryPolicy.php`, registered in `AuditServiceProvider`
   - Scope: `viewAny(User $actor): bool` → `$actor->is_active && $actor->role === Role::Administrator`. `Gate::policy(AuditEntry::class, AuditEntryPolicy::class)`.
   - Verify: `--filter=AuditEntryPolicyTest` → pass.
 
-- [ ] T017 [US1] Create `app/Modules/Audit/Http/Requests/SearchAuditEntriesRequest.php`
+- [X] T017 [US1] Create `app/Modules/Audit/Http/Requests/SearchAuditEntriesRequest.php`
   - Scope: `authorize()` → `$this->user()->can('viewAny', AuditEntry::class)`. Rules, as `ListChargesRequest`:
     - `from`: `nullable`, `date_format:Y-m-d`; `to`: `nullable`, `date_format:Y-m-d`, `after_or_equal:from`;
     - `staff_id`, `patient_id`: `nullable`, `integer`, `min:1`;
@@ -208,16 +208,16 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: `--filter=AuditValidationTest` → pass once the route exists (T019).
   - Depends: T015, T016
 
-- [ ] T018 [US1] Add `search` to `AuditEntryRepository` and `EloquentAuditEntryRepository`, and create `app/Modules/Audit/Services/AuditSearchService.php` (R9, R10, approved D5)
+- [X] T018 [US1] Add `search` to `AuditEntryRepository` and `EloquentAuditEntryRepository`, and create `app/Modules/Audit/Services/AuditSearchService.php` (R9, R10, approved D5)
   - Scope:
     - Add a pass-through `search` to the wrapper in `failAuditWrites` (T009), so that it still satisfies the contract.
     - Repository `search(array $filters, ?CarbonImmutable $start, ?CarbonImmutable $end, int $perPage): CursorPaginator`: `with('actor:id,name')`; `when` per filter; `created_at >= $start` and `created_at < $end`; `staff_id` as `where(fn ($q) => $q->where('actor_id', $id)->orWhere(fn ($q) => $q->where('subject_type', 'staff_member')->where('subject_id', $id)))`; `orderByDesc('id')`; `cursorPaginate($perPage)->withQueryString()`.
     - Service `search(array $filters, int $perPage): CursorPaginator`: converts `from` to the start of that clinic day and `to` to the start of the next clinic day, both in UTC, through `ClinicClock::timezone()`, and calls the repository. Search recording is added in T042.
   - Depends: T017
 
-- [ ] T019 [US1] Create `app/Modules/Audit/Http/Resources/AuditEntryResource.php` and `app/Modules/Audit/Http/Controllers/AuditEntryController.php`; add the route to `app/Modules/Audit/routes/api.php`
+- [X] T019 [US1] Create `app/Modules/Audit/Http/Resources/AuditEntryResource.php` and `app/Modules/Audit/Http/Controllers/AuditEntryController.php`; add the route to `app/Modules/Audit/routes/api.php`
   - Scope: exactly the contract's `AuditEntry`:
-    - `occurred_at`: `created_at->toIso8601String()`; `actor`: `{type, id, name, role}`, `name` from the relation;
+    - `occurred_at`: `created_at->toISOString()`, as the project's other resources; `actor`: `{type, id, name, role}`, `name` from the relation;
     - `subject`: `{type, id}` or `null`; `changes`: `{fields, values}` when `details.fields` exists, else `null`; `filters`: `details.filters` or `null`.
     Controller: `index(SearchAuditEntriesRequest $request): AnonymousResourceCollection`. Route: `GET /audit-entries`, named `audit.entries.index`. No other route (FR-014).
   - Verify: `--filter='AuditSearchTest|AuditValidationTest'` → pass. `php artisan route:list --path=audit-entries` → only `GET`.
@@ -225,26 +225,26 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 ### Patients and money
 
-- [ ] T020 [US1] Start `tests/Feature/Audit/AuditActionCoverageTest.php` and write `tests/Feature/Audit/AuditAtomicityTest.php` and `tests/Feature/Audit/AuditNoChangeTest.php` for Patients — failing first (SC-001, SC-004, US1 scenarios 1, 2, 5)
+- [X] T020 [US1] Start `tests/Feature/Audit/AuditActionCoverageTest.php` and write `tests/Feature/Audit/AuditAtomicityTest.php` and `tests/Feature/Audit/AuditNoChangeTest.php` for Patients — failing first (SC-001, SC-004, US1 scenarios 1, 2, 5)
   - Scope:
     - Coverage: `test_patient_registered`, `test_patient_updated`: actor, role, address, subject, `patient_id`, `fields`, and empty `values`.
     - Atomicity: with `failAuditWrites()`, updating a patient returns a general `500`, and the phone is unchanged; registering leaves no patient. A `422` on update leaves no entry.
     - No change: the same update twice gives one entry.
   - Verify: `--filter='AuditActionCoverageTest|AuditAtomicityTest|AuditNoChangeTest'` → fails.
 
-- [ ] T021 [US1] Record Patients changes in `app/Modules/Patients/Services/PatientService.php` (R3, approved D2, D3)
+- [X] T021 [US1] Record Patients changes in `app/Modules/Patients/Services/PatientService.php` (R3, approved D2, D3)
   - Scope: inject `AuditTrail`. `register`: `guardUniqueNationalId(fn () => DB::transaction(...))`, with the repository call followed by `recordChanges(AuditAction::PatientRegistered, $patient, AuditSubject::Patient, patientId: $patient->id)` inside it. `update`: the same with `PatientUpdated`.
   - Verify: the tests from T020 pass; `docker compose exec app php artisan test tests/Feature/Patients` → all pass unchanged.
   - Depends: T020
 
-- [ ] T022 [US1] Add Money cases to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
+- [X] T022 [US1] Add Money cases to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
   - Scope:
     - Coverage: `test_fee_set` (`fee` from and to; `from` null the first time), `test_charge_created`, `test_payment_recorded` and `test_refund_recorded` (`amount_paid` and `status` from and to), `test_discount_set` (`discount` from and to; `discount_reason` in `fields`, but its text nowhere), `test_charge_cancelled`.
     - Atomicity: with `failAuditWrites()`, `pay` leaves no payment and `amount_paid` unchanged; `discount` and `cancel` leave the charge unchanged; `set` leaves the fee unchanged. An over-balance payment (`422`) leaves no entry.
     - No change: the same fee twice gives one entry. The same discount twice gives **two** (spec, Edge Cases).
   - Verify: `--filter='AuditActionCoverageTest|AuditAtomicityTest|AuditNoChangeTest'` → the new ones fail.
 
-- [ ] T023 [US1] Record Money in `app/Modules/Payments/Services/ChargeService.php` and `app/Modules/Payments/Services/FeeService.php` (R4, R5)
+- [X] T023 [US1] Record Money in `app/Modules/Payments/Services/ChargeService.php` and `app/Modules/Payments/Services/FeeService.php` (R4, R5)
   - Scope:
     - `charge`: `recordChanges(ChargeCreated, $charge, Charge, patientId: $charge->patient_id)` before the closure returns.
     - `pay`, `refund`: `recordChanges(PaymentRecorded|RefundRecorded, ...)` after `applyPaid`, whose single update provides `amount_paid` and `status`.
@@ -256,14 +256,14 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 ### Doctors and schedules
 
-- [ ] T024 [US1] Add Doctors and Schedules cases to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
+- [X] T024 [US1] Add Doctors and Schedules cases to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
   - Scope:
     - Coverage: `test_specialty_created`, `test_specialty_updated`, `test_specialty_deactivated`, `test_specialty_reactivated` (`is_active` from and to), `test_doctor_created`, `test_doctor_updated` (`specialty_ids` in `fields` when the set changes), `test_schedule_set` (a first schedule writes an entry with `appointment_minutes` in `fields`, even with an empty `periods` array, which `SetScheduleRequest` allows), `test_schedule_cleared`, `test_time_off_added` (`reason` in `fields`, but its text nowhere), `test_time_off_removed`, the last also asserting that the entry is still found by `subject_type=time_off` after removal.
     - Atomicity: with `failAuditWrites()`: renaming a specialty, updating a doctor (the specialty set also unchanged), replacing a schedule (periods unchanged), clearing a schedule (it still exists), adding and removing time off.
     - No change: a repeated rename; deactivating twice; repeating a doctor update with the same specialty ids; repeating the same schedule with its periods sent in another order; clearing a doctor with no schedule.
   - Verify: `--filter='AuditActionCoverageTest|AuditAtomicityTest|AuditNoChangeTest'` → the new ones fail.
 
-- [ ] T025 [US1] Record Doctors changes in `app/Modules/Doctors/Services/SpecialtyService.php`, `app/Modules/Doctors/Services/DoctorService.php`, and `DoctorRepository`
+- [X] T025 [US1] Record Doctors changes in `app/Modules/Doctors/Services/SpecialtyService.php`, `app/Modules/Doctors/Services/DoctorService.php`, and `DoctorRepository`
   - Scope:
     - `SpecialtyService::{create,rename}`: `guardUniqueNames(..., fn () => DB::transaction(...))` with `recordChanges`. `deactivate`, `reactivate`: `DB::transaction` around the existing update with `recordChanges`; the idempotent path writes nothing.
     - `DoctorRepository::syncSpecialties` returns `bool`, whether anything was attached or detached: `$changes = $doctor->specialties()->sync($ids); return $changes['attached'] !== [] || $changes['detached'] !== [];`. Update the contract and the implementation.
@@ -272,7 +272,7 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
   - Verify: the tests from T024 for these pass; `docker compose exec app php artisan test tests/Feature/Doctors` → all pass unchanged.
   - Depends: T024
 
-- [ ] T026 [US1] Record Schedules in `app/Modules/Scheduling/Services/ScheduleService.php` and `app/Modules/Scheduling/Services/TimeOffService.php` (R3, R4)
+- [X] T026 [US1] Record Schedules in `app/Modules/Scheduling/Services/ScheduleService.php` and `app/Modules/Scheduling/Services/TimeOffService.php` (R3, R4)
   - Scope:
     - `EloquentDoctorScheduleRepository::lockOrCreateForDoctor`: keep the result of `insertOrIgnore`, and set `$schedule->wasRecentlyCreated = $inserted > 0` on the model it returns. Without this, a first schedule with no periods looks like no change, and writes no entry.
     - `ScheduleService::replace`, inside its transaction: after `lockOrCreateForDoctor`, compare `$schedule->periods` (a relation read after the lock, as `DoctorService::update` already does) with `$periods`, each reduced to `[weekday, start_minute, end_minute]` and sorted, to get `$periodsChanged`. Then `update`. Then call `recordChanges(ScheduleSet, $schedule, Doctor, extraFields: $periodsChanged ? ['periods'] : [], subjectId: $doctorId)`, **before** `replacePeriods`: its `$schedule->touch()` re-syncs the model and wipes `getChanges()`.
@@ -283,35 +283,35 @@ Only commands already used in this project (Artisan `make:migration`/`migrate`/`
 
 ### Appointments, visits, and medical records
 
-- [ ] T027 [US1] Add Appointments and Visits cases to `tests/Feature/Audit/AuditActionCoverageTest.php` and `AuditAtomicityTest.php` — failing first
+- [X] T027 [US1] Add Appointments and Visits cases to `tests/Feature/Audit/AuditActionCoverageTest.php` and `AuditAtomicityTest.php` — failing first
   - Scope:
     - Coverage: `test_appointment_booked`, `test_appointment_rescheduled` (`date`, `start_minute`, and `end_minute` from and to), `test_appointment_cancelled` (`status` from and to; `cancellation_reason` in `fields`, but its text nowhere), `test_appointment_no_show`, `test_visit_checked_in`, `test_visit_walk_in_added`, `test_visit_left`, `test_visit_check_in_undone` (the entry survives with `subject_id` and `patient_id`, although its record is gone), `test_visit_called`, `test_visit_finished`. Each asserts `patient_id`. Check-in and finish write one entry, though they also change the appointment (spec, Edge Cases).
     - Atomicity: with `failAuditWrites()`: booking leaves no appointment and the slot free; cancel leaves it `scheduled`; check-in leaves no visit and the appointment `scheduled`; undo leaves the visit; call-next leaves it `waiting`.
   - Verify: `--filter='AuditActionCoverageTest|AuditAtomicityTest'` → the new ones fail.
 
-- [ ] T028 [US1] Record Appointments in `app/Modules/Appointments/Services/BookingService.php` and `app/Modules/Appointments/Services/AppointmentService.php`
+- [X] T028 [US1] Record Appointments in `app/Modules/Appointments/Services/BookingService.php` and `app/Modules/Appointments/Services/AppointmentService.php`
   - Scope: `recordChanges` with `AuditSubject::Appointment` and `patientId: $appointment->patient_id`, last inside each existing transaction: `book` (keep the guard outside), `reschedule`, `cancel`, `markNoShow`. Read each method's end before editing, so the call uses the model that was just saved.
   - Verify: the new Appointments tests pass; `docker compose exec app php artisan test tests/Feature/Appointments` → all pass unchanged; `docker compose exec app php artisan test --group=concurrency` → pass.
   - Depends: T027
 
-- [ ] T029 [US1] Record Visits in `app/Modules/Queues/Services/QueueService.php` and `app/Modules/Queues/Services/DoctorQueueService.php`
+- [X] T029 [US1] Record Visits in `app/Modules/Queues/Services/QueueService.php` and `app/Modules/Queues/Services/DoctorQueueService.php`
   - Scope: `recordChanges` with `AuditSubject::Visit` and `patientId: $entry->patient_id`, last inside each existing transaction: `checkIn`, `addWalkIn`, `leave`, `callNext`, `finish`. `callNext` returns from inside a `foreach`, so assign the updated entry and record before returning; `finish` likewise. `undo`: `record(VisitCheckInUndone, Visit, $entry->id, $entry->patient_id)` before `$this->queue->delete($entry)`.
   - Verify: all tests from T027 pass; `docker compose exec app php artisan test tests/Feature/Queues` → all pass unchanged; `docker compose exec app php artisan test --group=concurrency` → pass.
   - Depends: T028
 
-- [ ] T030 [US1] Add Medical records changes to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
+- [X] T030 [US1] Add Medical records changes to `tests/Feature/Audit/AuditActionCoverageTest.php`, `AuditAtomicityTest.php`, and `AuditNoChangeTest.php` — failing first
   - Scope:
     - Coverage: `test_encounter_started`, `test_encounter_draft_saved` (changed clinical field names; no clinical text or ciphertext anywhere in the entry), `test_encounter_finalized` (`status` from and to), `test_encounter_addendum_added` (`text` in `fields`, but its text nowhere; subject is the encounter).
     - Atomicity: with `failAuditWrites()`: saving leaves the draft's content unchanged, finalizing leaves it `draft`, and an addendum is not added.
     - No change: saving the same content twice gives one `encounter.draft_saved`.
   - Verify: `--filter='AuditActionCoverageTest|AuditAtomicityTest|AuditNoChangeTest'` → the new ones fail.
 
-- [ ] T031 [US1] Record Medical records changes in `app/Modules/Encounters/Services/EncounterService.php`
+- [X] T031 [US1] Record Medical records changes in `app/Modules/Encounters/Services/EncounterService.php`
   - Scope: `recordChanges` with `AuditSubject::Encounter` and `patientId: $encounter->patient_id`, last inside each existing transaction: `start` (assign the created encounter, record, then return it), `save` (keep the locked model, whose `update` provides the changes), `finalize`. `addAddendum`: `DB::transaction` with `addAddendum` and `record(EncounterAddendumAdded, Encounter, $encounter->id, $encounter->patient_id, ['fields' => ['text']])`.
   - Verify: tests from T030 pass; `docker compose exec app php artisan test tests/Feature/Encounters` → all pass unchanged.
   - Depends: T030
 
-- [ ] T032 [US1] Run the whole suite and the concurrency group over `tests/`
+- [X] T032 [US1] Run the whole suite and the concurrency group over `tests/`
   - Verify: `docker compose exec app composer test` → all pass with no earlier test changed; `docker compose exec app php artisan test --group=concurrency` → pass. `git diff --stat --diff-filter=MD 476e76a -- tests/` prints nothing: no earlier test was changed or deleted. `476e76a` is the commit this feature branched from, so the result does not depend on whether local `main` is up to date.
   - Accept: failures are reported; deadlocks in the concurrency group mean research R10's lock reasoning was wrong: **stop and report**.
   - Depends: T019, T021, T023, T026, T029, T031

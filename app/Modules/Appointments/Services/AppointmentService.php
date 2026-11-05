@@ -6,6 +6,9 @@ use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Scheduling\Support\ClinicClock;
@@ -22,6 +25,7 @@ class AppointmentService
     public function __construct(
         private readonly AppointmentRepository $appointments,
         private readonly DoctorService $doctors,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -88,6 +92,8 @@ class AppointmentService
                 'status_changed_at' => now(),
                 'cancellation_reason' => $reason,
             ]);
+
+            $this->audit->recordChanges(AuditAction::AppointmentCancelled, $appointment, AuditSubject::Appointment, patientId: $appointment->patient_id);
         });
 
         return $this->find($id);
@@ -114,6 +120,8 @@ class AppointmentService
                 'status_changed_by' => $actor->id,
                 'status_changed_at' => now(),
             ]);
+
+            $this->audit->recordChanges(AuditAction::AppointmentNoShow, $appointment, AuditSubject::Appointment, patientId: $appointment->patient_id);
         });
 
         return $this->find($id);

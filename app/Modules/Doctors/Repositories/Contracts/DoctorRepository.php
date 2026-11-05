@@ -31,8 +31,9 @@ interface DoctorRepository
      * Make these the doctor's only specialties.
      *
      * @param  list<int>  $specialtyIds
+     * @return bool whether anything was attached or detached
      */
-    public function syncSpecialties(Doctor $doctor, array $specialtyIds): void;
+    public function syncSpecialties(Doctor $doctor, array $specialtyIds): bool;
 
     public function registrationNumberTaken(string $number): bool;
 

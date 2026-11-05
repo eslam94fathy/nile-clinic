@@ -2,6 +2,9 @@
 
 namespace App\Modules\Encounters\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Encounters\Enums\EncounterStatus;
@@ -31,6 +34,7 @@ class EncounterService
         private readonly EncounterRepository $encounters,
         private readonly QueueRepository $queue,
         private readonly DoctorService $doctors,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -60,13 +64,17 @@ class EncounterService
                 throw $this->refusal('visit', 'already_started');
             }
 
-            return $this->encounters->create([
+            $encounter = $this->encounters->create([
                 'queue_entry_id' => $entry->id,
                 'doctor_id' => $entry->doctor_id,
                 'patient_id' => $entry->patient_id,
                 'date' => $entry->date->toDateString(),
                 'status' => EncounterStatus::Draft,
             ]);
+
+            $this->audit->recordChanges(AuditAction::EncounterStarted, $encounter, AuditSubject::Encounter, patientId: $encounter->patient_id);
+
+            return $encounter;
         }, attempts: 3);
 
         return $this->find($encounter->id);
@@ -128,7 +136,11 @@ class EncounterService
     public function save(int $id, array $content): Encounter
     {
         DB::transaction(function () use ($id, $content) {
-            $this->encounters->update($this->lockDraft($id), $content);
+            $encounter = $this->lockDraft($id);
+
+            $this->encounters->update($encounter, $content);
+
+            $this->audit->recordChanges(AuditAction::EncounterDraftSaved, $encounter, AuditSubject::Encounter, patientId: $encounter->patient_id);
         }, attempts: 3);
 
         return $this->find($id);
@@ -154,6 +166,8 @@ class EncounterService
                 'status' => EncounterStatus::Finalized,
                 'finalized_at' => now(),
             ]);
+
+            $this->audit->recordChanges(AuditAction::EncounterFinalized, $encounter, AuditSubject::Encounter, patientId: $encounter->patient_id);
         }, attempts: 3);
 
         return $this->find($id);
@@ -171,7 +185,13 @@ class EncounterService
             throw $this->refusal('encounter', 'not_finalized');
         }
 
-        return $this->encounters->addAddendum($encounter, $text);
+        return DB::transaction(function () use ($encounter, $text) {
+            $addendum = $this->encounters->addAddendum($encounter, $text);
+
+            $this->audit->record(AuditAction::EncounterAddendumAdded, AuditSubject::Encounter, $encounter->id, $encounter->patient_id, ['fields' => ['text']]);
+
+            return $addendum;
+        });
     }
 
     /**

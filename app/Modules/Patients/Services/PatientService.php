@@ -2,12 +2,16 @@
 
 namespace App\Modules\Patients\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Patients\Exceptions\PatientNotFoundException;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,6 +21,7 @@ class PatientService
 {
     public function __construct(
         private readonly PatientRepository $patients,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -41,7 +46,13 @@ class PatientService
      */
     public function register(array $attributes): Patient
     {
-        return $this->guardUniqueNationalId(fn () => $this->patients->create($this->toColumns($attributes)));
+        return $this->guardUniqueNationalId(fn () => DB::transaction(function () use ($attributes) {
+            $patient = $this->patients->create($this->toColumns($attributes));
+
+            $this->audit->recordChanges(AuditAction::PatientRegistered, $patient, AuditSubject::Patient, patientId: $patient->id);
+
+            return $patient;
+        }));
     }
 
     /**
@@ -51,7 +62,13 @@ class PatientService
      */
     public function update(Patient $patient, array $attributes): Patient
     {
-        return $this->guardUniqueNationalId(fn () => $this->patients->update($patient, $this->toColumns($attributes)));
+        return $this->guardUniqueNationalId(fn () => DB::transaction(function () use ($patient, $attributes) {
+            $this->patients->update($patient, $this->toColumns($attributes));
+
+            $this->audit->recordChanges(AuditAction::PatientUpdated, $patient, AuditSubject::Patient, patientId: $patient->id);
+
+            return $patient;
+        }));
     }
 
     /**

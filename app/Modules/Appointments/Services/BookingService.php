@@ -7,6 +7,9 @@ use App\Modules\Appointments\Exceptions\AppointmentConflictException;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Models\Appointment;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use App\Modules\Scheduling\Repositories\Contracts\DoctorScheduleRepository;
@@ -35,6 +38,7 @@ class BookingService
         private readonly PatientRepository $patients,
         private readonly DoctorRepository $doctors,
         private readonly SlotService $slots,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -61,7 +65,7 @@ class BookingService
 
             [$start, $end] = $this->takeSlot($schedule !== null, $doctorId, $patientId, $input['date'], $input['start']);
 
-            return $this->appointments->create([
+            $appointment = $this->appointments->create([
                 'patient_id' => $patientId,
                 'doctor_id' => $doctorId,
                 'date' => $input['date'],
@@ -71,6 +75,10 @@ class BookingService
                 'note' => $input['note'] ?? null,
                 'booked_by' => $actor->id,
             ]);
+
+            $this->audit->recordChanges(AuditAction::AppointmentBooked, $appointment, AuditSubject::Appointment, patientId: $appointment->patient_id);
+
+            return $appointment;
         }, attempts: 3));
 
         return $this->appointments->find($appointment->id, ClinicClock::now());
@@ -107,6 +115,8 @@ class BookingService
                 'rescheduled_by' => $actor->id,
                 'rescheduled_at' => now(),
             ]);
+
+            $this->audit->recordChanges(AuditAction::AppointmentRescheduled, $appointment, AuditSubject::Appointment, patientId: $appointment->patient_id);
         }, attempts: 3));
 
         return $this->appointments->find($appointmentId, ClinicClock::now());
