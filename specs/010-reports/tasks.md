@@ -216,7 +216,7 @@ breakdown match by hand.
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T018 [P] [US2] Write `tests/Feature/Reports/BillingReportTest.php` (US2-1…5, FR-009–FR-011, FR-018)
+- [X] T018 [P] [US2] Write `tests/Feature/Reports/BillingReportTest.php` (US2-1…5, FR-009–FR-011, FR-018)
   - Scope:
     - per doctor and in `totals`: `active_charges`, `fees`, `discounts`, `amount_due`, `amount_paid`, `balance`, `cancelled_charges`, `uncharged_seen_visits`, exact strings and integers
     - a cancelled charge in no money figure, only in `cancelled_charges`
@@ -234,7 +234,7 @@ breakdown match by hand.
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Add `billingByDoctor`, `unchargedSeenVisitsByDoctor`, and `doctorsByName` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php` (R7, R8)
+- [X] T019 [US2] Add `billingByDoctor`, `unchargedSeenVisitsByDoctor`, and `doctorsByName` to `app/Modules/Reports/Repositories/Contracts/ReportRepository.php` and `QueryReportRepository.php` (R7, R8)
   - Scope, each with `from`, `to`, and `?doctorId` unless noted:
     - `billingByDoctor`: `charges` where `date` is in the range, grouped by `doctor_id`, with `SUM(status <> 'cancelled') as active_charges`, `SUM(status = 'cancelled') as cancelled_charges`, and
       `SUM(CASE WHEN status <> 'cancelled' THEN <column> ELSE 0 END)` as `fees`, `discounts`, and `amount_paid`. Use `ChargeStatus::Cancelled->value`.
@@ -242,7 +242,7 @@ breakdown match by hand.
     - `doctorsByName(array $ids)`: `doctors` joined to `users` on `user_id`, selecting `doctors.id`, `doctors.title`, and `users.name`; `orderBy('users.name')->orderBy('doctors.id')`.
   - Depends: T015
 
-- [ ] T020 [US2] Add `billing` and a private per-doctor paging helper to `app/Modules/Reports/Services/ReportService.php` (R6, R7)
+- [X] T020 [US2] Add `billing` and a private per-doctor paging helper to `app/Modules/Reports/Services/ReportService.php` (R6, R7)
   - Scope: `billing(string $from, string $to, ?int $doctorId, int $perPage): array{rows: LengthAwarePaginator, totals: array}`:
     - find the doctor if a filter is sent; merge the two queries by doctor id, in piastres; `amount_due = fees - discounts`; `balance = amount_due - amount_paid`;
     - totals are added up from the rows, across all doctors, and are zero when there are none;
@@ -250,7 +250,7 @@ breakdown match by hand.
       `new LengthAwarePaginator(array_slice(...), $total, $perPage, Paginator::resolveCurrentPage(), ['path' => Paginator::resolveCurrentPath()])`, then `withQueryString()`.
   - Depends: T016, T019
 
-- [ ] T021 [US2] Create `app/Modules/Reports/Http/Resources/BillingRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
+- [X] T021 [US2] Create `app/Modules/Reports/Http/Resources/BillingRowResource.php`, and add the action to `app/Modules/Reports/Http/Controllers/ReportController.php` and the route to `app/Modules/Reports/routes/api.php`
   - Scope: `billing(ReportRequest $request)` → `BillingRowResource::collection($report['rows'])->additional(['totals' => $report['totals']])`. Route: `GET /reports/billing`, name `reports.billing`.
   - Verify: `docker compose exec app php artisan test --filter="BillingReportTest|ReportValidationTest"` → pass.
   - Depends: T018, T020

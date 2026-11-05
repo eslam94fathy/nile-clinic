@@ -20,6 +20,7 @@ class ReportValidationTest extends TestCase
     /** Path => whether it is paged. */
     private const ENDPOINTS = [
         '/api/v1/reports/money-collected' => false,
+        '/api/v1/reports/billing' => true,
     ];
 
     protected function setUp(): void
@@ -49,7 +50,7 @@ class ReportValidationTest extends TestCase
      */
     public static function pagedEndpoints(): array
     {
-        return array_filter(self::endpoints(), fn (array $case) => self::ENDPOINTS[$case[0]]) ?: ['none yet' => ['']];
+        return array_filter(self::endpoints(), fn (array $case) => self::ENDPOINTS[$case[0]]);
     }
 
     /**
@@ -125,10 +126,6 @@ class ReportValidationTest extends TestCase
     #[DataProvider('pagedEndpoints')]
     public function test_an_invalid_page_size_is_refused(string $path): void
     {
-        if ($path === '') {
-            $this->markTestSkipped('No paged report exists yet.');
-        }
-
         foreach (['0', '101'] as $perPage) {
             $this->getJson("{$path}?from=2026-11-01&to=2026-11-01&per_page={$perPage}")
                 ->assertUnprocessable()

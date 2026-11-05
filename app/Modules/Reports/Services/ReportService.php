@@ -8,6 +8,8 @@ use App\Modules\Payments\Support\Money;
 use App\Modules\Reports\Repositories\Contracts\ReportRepository;
 use App\Modules\Scheduling\Support\ClinicClock;
 use Carbon\CarbonImmutable;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 /**
  * Turns the repository's aggregates into reports. Read only, so there is no transaction: every total is
@@ -69,6 +71,94 @@ class ReportService
                 $days,
             ),
         ];
+    }
+
+    /**
+     * What each doctor's visits were charged and what is owed, as charges stand now (US2).
+     *
+     * @return array{rows: LengthAwarePaginator, totals: array<string, mixed>}
+     */
+    public function billing(string $from, string $to, ?int $doctorId, int $perPage): array
+    {
+        $this->assertDoctorExists($doctorId);
+
+        $empty = ['active_charges' => 0, 'cancelled_charges' => 0, 'fees' => 0, 'discounts' => 0, 'amount_paid' => 0, 'uncharged_seen_visits' => 0];
+        $byDoctor = [];
+
+        foreach ($this->reports->billingByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] = [
+                ...$empty,
+                'active_charges' => (int) $row->active_charges,
+                'cancelled_charges' => (int) $row->cancelled_charges,
+                'fees' => Money::toPiastres($row->fees),
+                'discounts' => Money::toPiastres($row->discounts),
+                'amount_paid' => Money::toPiastres($row->amount_paid),
+            ];
+        }
+
+        foreach ($this->reports->unchargedSeenVisitsByDoctor($from, $to, $doctorId) as $row) {
+            $byDoctor[$row->doctor_id] = [...($byDoctor[$row->doctor_id] ?? $empty), 'uncharged_seen_visits' => (int) $row->visits];
+        }
+
+        $totals = $empty;
+
+        foreach ($byDoctor as $figures) {
+            foreach ($figures as $name => $value) {
+                $totals[$name] += $value;
+            }
+        }
+
+        return [
+            'rows' => $this->pageByDoctorName(array_map($this->billingFigures(...), $byDoctor), $perPage),
+            'totals' => $this->billingFigures($totals),
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $figures  Counts, and money in piastres.
+     * @return array<string, int|string>
+     */
+    private function billingFigures(array $figures): array
+    {
+        $due = $figures['fees'] - $figures['discounts'];
+
+        return [
+            'active_charges' => $figures['active_charges'],
+            'fees' => Money::fromPiastres($figures['fees']),
+            'discounts' => Money::fromPiastres($figures['discounts']),
+            'amount_due' => Money::fromPiastres($due),
+            'amount_paid' => Money::fromPiastres($figures['amount_paid']),
+            'balance' => Money::fromPiastres($due - $figures['amount_paid']),
+            'cancelled_charges' => $figures['cancelled_charges'],
+            'uncharged_seen_visits' => $figures['uncharged_seen_visits'],
+        ];
+    }
+
+    /**
+     * One page of rows, each with its doctor, by account name. Rows are bounded by the number of doctors, and a
+     * doctor can come from any of several queries, so paging happens here rather than in SQL (research R7).
+     *
+     * @param  array<int, array<string, mixed>>  $rowsByDoctor
+     */
+    private function pageByDoctorName(array $rowsByDoctor, int $perPage): LengthAwarePaginator
+    {
+        $rows = array_map(
+            fn (object $doctor) => [
+                'doctor' => ['id' => $doctor->id, 'name' => $doctor->name, 'title' => $doctor->title],
+                ...$rowsByDoctor[$doctor->id],
+            ],
+            $this->reports->doctorsByName(array_keys($rowsByDoctor)),
+        );
+
+        $page = Paginator::resolveCurrentPage();
+
+        return (new LengthAwarePaginator(
+            array_slice($rows, ($page - 1) * $perPage, $perPage),
+            count($rows),
+            $perPage,
+            $page,
+            ['path' => Paginator::resolveCurrentPath()],
+        ))->withQueryString();
     }
 
     /**
