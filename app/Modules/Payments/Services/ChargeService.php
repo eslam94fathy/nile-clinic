@@ -2,6 +2,10 @@
 
 namespace App\Modules\Payments\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
+use App\Modules\Audit\Support\AuditChanges;
 use App\Modules\Payments\Enums\ChargeStatus;
 use App\Modules\Payments\Enums\PaymentMethod;
 use App\Modules\Payments\Exceptions\ChargeNotFoundException;
@@ -29,6 +33,7 @@ class ChargeService
         private readonly ChargeRepository $charges,
         private readonly DoctorFeeRepository $fees,
         private readonly QueueRepository $queue,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -54,7 +59,7 @@ class ChargeService
 
             $fee = $this->fees->findForDoctor($entry->doctor_id) ?? throw $this->refusal('visit', 'no_fee');
 
-            return $this->charges->create([
+            $charge = $this->charges->create([
                 'queue_entry_id' => $entry->id,
                 'doctor_id' => $entry->doctor_id,
                 'patient_id' => $entry->patient_id,
@@ -63,6 +68,10 @@ class ChargeService
                 'fee' => $fee->amount,
                 'charged_by' => $actor->id,
             ]);
+
+            $this->audit->recordChanges(AuditAction::ChargeCreated, $charge, AuditSubject::Charge, patientId: $charge->patient_id);
+
+            return $charge;
         }, attempts: 3);
 
         return $this->find($charge->id);
@@ -117,6 +126,8 @@ class ChargeService
 
             $this->charges->addPayment($charge, $amount, $method, $actor->id);
             $this->applyPaid($charge, $paid + Money::toPiastres($amount), $due);
+
+            $this->audit->recordChanges(AuditAction::PaymentRecorded, $charge, AuditSubject::Charge, patientId: $charge->patient_id);
         }, attempts: 3);
 
         return $this->find($id);
@@ -148,6 +159,9 @@ class ChargeService
                 'discounted_at' => now(),
                 'status' => $this->statusFor($fee - $discount, $paid),
             ]);
+
+            // Always written: repeating a discount still records a new staff member and reason.
+            $this->audit->record(AuditAction::DiscountSet, AuditSubject::Charge, $charge->id, $charge->patient_id, AuditChanges::of($charge, AuditSubject::Charge));
         }, attempts: 3);
 
         return $this->find($id);
@@ -172,6 +186,8 @@ class ChargeService
 
             $this->charges->addRefund($charge, $amount, $method, $reason, $actor->id);
             $this->applyPaid($charge, $paid - Money::toPiastres($amount), $this->duePiastres($charge));
+
+            $this->audit->recordChanges(AuditAction::RefundRecorded, $charge, AuditSubject::Charge, patientId: $charge->patient_id);
         }, attempts: 3);
 
         return $this->find($id);
@@ -199,6 +215,8 @@ class ChargeService
                 'cancelled_by' => $actor->id,
                 'cancelled_at' => now(),
             ]);
+
+            $this->audit->recordChanges(AuditAction::ChargeCancelled, $charge, AuditSubject::Charge, patientId: $charge->patient_id);
         }, attempts: 3);
 
         return $this->find($id);

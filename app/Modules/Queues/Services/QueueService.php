@@ -5,6 +5,9 @@ namespace App\Modules\Queues\Services;
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Exceptions\AppointmentNotFoundException;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Doctors\Services\DoctorService;
@@ -38,6 +41,7 @@ class QueueService
         private readonly DoctorRepository $doctorRecords,
         private readonly PatientRepository $patients,
         private readonly VisitChargeRepository $visitCharges,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -89,7 +93,7 @@ class QueueService
 
                 $this->appointments->update($locked, ['status' => AppointmentStatus::CheckedIn]);
 
-                return $this->queue->create([
+                $entry = $this->queue->create([
                     'doctor_id' => $locked->doctor_id,
                     'patient_id' => $locked->patient_id,
                     'appointment_id' => $locked->id,
@@ -100,6 +104,10 @@ class QueueService
                     'arrived_at' => now(),
                     'checked_in_by' => $actor->id,
                 ]);
+
+                $this->audit->recordChanges(AuditAction::VisitCheckedIn, $entry, AuditSubject::Visit, patientId: $entry->patient_id);
+
+                return $entry;
             }, attempts: 3);
         } catch (UniqueConstraintViolationException) {
             throw new QueueConflictException('already_checked_in');
@@ -141,7 +149,7 @@ class QueueService
 
             $now = ClinicClock::now();
 
-            return $this->queue->create([
+            $entry = $this->queue->create([
                 'doctor_id' => $doctorId,
                 'patient_id' => $patientId,
                 'appointment_id' => null,
@@ -152,6 +160,10 @@ class QueueService
                 'arrived_at' => now(),
                 'checked_in_by' => $actor->id,
             ]);
+
+            $this->audit->recordChanges(AuditAction::VisitWalkInAdded, $entry, AuditSubject::Visit, patientId: $entry->patient_id);
+
+            return $entry;
         }, attempts: 3);
 
         return $this->queue->find($entry->id);
@@ -175,6 +187,8 @@ class QueueService
                 'left_at' => now(),
                 'left_by' => $actor->id,
             ]);
+
+            $this->audit->recordChanges(AuditAction::VisitLeft, $entry, AuditSubject::Visit, patientId: $entry->patient_id);
         }, attempts: 3);
 
         return $this->queue->find($id);
@@ -206,6 +220,8 @@ class QueueService
                 $this->appointments->lockById($entry->appointment_id),
                 ['status' => AppointmentStatus::Scheduled],
             );
+
+            $this->audit->record(AuditAction::VisitCheckInUndone, AuditSubject::Visit, $entry->id, $entry->patient_id);
 
             $this->queue->delete($entry);
         }, attempts: 3);

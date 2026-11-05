@@ -2,12 +2,16 @@
 
 namespace App\Modules\Doctors\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\SpecialtyNotFoundException;
 use App\Modules\Doctors\Models\Specialty;
 use App\Modules\Doctors\Repositories\Contracts\SpecialtyRepository;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,6 +21,7 @@ class SpecialtyService
 {
     public function __construct(
         private readonly SpecialtyRepository $specialties,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -40,10 +45,13 @@ class SpecialtyService
      */
     public function create(array $attributes): Specialty
     {
-        return $this->guardUniqueNames($attributes, fn () => $this->specialties->create([
-            ...$attributes,
-            'is_active' => true,
-        ]));
+        return $this->guardUniqueNames($attributes, fn () => DB::transaction(function () use ($attributes) {
+            $specialty = $this->specialties->create([...$attributes, 'is_active' => true]);
+
+            $this->audit->recordChanges(AuditAction::SpecialtyCreated, $specialty, AuditSubject::Specialty);
+
+            return $specialty;
+        }));
     }
 
     /**
@@ -51,7 +59,7 @@ class SpecialtyService
      */
     public function rename(Specialty $specialty, array $attributes): Specialty
     {
-        return $this->guardUniqueNames($attributes, fn () => $this->specialties->update($specialty, $attributes));
+        return $this->guardUniqueNames($attributes, fn () => $this->change(AuditAction::SpecialtyUpdated, $specialty, $attributes));
     }
 
     /**
@@ -59,7 +67,7 @@ class SpecialtyService
      */
     public function deactivate(Specialty $specialty): Specialty
     {
-        return $specialty->is_active ? $this->specialties->update($specialty, ['is_active' => false]) : $specialty;
+        return $specialty->is_active ? $this->change(AuditAction::SpecialtyDeactivated, $specialty, ['is_active' => false]) : $specialty;
     }
 
     /**
@@ -67,7 +75,21 @@ class SpecialtyService
      */
     public function reactivate(Specialty $specialty): Specialty
     {
-        return $specialty->is_active ? $specialty : $this->specialties->update($specialty, ['is_active' => true]);
+        return $specialty->is_active ? $specialty : $this->change(AuditAction::SpecialtyReactivated, $specialty, ['is_active' => true]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function change(AuditAction $action, Specialty $specialty, array $attributes): Specialty
+    {
+        return DB::transaction(function () use ($action, $specialty, $attributes) {
+            $this->specialties->update($specialty, $attributes);
+
+            $this->audit->recordChanges($action, $specialty, AuditSubject::Specialty);
+
+            return $specialty;
+        });
     }
 
     /**

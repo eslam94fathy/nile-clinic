@@ -2,6 +2,9 @@
 
 namespace App\Modules\Scheduling\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Scheduling\Exceptions\TimeOffNotFoundException;
@@ -11,6 +14,7 @@ use App\Modules\Scheduling\Support\ClinicClock;
 use App\Modules\Scheduling\Support\ClockTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -21,6 +25,7 @@ class TimeOffService
     public function __construct(
         private readonly DoctorRepository $doctors,
         private readonly TimeOffRepository $timeOff,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -44,14 +49,20 @@ class TimeOffService
     {
         $this->ensureDoctor($doctorId);
 
-        return $this->timeOff->create([
-            'doctor_id' => $doctorId,
-            'start_date' => $attributes['start_date'],
-            'end_date' => $attributes['end_date'],
-            'start_minute' => isset($attributes['start_time']) ? ClockTime::toMinutes($attributes['start_time']) : null,
-            'end_minute' => isset($attributes['end_time']) ? ClockTime::toMinutes($attributes['end_time']) : null,
-            'reason' => $attributes['reason'] ?? null,
-        ]);
+        return DB::transaction(function () use ($doctorId, $attributes) {
+            $entry = $this->timeOff->create([
+                'doctor_id' => $doctorId,
+                'start_date' => $attributes['start_date'],
+                'end_date' => $attributes['end_date'],
+                'start_minute' => isset($attributes['start_time']) ? ClockTime::toMinutes($attributes['start_time']) : null,
+                'end_minute' => isset($attributes['end_time']) ? ClockTime::toMinutes($attributes['end_time']) : null,
+                'reason' => $attributes['reason'] ?? null,
+            ]);
+
+            $this->audit->recordChanges(AuditAction::TimeOffAdded, $entry, AuditSubject::TimeOff);
+
+            return $entry;
+        });
     }
 
     /**
@@ -75,7 +86,11 @@ class TimeOffService
             ]);
         }
 
-        $this->timeOff->delete($entry);
+        DB::transaction(function () use ($entry) {
+            $this->timeOff->delete($entry);
+
+            $this->audit->record(AuditAction::TimeOffRemoved, AuditSubject::TimeOff, $entry->id);
+        });
     }
 
     private function ensureDoctor(int $doctorId): void

@@ -232,6 +232,29 @@ and activity show records as they stand now, so a late discount or payment chang
 Every endpoint, field, and response is described in
 [specs/010-reports/contracts/reports.openapi.yaml](specs/010-reports/contracts/reports.openapi.yaml).
 
+## Audit logs
+
+A permanent trail of who did what and when on sensitive records, for administrators only. Nothing can change or delete an
+entry, and an action does not go ahead if its entry cannot be saved.
+
+- `GET /api/v1/audit-entries`: search by any of `from`, `to`, `staff_id`, `patient_id`, `subject_type` with `subject_id`, `action`, and
+  `outcome`, newest first. Each search is itself recorded.
+
+What is recorded: sign-ins and staff changes; changes to patients, specialties, doctors, schedules, appointments, visits, medical
+records, and money; opening one patient or medical record, or a patient's history; and refused attempts to open a medical record or
+history. Listings, searches of other records, opening a charge, and reports are not.
+
+Entries hold field names, plus before and after values only for statuses, money, roles, appointment times, and doctor assignments.
+They identify patients by internal identifier only, and never hold patient details, clinical text, reasons, or passwords. For a `refused`
+`auth.sign_in`, the staff member is the account that was targeted, not necessarily the person who tried.
+
+Pages use a cursor (`meta.next_cursor`) with no total, because each search adds an entry and would shift numbered pages. Entries are
+kept indefinitely for now; the retention period needs legal review before production. Behind a load balancer, trusted proxies must be
+configured, or every entry shows the balancer's address.
+
+Every field and response is described in
+[specs/011-audit-logs/contracts/audit.openapi.yaml](specs/011-audit-logs/contracts/audit.openapi.yaml).
+
 ## Daily use
 
 ```sh

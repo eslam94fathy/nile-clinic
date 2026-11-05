@@ -13,4 +13,5 @@ return [
     // Project keys (feature 002), not from Laravel-Lang.
     'unauthenticated' => 'لم تقم بتسجيل الدخول.',
     'forbidden' => 'غير مسموح لك بتنفيذ هذا الإجراء.',
+    'server_error' => 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
 ];

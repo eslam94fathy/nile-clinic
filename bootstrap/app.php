@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -58,4 +59,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 'driver_code' => $e->errorInfo[1] ?? null,
             ]);
         })->stop();
+
+        // The framework's 500 message is a fixed English string (Constitution VII). Debug output is left alone.
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            if ($response->getStatusCode() === 500 && $request->is('api/*') && ! config('app.debug')) {
+                return response()->json(['message' => __('auth.server_error')], 500);
+            }
+
+            return $response;
+        });
     })->create();

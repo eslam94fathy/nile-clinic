@@ -4,6 +4,9 @@ namespace App\Modules\Queues\Services;
 
 use App\Modules\Appointments\Enums\AppointmentStatus;
 use App\Modules\Appointments\Repositories\Contracts\AppointmentRepository;
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
@@ -30,6 +33,7 @@ class DoctorQueueService
         private readonly AppointmentRepository $appointments,
         private readonly PatientRepository $patients,
         private readonly DoctorService $doctors,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -69,10 +73,14 @@ class DoctorQueueService
                     $this->patients->lockById($entry->patient_id);
 
                     if (! $this->queue->patientWithDoctor($entry->patient_id, $today)) {
-                        return $this->queue->update($entry, [
+                        $this->queue->update($entry, [
                             'status' => QueueStatus::WithDoctor,
                             'called_at' => now(),
                         ]);
+
+                        $this->audit->recordChanges(AuditAction::VisitCalled, $entry, AuditSubject::Visit, patientId: $entry->patient_id);
+
+                        return $entry;
                     }
                 }
 
@@ -109,10 +117,14 @@ class DoctorQueueService
                 );
             }
 
-            return $this->queue->update($entry, [
+            $this->queue->update($entry, [
                 'status' => QueueStatus::Seen,
                 'finished_at' => now(),
             ]);
+
+            $this->audit->recordChanges(AuditAction::VisitFinished, $entry, AuditSubject::Visit, patientId: $entry->patient_id);
+
+            return $entry;
         }, attempts: 3);
 
         return $this->queue->find($entry->id);

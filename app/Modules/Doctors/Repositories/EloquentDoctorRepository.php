@@ -33,9 +33,11 @@ class EloquentDoctorRepository implements DoctorRepository
         return $doctor;
     }
 
-    public function syncSpecialties(Doctor $doctor, array $specialtyIds): void
+    public function syncSpecialties(Doctor $doctor, array $specialtyIds): bool
     {
-        $doctor->specialties()->sync($specialtyIds);
+        $changes = $doctor->specialties()->sync($specialtyIds);
+
+        return $changes['attached'] !== [] || $changes['detached'] !== [];
     }
 
     public function registrationNumberTaken(string $number): bool

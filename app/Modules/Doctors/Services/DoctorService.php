@@ -2,6 +2,9 @@
 
 namespace App\Modules\Doctors\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
@@ -24,6 +27,7 @@ class DoctorService
         private readonly DoctorRepository $doctors,
         private readonly SpecialtyRepository $specialties,
         private readonly StaffMemberRepository $staffMembers,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -80,6 +84,8 @@ class DoctorService
             ]);
             $this->doctors->syncSpecialties($doctor, $attributes['specialty_ids']);
 
+            $this->audit->recordChanges(AuditAction::DoctorCreated, $doctor, AuditSubject::Doctor, extraFields: ['specialty_ids']);
+
             return $doctor;
         }));
 
@@ -95,9 +101,11 @@ class DoctorService
     public function update(Doctor $doctor, array $attributes): Doctor
     {
         $this->guardUniqueness(null, $attributes['registration_number'] ?? null, fn () => DB::transaction(function () use ($doctor, $attributes) {
+            $specialtiesChanged = false;
+
             if (array_key_exists('specialty_ids', $attributes)) {
                 $this->ensureAssignable($attributes['specialty_ids'], $doctor->specialties->modelKeys());
-                $this->doctors->syncSpecialties($doctor, $attributes['specialty_ids']);
+                $specialtiesChanged = $this->doctors->syncSpecialties($doctor, $attributes['specialty_ids']);
             }
 
             $fields = array_intersect_key($attributes, array_flip(['title', 'registration_number']));
@@ -105,6 +113,8 @@ class DoctorService
             if ($fields !== []) {
                 $this->doctors->update($doctor, $fields);
             }
+
+            $this->audit->recordChanges(AuditAction::DoctorUpdated, $doctor, AuditSubject::Doctor, extraFields: $specialtiesChanged ? ['specialty_ids'] : []);
         }));
 
         return $this->find($doctor->id);

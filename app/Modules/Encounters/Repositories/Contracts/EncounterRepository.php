@@ -37,6 +37,16 @@ interface EncounterRepository
     public function existsForVisit(int $queueEntryId): bool;
 
     /**
+     * The record's patient, or null if there is no such record. Selects no clinical column.
+     */
+    public function patientIdOfEncounter(int $id): ?int;
+
+    /**
+     * Whether the patient has a medical history to be refused. Selects no clinical column.
+     */
+    public function patientHasFinalizedRecord(int $patientId): bool;
+
+    /**
      * Addenda are only ever added: no method changes or deletes one (FR-011).
      */
     public function addAddendum(Encounter $encounter, string $text): EncounterAddendum;

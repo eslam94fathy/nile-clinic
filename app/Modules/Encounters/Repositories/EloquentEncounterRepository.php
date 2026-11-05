@@ -40,6 +40,19 @@ class EloquentEncounterRepository implements EncounterRepository
         return Encounter::query()->where('queue_entry_id', $queueEntryId)->exists();
     }
 
+    public function patientIdOfEncounter(int $id): ?int
+    {
+        return Encounter::query()->whereKey($id)->value('patient_id');
+    }
+
+    public function patientHasFinalizedRecord(int $patientId): bool
+    {
+        return Encounter::query()
+            ->where('patient_id', $patientId)
+            ->where('status', EncounterStatus::Finalized)
+            ->exists();
+    }
+
     public function addAddendum(Encounter $encounter, string $text): EncounterAddendum
     {
         return $encounter->addenda()->create(['text' => $text]);

@@ -2,6 +2,9 @@
 
 namespace App\Modules\Staff\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Staff\Enums\Role;
 use App\Modules\Staff\Exceptions\LastAdministratorException;
 use App\Modules\Staff\Exceptions\StaffMemberNotFoundException;
@@ -22,6 +25,7 @@ class StaffManagementService
     public function __construct(
         private readonly StaffMemberRepository $staffMembers,
         private readonly AccessTokenRepository $tokens,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -45,10 +49,14 @@ class StaffManagementService
      */
     public function create(array $attributes): User
     {
-        return $this->guardUniqueEmail(fn () => $this->staffMembers->create([
-            ...$attributes,
-            'is_active' => true,
-        ]));
+        return $this->guardUniqueEmail(fn () => DB::transaction(function () use ($attributes) {
+            $user = $this->staffMembers->create([...$attributes, 'is_active' => true]);
+
+            // With nobody signed in, as in staff:create-admin, the entry names the system (research R6).
+            $this->audit->recordChanges(AuditAction::StaffCreated, $user, AuditSubject::StaffMember);
+
+            return $user;
+        }));
     }
 
     /**
@@ -61,13 +69,13 @@ class StaffManagementService
         $newRole = isset($attributes['role']) ? Role::from($attributes['role']) : null;
 
         if ($newRole === null || $newRole === Role::Administrator || ! $user->isAdministrator()) {
-            return $this->guardUniqueEmail(fn () => $this->staffMembers->update($user, $attributes));
+            return $this->guardUniqueEmail(fn () => DB::transaction(fn () => $this->applyUpdate($user, $attributes)));
         }
 
         return DB::transaction(function () use ($user, $attributes) {
             $this->ensureNotLastActiveAdministrator($user);
 
-            return $this->guardUniqueEmail(fn () => $this->staffMembers->update($user, $attributes));
+            return $this->guardUniqueEmail(fn () => $this->applyUpdate($user, $attributes));
         });
     }
 
@@ -88,6 +96,9 @@ class StaffManagementService
             }
 
             $this->staffMembers->update($user, ['is_active' => false]);
+
+            $this->audit->recordChanges(AuditAction::StaffDeactivated, $user, AuditSubject::StaffMember);
+
             $this->tokens->deleteAllFor($user);
 
             return $user;
@@ -99,7 +110,17 @@ class StaffManagementService
      */
     public function reactivate(User $user): User
     {
-        return $user->is_active ? $user : $this->staffMembers->update($user, ['is_active' => true]);
+        if ($user->is_active) {
+            return $user;
+        }
+
+        return DB::transaction(function () use ($user) {
+            $this->staffMembers->update($user, ['is_active' => true]);
+
+            $this->audit->recordChanges(AuditAction::StaffReactivated, $user, AuditSubject::StaffMember);
+
+            return $user;
+        });
     }
 
     /**
@@ -110,7 +131,21 @@ class StaffManagementService
         DB::transaction(function () use ($user, $password) {
             $this->staffMembers->update($user, ['password' => $password]);
             $this->tokens->deleteAllFor($user);
+
+            $this->audit->record(AuditAction::StaffPasswordReset, AuditSubject::StaffMember, $user->id, details: ['fields' => ['password']]);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function applyUpdate(User $user, array $attributes): User
+    {
+        $this->staffMembers->update($user, $attributes);
+
+        $this->audit->recordChanges(AuditAction::StaffUpdated, $user, AuditSubject::StaffMember);
+
+        return $user;
     }
 
     /**

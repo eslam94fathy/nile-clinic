@@ -28,7 +28,7 @@ class EncounterController extends Controller
     {
         Gate::authorize('access', Encounter::class);
 
-        return EncounterResource::make($this->readable($encounter));
+        return EncounterResource::make($this->encounters->open($this->readable($encounter)));
     }
 
     public function update(SaveEncounterRequest $request, int $encounter): EncounterResource

@@ -2,6 +2,9 @@
 
 namespace App\Modules\Scheduling\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Doctors\Exceptions\DoctorNotFoundException;
 use App\Modules\Doctors\Repositories\Contracts\DoctorRepository;
 use App\Modules\Scheduling\Models\DoctorSchedule;
@@ -16,6 +19,7 @@ class ScheduleService
     public function __construct(
         private readonly DoctorScheduleRepository $schedules,
         private readonly DoctorRepository $doctors,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -45,7 +49,12 @@ class ScheduleService
 
         DB::transaction(function () use ($doctorId, $appointmentMinutes, $periods) {
             $schedule = $this->schedules->lockOrCreateForDoctor($doctorId, $appointmentMinutes);
+            $periodsChanged = $this->periodsDiffer($schedule, $periods);
             $this->schedules->update($schedule, ['appointment_minutes' => $appointmentMinutes]);
+
+            // Before replacePeriods: it touches the schedule, which wipes the model's changes (research R4).
+            $this->audit->recordChanges(AuditAction::ScheduleSet, $schedule, AuditSubject::Doctor, extraFields: $periodsChanged ? ['periods'] : [], subjectId: $doctorId);
+
             $this->schedules->replacePeriods($schedule, $periods);
         });
 
@@ -61,7 +70,35 @@ class ScheduleService
     {
         $this->ensureDoctor($doctorId);
 
-        $this->schedules->deleteForDoctor($doctorId);
+        DB::transaction(function () use ($doctorId) {
+            if ($this->schedules->lockForDoctor($doctorId) === null) {
+                return;
+            }
+
+            $this->schedules->deleteForDoctor($doctorId);
+
+            $this->audit->record(AuditAction::ScheduleCleared, AuditSubject::Doctor, $doctorId);
+        });
+    }
+
+    /**
+     * @param  list<array{weekday: int, start_minute: int, end_minute: int}>  $periods
+     */
+    private function periodsDiffer(DoctorSchedule $schedule, array $periods): bool
+    {
+        $normalize = function (iterable $rows): array {
+            $normalized = [];
+
+            foreach ($rows as $row) {
+                $normalized[] = [(int) $row['weekday'], (int) $row['start_minute'], (int) $row['end_minute']];
+            }
+
+            sort($normalized);
+
+            return $normalized;
+        };
+
+        return $normalize($schedule->periods) !== $normalize($periods);
     }
 
     private function ensureDoctor(int $doctorId): void

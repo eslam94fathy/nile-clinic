@@ -21,14 +21,19 @@ class EloquentDoctorScheduleRepository implements DoctorScheduleRepository
     {
         $now = now();
 
-        DoctorSchedule::query()->insertOrIgnore([
+        $inserted = DoctorSchedule::query()->insertOrIgnore([
             'doctor_id' => $doctorId,
             'appointment_minutes' => $appointmentMinutes,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
-        return DoctorSchedule::query()->where('doctor_id', $doctorId)->lockForUpdate()->firstOrFail();
+        $schedule = DoctorSchedule::query()->where('doctor_id', $doctorId)->lockForUpdate()->firstOrFail();
+
+        // Tells the audit trail that this is a first schedule, even one with no periods (research R4).
+        $schedule->wasRecentlyCreated = $inserted > 0;
+
+        return $schedule;
     }
 
     public function update(DoctorSchedule $schedule, array $attributes): DoctorSchedule

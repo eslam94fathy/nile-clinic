@@ -15,6 +15,7 @@ app/
 │   └── <Domain>/                              # PascalCase domain name: System, Patients
 │       ├── Http/
 │       │   ├── Controllers/                   # thin: Form Request in → Service/Action → Resource out
+│       │   ├── Middleware/                    # only when used by this module's own routes
 │       │   ├── Requests/                      # Form Requests: validation (+ authorize() → Policy)
 │       │   └── Resources/                     # API Resources: the only response serialization
 │       ├── Actions/                           # single-purpose business operations
@@ -84,6 +85,21 @@ has no Requests, Policies, Models, or `lang/` because it needs none.
   `AuthenticatesRequests` in the middleware priority list (`bootstrap/app.php`,
   `prependToPriorityList`). Without it, `auth:sanctum` runs first and 401 responses ignore
   `Accept-Language`.
+
+## Audit trail
+
+Sensitive actions are recorded by `App\Modules\Audit\Services\AuditTrail` (feature 011). When adding a sensitive action:
+
+1. Add a case to `AuditAction`.
+2. Call `AuditTrail` from the service, **inside the transaction** and after the writes it describes, so the change and its entry
+   stand or fall together. Do not catch its failure. Only `recordRefusal` keeps going, because a refusal's response must not change.
+3. Add a method to `tests/Feature/Audit/AuditActionCoverageTest.php`, named `test_` plus the action with its dot replaced. A test
+   fails if a case has no method, but nothing can detect an action that was never added to the enum.
+
+Pass only names, allowed values, and internal identifiers: never request text or models. `AuditChanges` keeps before and after
+values only for fields on its allow-list, so a new field keeps its name only until someone adds it deliberately. Never add a value
+that could identify a patient or hold clinical content. A response that returns a whole patient or medical record must also leave an
+entry, even when nothing was changed.
 
 ## API versioning
 

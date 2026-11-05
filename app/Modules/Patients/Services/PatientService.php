@@ -2,12 +2,16 @@
 
 namespace App\Modules\Patients\Services;
 
+use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSubject;
+use App\Modules\Audit\Services\AuditTrail;
 use App\Modules\Patients\Exceptions\PatientNotFoundException;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Repositories\Contracts\PatientRepository;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,6 +21,7 @@ class PatientService
 {
     public function __construct(
         private readonly PatientRepository $patients,
+        private readonly AuditTrail $audit,
     ) {}
 
     /**
@@ -37,11 +42,33 @@ class PatientService
     }
 
     /**
+     * Find a patient for a staff member to read, leaving an entry. If the entry cannot be saved, the
+     * patient is not returned (FR-004, FR-007). `find` stays free of this, because writes and other
+     * modules call it.
+     *
+     * @throws PatientNotFoundException
+     */
+    public function open(int $id): Patient
+    {
+        $patient = $this->find($id);
+
+        $this->audit->record(AuditAction::PatientOpened, AuditSubject::Patient, $id, $id);
+
+        return $patient;
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes  validated input; emergency_contact is a nested object
      */
     public function register(array $attributes): Patient
     {
-        return $this->guardUniqueNationalId(fn () => $this->patients->create($this->toColumns($attributes)));
+        return $this->guardUniqueNationalId(fn () => DB::transaction(function () use ($attributes) {
+            $patient = $this->patients->create($this->toColumns($attributes));
+
+            $this->audit->recordChanges(AuditAction::PatientRegistered, $patient, AuditSubject::Patient, patientId: $patient->id);
+
+            return $patient;
+        }));
     }
 
     /**
@@ -51,7 +78,19 @@ class PatientService
      */
     public function update(Patient $patient, array $attributes): Patient
     {
-        return $this->guardUniqueNationalId(fn () => $this->patients->update($patient, $this->toColumns($attributes)));
+        return $this->guardUniqueNationalId(fn () => DB::transaction(function () use ($patient, $attributes) {
+            $this->patients->update($patient, $this->toColumns($attributes));
+
+            $this->audit->recordChanges(AuditAction::PatientUpdated, $patient, AuditSubject::Patient, patientId: $patient->id);
+
+            // Nothing changed, but the caller still gets the whole record, so this is an opening (FR-004).
+            // Otherwise sending one known field would read the rest of the details without a trace.
+            if (! $patient->wasChanged()) {
+                $this->audit->record(AuditAction::PatientOpened, AuditSubject::Patient, $patient->id, $patient->id);
+            }
+
+            return $patient;
+        }));
     }
 
     /**
